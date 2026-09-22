@@ -1,0 +1,13 @@
+# Python 3.13-compatible — all packages have prebuilt cp313-win_amd64 wheels
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+sqlalchemy>=2.0.0
+bcrypt>=4.0.0
+python-jose[cryptography]>=3.3.0
+chromadb>=0.6.0
+sentence-transformers>=3.0.0
+google-generativeai>=0.7.2
+python-dotenv>=1.0.0
+pydantic[email]>=2.10.0
+python-multipart>=0.0.9
+numpy>=2.0.0
