@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import client from '../api/client'
 
 const AuthContext = createContext(null)
@@ -21,6 +21,21 @@ export function AuthProvider({ children }) {
     setUser(userData)
   }
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('jurisai_token')
+    localStorage.removeItem('jurisai_user')
+    setToken(null)
+    setUser(null)
+  }, [])
+
+  // Listen for soft logout events fired by the axios 401 interceptor
+  // This avoids a hard page reload while still clearing auth state
+  useEffect(() => {
+    const handleSoftLogout = () => logout()
+    window.addEventListener('jurisai:logout', handleSoftLogout)
+    return () => window.removeEventListener('jurisai:logout', handleSoftLogout)
+  }, [logout])
+
   const login = useCallback(async (email, password) => {
     const res = await client.post('/auth/login', { email, password })
     const { access_token, user: userData } = res.data
@@ -33,13 +48,6 @@ export function AuthProvider({ children }) {
     const { access_token, user: userData } = res.data
     _persist(access_token, userData)
     return userData
-  }, [])
-
-  const logout = useCallback(() => {
-    localStorage.removeItem('jurisai_token')
-    localStorage.removeItem('jurisai_user')
-    setToken(null)
-    setUser(null)
   }, [])
 
   const updateUser = useCallback((updates) => {

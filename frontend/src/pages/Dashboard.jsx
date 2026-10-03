@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Sparkles, Users, Briefcase, Menu,
   Loader2, AlertTriangle, Scale, FileText, Zap,
-  Plus, FolderOpen, ChevronLeft, Clock,
+  Plus, FolderOpen, ChevronLeft, Clock, MessageSquare,
+  CheckCircle, ArrowRight,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { apiQuery, apiGetCase, apiTogglePro } from '../api/client'
@@ -31,8 +32,10 @@ export default function Dashboard() {
   const { user, logout, updateUser } = useAuth()
   const navigate = useNavigate()
   const textareaRef = useRef(null)
+  const followUpRef = useRef(null)
 
   const [query, setQuery] = useState('')
+  const [followUpQuery, setFollowUpQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
@@ -46,6 +49,7 @@ export default function Dashboard() {
   const [activeCaseId, setActiveCaseId] = useState(null)   // selected case in sidebar
   const [caseView, setCaseView] = useState(null)            // loaded case detail
   const [caseViewLoading, setCaseViewLoading] = useState(false)
+  const [selectedQueryId, setSelectedQueryId] = useState(null)
 
   const refreshSidebar = () => {
     if (window._jurisRefreshCases) window._jurisRefreshCases()
@@ -57,49 +61,117 @@ export default function Dashboard() {
     toastTimer.current = setTimeout(() => setToast(null), 8000)
   }, [])
 
+  // Safely parse JSON from query log
+  const parseQueryResponse = (q) => {
+    if (!q) return null
+    let parsed = null
+    try {
+      parsed = typeof q.response_json === 'string' ? JSON.parse(q.response_json) : q.response_json
+    } catch (e) {
+      console.error('Error parsing response_json:', e)
+    }
+    if (!parsed) return null
+    return {
+      ...parsed,
+      query_text: q.query_text,
+      query_id: q.id,
+      case_id: q.case_id,
+      created_at: q.created_at,
+    }
+  }
+
   // Load a case's queries when user clicks it in sidebar
   const handleCaseSelect = useCallback(async (caseId) => {
     if (!caseId) {
-      // "New case" — clear active case, show query box
+      // "New case" — clear active case, show fresh query box
       setActiveCaseId(null)
       setCaseView(null)
       setResult(null)
+      setSelectedQueryId(null)
       setQuery('')
       return
     }
     setActiveCaseId(caseId)
-    setResult(null)
     setCaseViewLoading(true)
+    setError('')
     try {
       const res = await apiGetCase(caseId)
       setCaseView(res.data)
+      // Automatically load the latest query result into the complete interface!
+      if (res.data?.queries && res.data.queries.length > 0) {
+        const latestQ = res.data.queries[res.data.queries.length - 1]
+        const fullResult = parseQueryResponse(latestQ)
+        if (fullResult) {
+          setResult(fullResult)
+          setSelectedQueryId(latestQ.id)
+          setActiveTab('citizen')
+        }
+      } else {
+        setResult(null)
+        setSelectedQueryId(null)
+      }
     } catch {
       setCaseView(null)
+      setResult(null)
+      setSelectedQueryId(null)
     } finally {
       setCaseViewLoading(false)
     }
   }, [])
 
-  const handleQuery = async () => {
-    const trimmed = query.trim()
+  // Load a specific query from History into the complete search result interface
+  const handleHistorySelect = useCallback(async (historyItem) => {
+    if (!historyItem) return
+    setError('')
+    const fullResult = parseQueryResponse(historyItem)
+    if (fullResult) {
+      setResult(fullResult)
+      setSelectedQueryId(historyItem.id)
+      setActiveTab('citizen')
+      if (historyItem.case_id) {
+        setActiveCaseId(historyItem.case_id)
+        apiGetCase(historyItem.case_id)
+          .then((res) => setCaseView(res.data))
+          .catch(() => {})
+      } else {
+        setActiveCaseId(null)
+        setCaseView(null)
+      }
+    }
+  }, [])
+
+  const executeQuery = async (queryText, targetCaseId = null) => {
+    const trimmed = queryText.trim()
     if (!trimmed || loading) return
     setError('')
     setLimitError(false)
-    setResult(null)
     setLoading(true)
 
     try {
-      const res = await apiQuery(trimmed, activeCaseId)
+      const res = await apiQuery(trimmed, targetCaseId)
       const data = res.data
-      setResult(data)
+      setResult({
+        ...data,
+        query_text: trimmed,
+        created_at: new Date().toISOString(),
+      })
+      setSelectedQueryId(data.query_id)
       setActiveTab('citizen')
+      setQuery('')
+      setFollowUpQuery('')
       updateUser({ daily_query_count: (user?.daily_query_count || 0) + 1 })
-      if (data.case_id) setActiveCaseId(data.case_id)
+
+      if (data.case_id) {
+        setActiveCaseId(data.case_id)
+        apiGetCase(data.case_id)
+          .then((cRes) => setCaseView(cRes.data))
+          .catch(() => {})
+      }
       refreshSidebar()
     } catch (err) {
       if (err.response?.status === 429) {
         setLimitError(true)
-        showToast('Daily query limit reached. Upgrade to Pro for unlimited access.', 'warning')
+        showToast('Daily query limit reached (5/5). Upgrade to Pro for unlimited access.', 'warning')
       } else {
         const msg = err.response?.data?.detail || 'Something went wrong. Please try again.'
         setError(msg)
@@ -110,6 +182,9 @@ export default function Dashboard() {
     }
   }
 
+  const handleQuery = () => executeQuery(query, activeCaseId)
+  const handleFollowUpQuery = () => executeQuery(followUpQuery, activeCaseId)
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
@@ -117,18 +192,37 @@ export default function Dashboard() {
     }
   }
 
+  const handleFollowUpKeyDown = (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      handleFollowUpQuery()
+    }
+  }
+
   const handleLogout = () => { logout(); navigate('/login') }
 
-  const handleUpgrade = async () => {
-    try {
-      // Refetch user from /me to get updated is_pro
-      const meRes = await apiTogglePro()
-      updateUser({ is_pro: meRes.data.is_pro })
-    } catch {
-      // Optimistic toggle for demo
-      updateUser({ is_pro: !user?.is_pro })
+  const handleUpgrade = async (updatedUser) => {
+    if (updatedUser) {
+      updateUser(updatedUser)
+      setLimitError(false)
+      showToast(
+        updatedUser.is_pro
+          ? '🎉 Upgraded to Pro Plan! Unlimited queries & Supreme Court precedents unlocked.'
+          : 'Switched to Free Plan (5 queries/day).',
+        'warning'
+      )
+      return
     }
-    setLimitError(false)
+    // If called directly from the limit banner button
+    try {
+      const res = await apiTogglePro('upgrade')
+      updateUser(res.data)
+      setLimitError(false)
+      showToast('🎉 Upgraded to Pro Plan! Unlimited queries & Supreme Court precedents unlocked.', 'warning')
+    } catch (err) {
+      console.error('Upgrade failed:', err)
+      showToast('Failed to upgrade plan. Please try again.', 'error')
+    }
   }
 
   const handleSuggestionClick = (s) => {
@@ -136,7 +230,7 @@ export default function Dashboard() {
     textareaRef.current?.focus()
   }
 
-  const showHero = !result && !loading && !caseView && !caseViewLoading
+  const showHero = !result && !loading && (!caseView || (caseView.queries && caseView.queries.length === 0)) && !caseViewLoading
 
   return (
     <motion.div
@@ -181,6 +275,7 @@ export default function Dashboard() {
         onLogout={handleLogout}
         onUpgrade={handleUpgrade}
         onCaseSelect={handleCaseSelect}
+        onHistorySelect={handleHistorySelect}
         activeCaseId={activeCaseId}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -190,7 +285,7 @@ export default function Dashboard() {
         <div className="max-w-3xl w-full mx-auto px-4 lg:px-6 py-6 flex flex-col flex-1">
 
           {/* Top bar */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-6">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden w-9 h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors"
@@ -203,11 +298,14 @@ export default function Dashboard() {
               <motion.button
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null) }}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-400 transition-colors"
+                onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null); setSelectedQueryId(null) }}
+                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-400 transition-colors bg-white/4 px-3 py-1.5 rounded-lg border border-white/6"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                {caseView.name.length > 40 ? caseView.name.slice(0, 40) + '…' : caseView.name}
+                <span className="text-slate-500">Case:</span>
+                <span className="font-semibold text-white truncate max-w-[240px]">
+                  {caseView.name}
+                </span>
               </motion.button>
             )}
 
@@ -217,92 +315,25 @@ export default function Dashboard() {
                 animate={{ scale: [1, 1.3, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              <span className="text-xs text-slate-600">Gemini 3.6 Flash · Active</span>
+              <span className="text-xs text-slate-500">Gemini 2.5 Flash · Verified RAG</span>
             </div>
           </div>
 
-          {/* ── Case View: query history inside a case ── */}
-          <AnimatePresence mode="wait">
+          {/* Loading spinner for case selection */}
+          <AnimatePresence>
             {caseViewLoading && (
               <motion.div
                 key="caseLoading"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex justify-center py-16"
+                className="flex flex-col items-center justify-center py-16 gap-3"
               >
-                <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
-              </motion.div>
-            )}
-
-            {caseView && !caseViewLoading && !result && (
-              <motion.div
-                key="caseView"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-6"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <FolderOpen className="w-4 h-4 text-indigo-400" />
-                  <h2 className="text-sm font-semibold text-white truncate">{caseView.name}</h2>
-                  <span className="text-xs text-slate-600 ml-auto">
-                    {caseView.queries?.length || 0} queries
-                  </span>
-                </div>
-
-                {caseView.queries?.length === 0 ? (
-                  <div className="text-center py-12 glass-card rounded-2xl">
-                    <Clock className="w-8 h-8 text-slate-800 mx-auto mb-2" />
-                    <p className="text-sm text-slate-600">No queries in this case yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {[...caseView.queries].reverse().map((q, i) => {
-                      let parsed = null
-                      try { parsed = JSON.parse(q.response_json) } catch { }
-                      return (
-                        <motion.div
-                          key={q.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          className="glass-card rounded-xl p-4"
-                        >
-                          <p className="text-xs font-semibold text-indigo-300 mb-2 flex items-center gap-2">
-                            <Send className="w-3 h-3" />
-                            {q.query_text}
-                          </p>
-                          {parsed?.plain_english_summary && (
-                            <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
-                              {parsed.plain_english_summary}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-                            <span className="text-[10px] text-slate-700">
-                              {new Date(q.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
-                            </span>
-                            <button
-                              onClick={() => {
-                                setQuery(q.query_text)
-                                setCaseView(null)
-                                setResult(null)
-                                textareaRef.current?.focus()
-                              }}
-                              className="text-[10px] text-indigo-500 hover:text-indigo-400 transition-colors"
-                            >
-                              Ask again →
-                            </button>
-                          </div>
-                        </motion.div>
-                      )
-                    })}
-                  </div>
-                )}
+                <Loader2 className="w-7 h-7 text-indigo-400 animate-spin" />
+                <p className="text-xs text-slate-500">Loading case intelligence...</p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Hero header */}
+          {/* Hero header — shown when no query/result is active */}
           <AnimatePresence>
             {showHero && (
               <motion.div
@@ -327,20 +358,20 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Query input card */}
-          {!caseView && (
+          {/* Initial Query input card — shown when no result is displayed */}
+          {!result && !caseViewLoading && (
             <motion.div layout="position" className="glass-card rounded-2xl p-4 mb-4">
-              {activeCaseId && !caseView && (
+              {activeCaseId && (
                 <div className="flex items-center gap-1.5 mb-2 px-0.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  <span className="text-xs text-indigo-400/70">
+                  <span className="text-xs text-indigo-400/80 font-medium">
                     Adding to current case
                   </span>
                   <button
-                    onClick={() => setActiveCaseId(null)}
-                    className="ml-auto text-[10px] text-slate-600 hover:text-slate-400"
+                    onClick={() => { setActiveCaseId(null); setCaseView(null) }}
+                    className="ml-auto text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
                   >
-                    New case instead
+                    Start new case instead
                   </button>
                 </div>
               )}
@@ -379,7 +410,7 @@ export default function Dashboard() {
             </motion.div>
           )}
 
-          {/* Suggestion grid */}
+          {/* Suggestion grid — shown only in hero state */}
           <AnimatePresence>
             {showHero && (
               <motion.div
@@ -407,7 +438,7 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Loading state */}
+          {/* Loading state during query analysis */}
           <AnimatePresence>
             {loading && (
               <motion.div
@@ -429,7 +460,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-white mb-1">Analyzing your legal scenario…</p>
-                  <p className="text-xs text-slate-600">Retrieving statutes · Searching precedents · Verifying citations</p>
+                  <p className="text-xs text-slate-500">Retrieving statutes · Searching precedents · Verifying citations</p>
                 </div>
                 <div className="flex gap-1.5">
                   {[0, 1, 2, 3].map((i) => (
@@ -445,7 +476,7 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Error / Limit alerts */}
+          {/* Error & Limit alerts */}
           <AnimatePresence>
             {limitError && (
               <motion.div
@@ -462,11 +493,11 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-white mb-1">Daily limit reached</p>
                     <p className="text-xs text-slate-400 mb-3">
-                      You've used all 3 free queries for today. Upgrade to Pro for unlimited
+                      You've used all 5 free queries for today. Upgrade to Pro for unlimited
                       access + Supreme Court precedents.
                     </p>
                     <button
-                      onClick={handleUpgrade}
+                      onClick={() => handleUpgrade()}
                       className="text-xs bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300 px-4 py-2 rounded-lg transition-all font-semibold"
                     >
                       Upgrade to Pro — Free Demo
@@ -490,61 +521,170 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Results */}
+          {/* ══════════════════════════════════════════════════════════════════════
+              FULL SEARCH RESULT INTERFACE (For Both New Search & Case History)
+             ══════════════════════════════════════════════════════════════════════ */}
           <AnimatePresence>
-            {result && (
+            {result && !caseViewLoading && (
               <motion.div
-                key="results"
+                key={`result-${result.query_id || 'active'}`}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="space-y-5"
               >
-                {/* New case / continue buttons */}
-                <div className="flex items-center gap-2 mb-4">
-                  <button
-                    onClick={() => { setResult(null); setQuery(''); setActiveCaseId(null) }}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-400 border border-white/5 hover:border-indigo-500/20 px-3 py-1.5 rounded-lg transition-all"
-                  >
-                    <Plus className="w-3 h-3" /> New case
-                  </button>
-                  <button
-                    onClick={() => { setResult(null); setQuery('') }}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-400 border border-white/5 hover:border-indigo-500/20 px-3 py-1.5 rounded-lg transition-all"
-                  >
-                    <Send className="w-3 h-3" /> Follow-up query
-                  </button>
+                {/* Action Toolbar: New Case / Follow-up buttons */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setResult(null); setQuery(''); setActiveCaseId(null); setCaseView(null); setSelectedQueryId(null) }}
+                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-white/6 hover:border-indigo-500/30 bg-white/4 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <Plus className="w-3 h-3 text-indigo-400" /> Start New Case
+                    </button>
+                    <button
+                      onClick={() => { followUpRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
+                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-white/6 hover:border-indigo-500/30 bg-white/4 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <MessageSquare className="w-3 h-3 text-indigo-400" /> Ask Follow-up
+                    </button>
+                  </div>
+
+                  {user?.is_pro && (
+                    <button
+                      onClick={() => alert('📄 PDF Export — Coming in v2.1!\n\nGenerates a court-ready formatted legal brief with all statutory sections and landmark precedent citations.')}
+                      className="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white border border-amber-500/30 hover:border-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg transition-all font-medium"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-400" /> Export PDF (Pro)
+                    </button>
+                  )}
                 </div>
 
-                {/* Tab switcher */}
-                <div className="flex gap-1 glass rounded-xl p-1 mb-5 w-fit">
-                  <TabButton active={activeTab === 'citizen'} onClick={() => setActiveTab('citizen')}
-                    icon={<Users className="w-3.5 h-3.5" />} label="Citizen View" />
-                  <TabButton active={activeTab === 'advocate'} onClick={() => setActiveTab('advocate')}
-                    icon={<Briefcase className="w-3.5 h-3.5" />} label="Advocate View" />
+                {/* Case Queries Switcher — when case has multiple questions */}
+                {caseView?.queries && caseView.queries.length > 1 && (
+                  <div className="glass-card rounded-xl p-3 border border-indigo-500/15">
+                    <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                      <span className="font-semibold uppercase tracking-wider text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <FolderOpen className="w-3.5 h-3.5 text-indigo-400" /> Questions in this Case ({caseView.queries.length})
+                      </span>
+                      <span className="text-[10px] text-slate-500">Click any question to view its full advice</span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                      {caseView.queries.map((q, idx) => {
+                        const isSelected = selectedQueryId === q.id || result.query_id === q.id
+                        return (
+                          <button
+                            key={q.id}
+                            onClick={() => {
+                              const parsed = parseQueryResponse(q)
+                              if (parsed) {
+                                setResult(parsed)
+                                setSelectedQueryId(q.id)
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20'
+                                : 'bg-white/4 text-slate-400 hover:text-slate-200 border-white/6 hover:bg-white/8'
+                            }`}
+                          >
+                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                            }`}>
+                              {idx + 1}
+                            </span>
+                            <span className="truncate max-w-[220px]">{q.query_text}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Scenario Banner — Displays the full question that was analyzed */}
+                <div className="glass-card rounded-2xl p-5 border border-indigo-500/20 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                    <span className="flex items-center gap-1.5 font-semibold text-indigo-400">
+                      <Scale className="w-3.5 h-3.5" /> Legal Scenario Analyzed
+                    </span>
+                    {result.created_at && (
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(result.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm sm:text-base font-medium text-white leading-relaxed">
+                    {result.query_text || query}
+                  </p>
                 </div>
 
+                {/* Dual-View Tab Switcher */}
+                <div className="flex gap-1 glass rounded-xl p-1 w-fit border border-white/6">
+                  <TabButton
+                    active={activeTab === 'citizen'}
+                    onClick={() => setActiveTab('citizen')}
+                    icon={<Users className="w-3.5 h-3.5" />}
+                    label="Citizen View"
+                  />
+                  <TabButton
+                    active={activeTab === 'advocate'}
+                    onClick={() => setActiveTab('advocate')}
+                    icon={<Briefcase className="w-3.5 h-3.5" />}
+                    label="Advocate View"
+                  />
+                </div>
+
+                {/* Full Tab Content — Citizen View vs Advocate View with all citations */}
                 <AnimatePresence mode="wait">
-                  {activeTab === 'citizen'
-                    ? <CitizenView key="citizen" data={result} />
-                    : <AdvocateView key="advocate" data={result} isPro={user?.is_pro} />
-                  }
+                  {activeTab === 'citizen' ? (
+                    <CitizenView key="citizen" data={result} />
+                  ) : (
+                    <AdvocateView key="advocate" data={result} isPro={user?.is_pro} />
+                  )}
                 </AnimatePresence>
 
-                {user?.is_pro && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-                    className="mt-5 flex justify-end">
-                    <button
-                      onClick={() => alert('PDF Export — Coming in v2.1!\n\nWill generate a formatted legal brief with all citations.')}
-                      className="flex items-center gap-2 text-xs text-slate-500 hover:text-white border border-slate-800 hover:border-indigo-500/30 px-4 py-2 rounded-xl transition-all"
-                    >
-                      <FileText className="w-3.5 h-3.5" /> Export PDF (Pro)
-                    </button>
-                  </motion.div>
-                )}
+                {/* Follow-up Query Card right beneath the complete advice */}
+                <div ref={followUpRef} className="pt-4 border-t border-indigo-500/15">
+                  <div className="glass-card rounded-2xl p-4 border border-indigo-500/20">
+                    <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-slate-300">
+                      <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Ask a Follow-up Question in this Case</span>
+                    </div>
+                    <textarea
+                      value={followUpQuery}
+                      onChange={(e) => setFollowUpQuery(e.target.value)}
+                      onKeyDown={handleFollowUpKeyDown}
+                      placeholder="Ask a clarifying question or explore legal next steps in detail… (Ctrl + Enter to send)"
+                      rows={3}
+                      className="w-full bg-transparent text-white placeholder-slate-600 text-sm resize-none focus:outline-none leading-relaxed"
+                    />
+                    <div className="flex items-center justify-end mt-2 pt-2 border-t border-white/5 gap-2">
+                      <motion.button
+                        onClick={handleFollowUpQuery}
+                        disabled={loading || !followUpQuery.trim()}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-35 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all indigo-glow"
+                      >
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        {loading ? 'Analyzing…' : 'Send Follow-up'}
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
+
         </div>
       </main>
     </motion.div>
@@ -556,7 +696,7 @@ function TabButton({ active, onClick, icon, label }) {
     <button
       onClick={onClick}
       className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
-        active ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+        active ? 'text-white' : 'text-slate-400 hover:text-slate-200'
       }`}
     >
       {active && (
