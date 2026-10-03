@@ -7,6 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta
+from typing import Optional
 import json
 
 import models
@@ -122,11 +123,17 @@ def get_me(current_user: models.User = Depends(auth.get_current_user)):
 
 @app.patch("/api/auth/upgrade", response_model=schemas.UserResponse, tags=["Auth"])
 def toggle_pro(
+    action: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    """Toggle Pro/Free tier — upgrade if Free, downgrade if Pro."""
-    current_user.is_pro = not current_user.is_pro
+    """Toggle or set Pro/Free tier — supports explicit upgrade/downgrade or toggle."""
+    if action == "upgrade":
+        current_user.is_pro = True
+    elif action == "downgrade":
+        current_user.is_pro = False
+    else:
+        current_user.is_pro = not current_user.is_pro
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -289,11 +296,11 @@ def run_query(
         current_user.daily_query_count = 0
         current_user.last_query_date = today_str
 
-    # Free tier limit
-    if not current_user.is_pro and current_user.daily_query_count >= 3:
+    # Free tier limit: 5 queries/day
+    if not current_user.is_pro and current_user.daily_query_count >= 5:
         raise HTTPException(
             429,
-            "Daily limit of 3 free queries reached. "
+            "Daily limit of 5 free queries reached. "
             "Upgrade to Pro for unlimited queries + Supreme Court precedents.",
         )
 
