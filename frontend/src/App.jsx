@@ -2,9 +2,13 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { LanguageProvider } from './context/LanguageContext'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import CaseChat from './pages/CaseChat'
+import LimitationChronology from './pages/LimitationChronology'
+import PrecedentsExplorer from './pages/PrecedentsExplorer'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 
@@ -34,6 +38,18 @@ function AppRoutes() {
           path="/dashboard"
           element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
         />
+        <Route
+          path="/case-chat"
+          element={<ProtectedRoute><CaseChat /></ProtectedRoute>}
+        />
+        <Route
+          path="/limitation-chronology"
+          element={<ProtectedRoute><LimitationChronology /></ProtectedRoute>}
+        />
+        <Route
+          path="/precedents"
+          element={<ProtectedRoute><PrecedentsExplorer /></ProtectedRoute>}
+        />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -44,9 +60,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <LanguageProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </LanguageProvider>
     </AuthProvider>
   )
 }

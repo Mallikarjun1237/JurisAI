@@ -5,13 +5,20 @@ import {
   Send, Sparkles, Users, Briefcase, Menu,
   Loader2, AlertTriangle, Scale, FileText, Zap,
   Plus, FolderOpen, ChevronLeft, Clock, MessageSquare,
-  CheckCircle, ArrowRight,
+  CheckCircle, ArrowRight, Download, Pencil, BookOpen, Calendar,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, LanguageSelector } from '../context/LanguageContext'
 import { apiQuery, apiGetCase, apiTogglePro } from '../api/client'
 import Sidebar from '../components/Sidebar'
 import CitizenView from '../components/CitizenView'
 import AdvocateView from '../components/AdvocateView'
+import ProfileModal from '../components/ProfileModal'
+import BNSConverterModal from '../components/BNSConverterModal'
+import LegalDraftModal from '../components/LegalDraftModal'
+import TelemetryCard from '../components/TelemetryCard'
+import VoiceInputButton from '../components/VoiceInputButton'
+import { generateCourtLegalReport } from '../utils/courtReportGenerator'
 
 const SUGGESTIONS = [
   'My employer withheld my salary and terminated me without notice',
@@ -30,6 +37,7 @@ const pageVariants = {
 
 export default function Dashboard() {
   const { user, logout, updateUser } = useAuth()
+  const { language, t } = useLanguage()
   const navigate = useNavigate()
   const textareaRef = useRef(null)
   const followUpRef = useRef(null)
@@ -37,6 +45,7 @@ export default function Dashboard() {
   const [query, setQuery] = useState('')
   const [followUpQuery, setFollowUpQuery] = useState('')
   const [loading, setLoading] = useState(false)
+  const [generatingPdf, setGeneratingPdf] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [limitError, setLimitError] = useState(false)
@@ -50,6 +59,11 @@ export default function Dashboard() {
   const [caseView, setCaseView] = useState(null)            // loaded case detail
   const [caseViewLoading, setCaseViewLoading] = useState(false)
   const [selectedQueryId, setSelectedQueryId] = useState(null)
+
+  // Modal dialog states
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isBNSModalOpen, setIsBNSModalOpen] = useState(false)
+  const [isDraftModalOpen, setIsDraftModalOpen] = useState(false)
 
   const refreshSidebar = () => {
     if (window._jurisRefreshCases) window._jurisRefreshCases()
@@ -148,7 +162,7 @@ export default function Dashboard() {
     setLoading(true)
 
     try {
-      const res = await apiQuery(trimmed, targetCaseId)
+      const res = await apiQuery(trimmed, targetCaseId, language)
       const data = res.data
       setResult({
         ...data,
@@ -276,6 +290,8 @@ export default function Dashboard() {
         onUpgrade={handleUpgrade}
         onCaseSelect={handleCaseSelect}
         onHistorySelect={handleHistorySelect}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenBNS={() => setIsBNSModalOpen(true)}
         activeCaseId={activeCaseId}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -284,8 +300,8 @@ export default function Dashboard() {
       <main className="flex-1 flex flex-col min-h-screen relative">
         <div className="max-w-3xl w-full mx-auto px-4 lg:px-6 py-6 flex flex-col flex-1">
 
-          {/* Top bar */}
-          <div className="flex items-center gap-3 mb-6">
+          {/* Top Bar with Profile Pill & Quick BNS Tool */}
+          <div className="flex items-center gap-2 sm:gap-3 mb-6">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden w-9 h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors"
@@ -303,19 +319,68 @@ export default function Dashboard() {
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span className="text-slate-500">Case:</span>
-                <span className="font-semibold text-white truncate max-w-[240px]">
+                <span className="font-semibold text-white truncate max-w-[180px] sm:max-w-[240px]">
                   {caseView.name}
                 </span>
               </motion.button>
             )}
 
             <div className="flex items-center gap-2 ml-auto">
-              <motion.div
-                className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              <span className="text-xs text-slate-500">Gemini 2.5 Flash · Verified RAG</span>
+              {/* Vernacular Language Switcher */}
+              <LanguageSelector compact={false} />
+
+              {/* Case Document Chatbot Quick Trigger */}
+              <button
+                onClick={() => navigate('/case-chat')}
+                className="flex items-center gap-1.5 text-xs text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 px-3 py-1.5 rounded-xl transition-all font-semibold shadow-md shadow-indigo-600/20 shrink-0"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Case Document Chat</span>
+                <span className="sm:hidden">Chat</span>
+              </button>
+
+              {/* Court Limitation Tool */}
+              <button
+                onClick={() => navigate('/limitation-chronology')}
+                className="hidden md:flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all font-medium"
+                title="Court Limitation Clock & List of Dates"
+              >
+                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Limitation</span>
+              </button>
+
+              {/* Landmark Precedents */}
+              <button
+                onClick={() => navigate('/precedents')}
+                className="hidden md:flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all font-medium"
+                title="Supreme Court Landmark Precedents & Citations"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+                <span>Precedents</span>
+              </button>
+
+              {/* BNS Tool Quick Trigger */}
+              <button
+                onClick={() => setIsBNSModalOpen(true)}
+                className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-medium"
+              >
+                <Scale className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="flex items-center gap-1">
+                  <span>IPC</span>
+                  <span className="text-indigo-400 font-bold">⇄</span>
+                  <span>BNS</span>
+                </span>
+              </button>
+
+              {/* Live engine badge */}
+              <div className="hidden lg:flex items-center gap-1.5 pl-1">
+                <motion.div
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <span className="text-[11px] text-slate-500">Legal Intelligence Engine</span>
+              </div>
             </div>
           </div>
 
@@ -349,10 +414,9 @@ export default function Dashboard() {
                     <Scale className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-gradient mb-2">JurisAI</h1>
+                <h1 className="text-3xl lg:text-4xl font-bold text-gradient mb-2">{t('appTitle') || 'JurisAI'}</h1>
                 <p className="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed">
-                  Describe your legal situation. Get verified statutes, landmark precedents,
-                  and actionable guidance — instantly.
+                  {t('appSubtitle') || 'Describe your legal situation. Get verified statutes, landmark precedents, and actionable guidance — instantly.'}
                 </p>
               </motion.div>
             )}
@@ -380,7 +444,7 @@ export default function Dashboard() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={'Describe your legal scenario in plain language…\n\nPress Ctrl + Enter to submit.'}
+                placeholder={t('searchPlaceholder') || 'Describe your legal scenario in plain language…\n\nPress Ctrl + Enter to submit.'}
                 rows={4}
                 className="w-full bg-transparent text-white placeholder-slate-700 text-sm resize-none focus:outline-none leading-relaxed"
               />
@@ -396,16 +460,25 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                <motion.button
-                  onClick={handleQuery}
-                  disabled={loading || !query.trim()}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-35 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors indigo-glow shrink-0"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  {loading ? 'Analyzing…' : 'Analyze'}
-                </motion.button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Voice Input Button — Vernacular dictation */}
+                  <VoiceInputButton
+                    language={language}
+                    onTranscript={(text) => setQuery((prev) => (prev ? prev + ' ' + text : text))}
+                    onError={(msg) => showToast(msg, 'error')}
+                    size="md"
+                  />
+                  <motion.button
+                    onClick={handleQuery}
+                    disabled={loading || !query.trim()}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-35 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors indigo-glow shrink-0"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {loading ? 'Analyzing…' : (t('searchBtn') || 'Analyze')}
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -534,7 +607,7 @@ export default function Dashboard() {
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                 className="space-y-5"
               >
-                {/* Action Toolbar: New Case / Follow-up buttons */}
+                {/* Action Toolbar: New Case / Follow-up / Court-PDF / Drafts */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <button
@@ -551,14 +624,41 @@ export default function Dashboard() {
                     </button>
                   </div>
 
-                  {user?.is_pro && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Official Legal Drafts Button */}
                     <button
-                      onClick={() => alert('📄 PDF Export — Coming in v2.1!\n\nGenerates a court-ready formatted legal brief with all statutory sections and landmark precedent citations.')}
-                      className="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white border border-amber-500/30 hover:border-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg transition-all font-medium"
+                      onClick={() => setIsDraftModalOpen(true)}
+                      className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg transition-all font-semibold"
                     >
-                      <FileText className="w-3.5 h-3.5 text-amber-400" /> Export PDF (Pro)
+                      <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>{t('officialDrafts') || 'Legal Notice & Drafts'}</span>
                     </button>
-                  )}
+
+                    {/* Official Court-Standard PDF Export */}
+                    <button
+                      onClick={() => {
+                        setGeneratingPdf(true)
+                        try {
+                          generateCourtLegalReport({ result, user, caseName: caseView?.name })
+                          showToast('Court-Standard Legal Report downloaded successfully!', 'warning')
+                        } catch (e) {
+                          console.error(e)
+                          showToast('Failed to generate PDF. Please try again.', 'error')
+                        } finally {
+                          setGeneratingPdf(false)
+                        }
+                      }}
+                      disabled={generatingPdf}
+                      className="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white border border-amber-500/30 hover:border-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg transition-all font-semibold shadow-sm"
+                    >
+                      {generatingPdf ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5 text-amber-400" />
+                      )}
+                      <span>{t('exportPdf') || 'Court-Standard PDF'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Case Queries Switcher — when case has multiple questions */}
@@ -627,19 +727,27 @@ export default function Dashboard() {
                   </p>
                 </div>
 
+                {/* Hallucination & Faithfulness Telemetry + Fast Query Caching Badge */}
+                <TelemetryCard
+                  telemetry={result.telemetry}
+                  confidenceScore={result.confidence_score}
+                  statutesCount={result.applicable_statutes?.length || 0}
+                  precedentsCount={result.relevant_precedents?.length || 0}
+                />
+
                 {/* Dual-View Tab Switcher */}
                 <div className="flex gap-1 glass rounded-xl p-1 w-fit border border-white/6">
                   <TabButton
                     active={activeTab === 'citizen'}
                     onClick={() => setActiveTab('citizen')}
                     icon={<Users className="w-3.5 h-3.5" />}
-                    label="Citizen View"
+                    label={t('citizenView') || 'Citizen View'}
                   />
                   <TabButton
                     active={activeTab === 'advocate'}
                     onClick={() => setActiveTab('advocate')}
                     icon={<Briefcase className="w-3.5 h-3.5" />}
-                    label="Advocate View"
+                    label={t('advocateView') || 'Advocate View'}
                   />
                 </div>
 
@@ -668,6 +776,13 @@ export default function Dashboard() {
                       className="w-full bg-transparent text-white placeholder-slate-600 text-sm resize-none focus:outline-none leading-relaxed"
                     />
                     <div className="flex items-center justify-end mt-2 pt-2 border-t border-white/5 gap-2">
+                      {/* Voice for follow-up */}
+                      <VoiceInputButton
+                        language={language}
+                        onTranscript={(text) => setFollowUpQuery((prev) => (prev ? prev + ' ' + text : text))}
+                        onError={(msg) => showToast(msg, 'error')}
+                        size="sm"
+                      />
                       <motion.button
                         onClick={handleFollowUpQuery}
                         disabled={loading || !followUpQuery.trim()}
@@ -687,6 +802,26 @@ export default function Dashboard() {
 
         </div>
       </main>
+
+      {/* ── MODALS ── */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user}
+        onUserUpdated={(updated) => updateUser(updated)}
+      />
+
+      <BNSConverterModal
+        isOpen={isBNSModalOpen}
+        onClose={() => setIsBNSModalOpen(false)}
+      />
+
+      <LegalDraftModal
+        isOpen={isDraftModalOpen}
+        onClose={() => setIsDraftModalOpen(false)}
+        result={result}
+        user={user}
+      />
     </motion.div>
   )
 }

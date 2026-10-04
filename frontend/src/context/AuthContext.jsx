@@ -53,7 +53,11 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback((updates) => {
     setUser((prev) => {
       const updated = { ...prev, ...updates }
-      localStorage.setItem('jurisai_user', JSON.stringify(updated))
+      try {
+        localStorage.setItem('jurisai_user', JSON.stringify(updated))
+      } catch (err) {
+        console.warn('Could not persist updated user to localStorage:', err)
+      }
       return updated
     })
   }, [])

@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Scale, LogOut, ChevronRight, Sparkles, X, TrendingUp,
   Plus, Folder, FolderOpen, Pencil, Trash2, Check, MoreHorizontal,
-  ArrowDownCircle, History, Clock, MessageSquare,
+  ArrowDownCircle, History, Clock, MessageSquare, Bot, Calendar, BookOpen,
 } from 'lucide-react'
 import PlanBadge from './PlanBadge'
+import { useLanguage, LanguageSelector } from '../context/LanguageContext'
 import { apiListCases, apiRenameCase, apiDeleteCase, apiTogglePro, apiGetHistory } from '../api/client'
 
 export default function Sidebar({
   user, onLogout, onUpgrade, onCaseSelect, onHistorySelect, activeCaseId, open, onClose,
+  onOpenProfile, onOpenBNS,
 }) {
+  const { t } = useLanguage()
+  const navigate = useNavigate()
   const [cases, setCases] = useState([])
   const [historyList, setHistoryList] = useState([])
   const [sidebarTab, setSidebarTab] = useState('cases') // 'cases' | 'history'
@@ -102,14 +107,38 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* ── User Card ── */}
+      {/* ── User Card with Profile Image & Pencil Edit Button ── */}
       <div className="px-4 py-4 border-b border-indigo-500/10 shrink-0">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {(user?.full_name || user?.email || 'U')[0].toUpperCase()}
+          <div className="relative group/avatar">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden border border-indigo-500/30">
+              {user?.profile_image ? (
+                <img src={user.profile_image} alt="User Avatar" className="w-full h-full object-cover" />
+              ) : (
+                (user?.full_name || user?.email || 'U')[0].toUpperCase()
+              )}
+            </div>
+            {/* Pencil button directly on avatar */}
+            <button
+              onClick={() => { if (onOpenProfile) onOpenProfile(); onClose(); }}
+              title="Edit Profile & Photo"
+              className="absolute -bottom-1 -right-1 w-5 h-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-md border border-[#05050f] transition-transform hover:scale-110"
+            >
+              <Pencil className="w-2.5 h-2.5" />
+            </button>
           </div>
+
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white truncate">{user?.full_name || 'User'}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-semibold text-white truncate">{user?.full_name || 'User'}</p>
+              <button
+                onClick={() => { if (onOpenProfile) onOpenProfile(); onClose(); }}
+                title="Edit Profile"
+                className="text-slate-500 hover:text-indigo-400 transition-colors p-0.5"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
             <p className="text-xs text-slate-500 truncate">{user?.email}</p>
           </div>
           <PlanBadge isPro={user?.is_pro} />
@@ -140,6 +169,57 @@ export default function Sidebar({
             <span>{user?.query_count || 0} total · Unlimited</span>
           </div>
         )}
+
+        {/* Vernacular Language Selector */}
+        <div className="mt-3 pt-2.5 border-t border-white/5">
+          <div className="text-[10px] uppercase font-semibold text-slate-500 mb-1.5 px-1 tracking-wider">
+            Language / ಭಾಷೆ / భాష / भाषा
+          </div>
+          <LanguageSelector fullWidth={true} align="left" compact={false} />
+        </div>
+
+        {/* Quick Tools & Case Document Chat */}
+        <div className="mt-3 pt-2.5 border-t border-white/5 space-y-1.5">
+          <button
+            onClick={() => { navigate('/case-chat'); onClose(); }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-indigo-600/30 to-violet-600/30 hover:from-indigo-600/50 hover:to-violet-600/50 border border-indigo-500/30 transition-all text-left shadow-sm group"
+          >
+            <Bot className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span className="truncate flex-1 font-medium">{t('chatNav') || 'Case Document Chat'}</span>
+            <span className="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.2 rounded font-bold">AI</span>
+          </button>
+
+          <button
+            onClick={() => { navigate('/limitation-chronology'); onClose(); }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
+          >
+            <Calendar className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span className="truncate flex-1 font-medium">{t('limitationNav') || 'Limitation & Chronology'}</span>
+            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-bold">Court</span>
+          </button>
+
+          <button
+            onClick={() => { navigate('/precedents'); onClose(); }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span className="truncate flex-1 font-medium">{t('precedentsNav') || 'Precedents & Citations'}</span>
+            <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-bold">SC</span>
+          </button>
+
+          <button
+            onClick={() => { if (onOpenBNS) onOpenBNS(); onClose(); }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
+          >
+            <Scale className="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-12 transition-transform" />
+            <span className="truncate flex-1 flex items-center gap-1.5">
+              <span>IPC</span>
+              <span className="text-indigo-400 font-bold">⇄</span>
+              <span>BNS</span>
+            </span>
+            <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">2024</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Sidebar Tabs: Cases vs Recent History ── */}
@@ -154,7 +234,7 @@ export default function Sidebar({
             }`}
           >
             <Folder className="w-3.5 h-3.5" />
-            <span>Cases</span>
+            <span>{t('casesTitle') || 'Cases'}</span>
             {cases.length > 0 && (
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${sidebarTab === 'cases' ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-800 text-slate-400'}`}>
                 {cases.length}
@@ -170,7 +250,7 @@ export default function Sidebar({
             }`}
           >
             <History className="w-3.5 h-3.5" />
-            <span>History</span>
+            <span>{t('historyTitle') || 'History'}</span>
             {historyList.length > 0 && (
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${sidebarTab === 'history' ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-800 text-slate-400'}`}>
                 {historyList.length}

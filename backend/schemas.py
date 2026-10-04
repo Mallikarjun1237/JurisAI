@@ -25,7 +25,8 @@ class TokenResponse(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
-    full_name: Optional[str]
+    full_name: Optional[str] = None
+    profile_image: Optional[str] = None
     is_pro: bool
     query_count: int
     daily_query_count: int
@@ -33,6 +34,13 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    profile_image: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -53,6 +61,7 @@ class MessageResponse(BaseModel):
 class QueryRequest(BaseModel):
     query: str
     case_id: Optional[int] = None   # if None → auto-create new case
+    language: Optional[str] = "en"  # "en", "hi", "kn", "te"
 
 
 class StatuteItem(BaseModel):
@@ -78,6 +87,7 @@ class QueryResponse(BaseModel):
     confidence_score: float
     query_id: int
     case_id: int
+    telemetry: Optional[dict] = None
 
 
 class QueryHistoryItem(BaseModel):
@@ -116,3 +126,85 @@ class CaseDetail(BaseModel):
 
 class RenameCaseRequest(BaseModel):
     name: str
+
+
+# ── Document & Case Chatbot ──────────────────────────────────────────────────
+
+class DocChatMessageResponse(BaseModel):
+    id: int
+    role: str
+    content: str
+    file_name: Optional[str] = None
+    risk_level: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UploadedDocResponse(BaseModel):
+    id: int
+    filename: str
+    file_size: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DocChatDetailResponse(BaseModel):
+    id: int
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    messages: List[DocChatMessageResponse] = []
+    documents: List[UploadedDocResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class DocChatListItem(BaseModel):
+    id: int
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+    document_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class DocChatMessageRequest(BaseModel):
+    message: str
+    tone: Optional[str] = "citizen"  # "citizen" or "counsel"
+    language: Optional[str] = "en"  # "en", "hi", "kn", "te"
+
+
+# ── Limitation & Chronology Schemas ──────────────────────────────────────────
+
+class LimitationCalculateRequest(BaseModel):
+    preset_id: str
+    cause_of_action_date: str  # YYYY-MM-DD
+    reference_date: Optional[str] = None
+
+
+class ChronologyExtractRequest(BaseModel):
+    text: str
+    language: Optional[str] = "en"  # "en", "hi", "kn", "te"
+
+
+# ── Precedent & Citation Lookup Schemas ──────────────────────────────────────
+
+class PrecedentAnalyzeRequest(BaseModel):
+    query_or_citation: str
+    language: Optional[str] = "en"  # "en", "hi", "kn", "te"
+
+
+# ── Privacy & PII Redaction Schemas (DPDP Act 2023) ──────────────────────────
+
+class RedactRequest(BaseModel):
+    text: str
+
+
