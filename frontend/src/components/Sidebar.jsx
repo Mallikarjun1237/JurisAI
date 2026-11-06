@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Scale, LogOut, ChevronRight, Sparkles, X, TrendingUp,
   Plus, Folder, FolderOpen, Pencil, Trash2, Check, MoreHorizontal,
-  ArrowDownCircle, History, Clock, MessageSquare, Bot, Calendar, BookOpen,
+  ArrowDownCircle, History, Clock, MessageSquare, Bot, Calendar, BookOpen, Calculator,
+  ShieldCheck,
 } from 'lucide-react'
 import PlanBadge from './PlanBadge'
 import { useLanguage, LanguageSelector } from '../context/LanguageContext'
@@ -12,7 +13,7 @@ import { apiListCases, apiRenameCase, apiDeleteCase, apiTogglePro, apiGetHistory
 
 export default function Sidebar({
   user, onLogout, onUpgrade, onCaseSelect, onHistorySelect, activeCaseId, open, onClose,
-  onOpenProfile, onOpenBNS,
+  onOpenProfile, onOpenBNS, onOpenCourtFee, onOpenDiary, onOpenDPDP,
 }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
@@ -88,7 +89,14 @@ export default function Sidebar({
     setMenuOpenId(null)
   }
 
-  const dailyUsed = user?.daily_query_count || 0
+  // Compute today's date in IST (UTC+5:30) for accurate daily reset display
+  const getISTDate = () => {
+    const utc = Date.now() + new Date().getTimezoneOffset() * 60000
+    return new Date(utc + (5 * 60 + 30) * 60000).toISOString().slice(0, 10)
+  }
+  const todayIST = getISTDate()
+  const isNewDay = user?.last_query_date && user.last_query_date !== todayIST
+  const dailyUsed = isNewDay ? 0 : (user?.daily_query_count || 0)
   const dailyPct = Math.min(100, (dailyUsed / 5) * 100)
 
   const SidebarContent = () => (
@@ -130,13 +138,13 @@ export default function Sidebar({
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-semibold text-white truncate">{user?.full_name || 'User'}</p>
+              <p className="text-xs font-semibold text-slate-200 truncate">{user?.full_name || 'User'}</p>
               <button
                 onClick={() => { if (onOpenProfile) onOpenProfile(); onClose(); }}
                 title="Edit Profile"
                 className="text-slate-500 hover:text-indigo-400 transition-colors p-0.5"
               >
-                <Pencil className="w-3 h-3" />
+                <Pencil className="w-2.5 h-2.5" />
               </button>
             </div>
             <p className="text-xs text-slate-500 truncate">{user?.email}</p>
@@ -144,282 +152,260 @@ export default function Sidebar({
           <PlanBadge isPro={user?.is_pro} />
         </div>
 
+        {/* ── Query Quota (free users only) ── */}
         {!user?.is_pro && (
           <div>
-            <div className="flex justify-between text-xs mb-1.5">
-              <span className="text-slate-500">Today's queries</span>
-              <span className={`font-semibold ${dailyUsed >= 5 ? 'text-red-400' : 'text-indigo-400'}`}>
-                {dailyUsed} / 5
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+              <span className="flex items-center gap-1 text-[11px]">
+                <TrendingUp className="w-3 h-3 text-indigo-400" />
+                {t('dailyQueries') || 'Daily Queries'}
               </span>
+              <span className="font-mono text-slate-400 text-[11px]">{dailyUsed}/5 used</span>
             </div>
-            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <motion.div
-                className={`h-full rounded-full ${dailyUsed >= 5 ? 'bg-red-500' : 'bg-indigo-500'}`}
+                className={`h-full rounded-full transition-all duration-300 ${
+                  dailyUsed >= 5
+                    ? 'bg-red-500'
+                    : dailyUsed >= 4
+                    ? 'bg-amber-400'
+                    : 'bg-indigo-500'
+                }`}
                 initial={{ width: 0 }}
                 animate={{ width: `${dailyPct}%` }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.6 }}
               />
             </div>
           </div>
         )}
-
-        {user?.is_pro && (
-          <div className="flex items-center gap-1.5 text-xs text-amber-400/70">
-            <TrendingUp className="w-3 h-3" />
-            <span>{user?.query_count || 0} total · Unlimited</span>
-          </div>
-        )}
-
-        {/* Vernacular Language Selector */}
-        <div className="mt-3 pt-2.5 border-t border-white/5">
-          <div className="text-[10px] uppercase font-semibold text-slate-500 mb-1.5 px-1 tracking-wider">
-            Language / ಭಾಷೆ / భాష / भाषा
-          </div>
-          <LanguageSelector fullWidth={true} align="left" compact={false} />
-        </div>
-
-        {/* Quick Tools & Case Document Chat */}
-        <div className="mt-3 pt-2.5 border-t border-white/5 space-y-1.5">
-          <button
-            onClick={() => { navigate('/case-chat'); onClose(); }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-indigo-600/30 to-violet-600/30 hover:from-indigo-600/50 hover:to-violet-600/50 border border-indigo-500/30 transition-all text-left shadow-sm group"
-          >
-            <Bot className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
-            <span className="truncate flex-1 font-medium">{t('chatNav') || 'Case Document Chat'}</span>
-            <span className="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.2 rounded font-bold">AI</span>
-          </button>
-
-          <button
-            onClick={() => { navigate('/limitation-chronology'); onClose(); }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
-          >
-            <Calendar className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
-            <span className="truncate flex-1 font-medium">{t('limitationNav') || 'Limitation & Chronology'}</span>
-            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-bold">Court</span>
-          </button>
-
-          <button
-            onClick={() => { navigate('/precedents'); onClose(); }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
-            <span className="truncate flex-1 font-medium">{t('precedentsNav') || 'Precedents & Citations'}</span>
-            <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-bold">SC</span>
-          </button>
-
-          <button
-            onClick={() => { if (onOpenBNS) onOpenBNS(); onClose(); }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-indigo-500/8 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
-          >
-            <Scale className="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-12 transition-transform" />
-            <span className="truncate flex-1 flex items-center gap-1.5">
-              <span>IPC</span>
-              <span className="text-indigo-400 font-bold">⇄</span>
-              <span>BNS</span>
-            </span>
-            <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">2024</span>
-          </button>
-        </div>
       </div>
 
-      {/* ── Sidebar Tabs: Cases vs Recent History ── */}
-      <div className="px-3 pt-3 pb-1 shrink-0">
-        <div className="grid grid-cols-2 gap-1 bg-white/4 p-1 rounded-xl border border-white/6">
+      {/* ── Quick Tools Grid ── */}
+      <div className="px-4 py-3 border-b border-indigo-500/10 shrink-0 space-y-1.5">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Legal Suite</p>
+        <button
+          onClick={() => { navigate('/case-chat'); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
+        >
+          <Bot className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span>Case Document Chat</span>
+        </button>
+        <button
+          onClick={() => { if (onOpenDiary) onOpenDiary(); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
+        >
+          <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span>Advocate Diary</span>
+        </button>
+        <button
+          onClick={() => { if (onOpenCourtFee) onOpenCourtFee(); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
+        >
+          <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span>Court Fees Calculator</span>
+        </button>
+        <button
+          onClick={() => { if (onOpenBNS) onOpenBNS(); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
+        >
+          <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span>IPC ⇄ BNS Converter</span>
+        </button>
+        <button
+          onClick={() => { navigate('/precedents'); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
+        >
+          <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span>Supreme Court Precedents</span>
+        </button>
+      </div>
+
+      {/* ── Tabs: Cases vs Search History ── */}
+      <div className="px-4 pt-3 pb-2 shrink-0">
+        <div className="flex bg-white/4 rounded-lg p-0.5 border border-white/6">
           <button
             onClick={() => setSidebarTab('cases')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
               sidebarTab === 'cases'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
             }`}
           >
-            <Folder className="w-3.5 h-3.5" />
-            <span>{t('casesTitle') || 'Cases'}</span>
-            {cases.length > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${sidebarTab === 'cases' ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-800 text-slate-400'}`}>
-                {cases.length}
-              </span>
-            )}
+            <Folder className="w-3 h-3" />
+            <span>Cases ({cases.length})</span>
           </button>
           <button
             onClick={() => setSidebarTab('history')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
               sidebarTab === 'history'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
             }`}
           >
-            <History className="w-3.5 h-3.5" />
-            <span>{t('historyTitle') || 'History'}</span>
-            {historyList.length > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${sidebarTab === 'history' ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-800 text-slate-400'}`}>
-                {historyList.length}
-              </span>
-            )}
+            <History className="w-3 h-3" />
+            <span>History</span>
           </button>
         </div>
       </div>
 
-      {/* ── Content List: Cases or History ── */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
-        {sidebarTab === 'cases' ? (
-          <div>
-            <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-                Legal Cases
-              </span>
-              <button
-                onClick={() => { onCaseSelect(null); onClose() }}
-                title="Start new case"
-                className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 px-1.5 py-0.5 rounded hover:bg-indigo-500/10 transition-all"
-              >
-                <Plus className="w-3 h-3" /> New
-              </button>
-            </div>
+      {/* ── TAB 1: Cases List ── */}
+      {sidebarTab === 'cases' && (
+        <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 scrollbar-thin">
+          {/* New Case button */}
+          <button
+            onClick={() => { onCaseSelect(null); onClose(); }}
+            className="w-full flex items-center gap-2 p-2.5 rounded-lg border border-dashed border-indigo-500/20 hover:border-indigo-500/40 text-slate-400 hover:text-indigo-300 transition-all text-xs font-medium mb-2 group"
+          >
+            <Plus className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span>{t('newCase') || 'New Case'}</span>
+          </button>
 
-            {cases.length === 0 ? (
-              <div className="text-center py-8 px-2">
-                <FolderOpen className="w-7 h-7 text-slate-800 mx-auto mb-2" />
-                <p className="text-xs text-slate-700">No legal cases yet</p>
-                <p className="text-xs text-slate-800 mt-1">Cases are created automatically when you search</p>
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {cases.map((c, i) => (
-                  <motion.div
+          {cases.length === 0 ? (
+            <div className="text-center py-8 px-2">
+              <Folder className="w-7 h-7 text-slate-800 mx-auto mb-2" />
+              <p className="text-xs text-slate-600">No cases saved yet</p>
+              <p className="text-[11px] text-slate-700 mt-1">Queries you run can be saved into organized cases</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {cases.map((c) => {
+                const isActive = activeCaseId === c.id
+                const isEditing = editingId === c.id
+                const isMenuOpen = menuOpenId === c.id
+
+                return (
+                  <div
                     key={c.id}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.02 }}
-                    className="relative group"
+                    className={`group relative rounded-lg transition-all ${
+                      isActive
+                        ? 'bg-indigo-600/20 border border-indigo-500/30'
+                        : 'hover:bg-white/4 border border-transparent'
+                    }`}
                   >
-                    {editingId === c.id ? (
-                      <div className="flex items-center gap-1 px-2 py-1.5">
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 p-2">
                         <input
-                          autoFocus
+                          type="text"
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') commitEdit(c.id)
                             if (e.key === 'Escape') setEditingId(null)
                           }}
-                          className="flex-1 bg-white/5 border border-indigo-500/30 rounded px-2 py-0.5 text-xs text-white focus:outline-none"
+                          autoFocus
+                          className="flex-1 bg-slate-900 border border-indigo-500/40 rounded px-2 py-1 text-xs text-white focus:outline-none"
                         />
                         <button
                           onClick={() => commitEdit(c.id)}
-                          className="text-emerald-400 hover:text-emerald-300 p-0.5"
+                          className="p-1 text-emerald-400 hover:text-emerald-300"
                         >
-                          <Check className="w-3 h-3" />
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="p-1 text-slate-500 hover:text-slate-300"
+                        >
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => { onCaseSelect(c.id); onClose() }}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-all text-xs flex items-center gap-2
-                          ${activeCaseId === c.id
-                            ? 'bg-indigo-500/15 text-white border border-indigo-500/20'
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-indigo-500/6'
-                          }`}
+                      <div
+                        onClick={() => { onCaseSelect(c.id); onClose(); }}
+                        className="flex items-center gap-2 p-2.5 cursor-pointer"
                       >
-                        <ChevronRight className={`w-3 h-3 shrink-0 transition-colors
-                          ${activeCaseId === c.id ? 'text-indigo-400' : 'text-slate-600 group-hover:text-indigo-400'}`}
-                        />
-                        <span className="truncate flex-1 font-medium">{c.name}</span>
-                        {c.query_count > 0 && (
-                          <span className="text-slate-600 text-[10px] shrink-0 bg-white/5 px-1.5 py-0.5 rounded">
-                            {c.query_count}
-                          </span>
+                        {isActive ? (
+                          <FolderOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        ) : (
+                          <Folder className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 shrink-0" />
                         )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === c.id ? null : c.id) }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-200 transition-all"
-                        >
-                          <MoreHorizontal className="w-3 h-3" />
-                        </button>
-                      </button>
-                    )}
+                        <span className={`text-xs truncate flex-1 ${isActive ? 'text-white font-medium' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                          {c.name}
+                        </span>
 
-                    {/* Context menu */}
-                    <AnimatePresence>
-                      {menuOpenId === c.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          transition={{ duration: 0.12 }}
-                          className="absolute right-0 top-full mt-0.5 z-50 bg-[#0f0f1e] border border-white/10 rounded-lg shadow-xl overflow-hidden w-32"
-                        >
+                        {/* Meatball menu */}
+                        <div className="relative">
                           <button
-                            onClick={(e) => startEdit(c, e)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMenuOpenId(isMenuOpen ? null : c.id)
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-slate-300 rounded transition-opacity"
                           >
-                            <Pencil className="w-3 h-3" /> Rename
+                            <MoreHorizontal className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={(e) => handleDelete(c.id, e)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-                Recent Queries
-              </span>
-            </div>
 
-            {historyList.length === 0 ? (
-              <div className="text-center py-8 px-2">
-                <Clock className="w-7 h-7 text-slate-800 mx-auto mb-2" />
-                <p className="text-xs text-slate-700">No search history yet</p>
-                <p className="text-xs text-slate-800 mt-1">Queries will appear here automatically</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {historyList.map((item, i) => (
-                  <motion.button
-                    key={item.id}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.02 }}
-                    onClick={() => {
-                      if (onHistorySelect) onHistorySelect(item)
-                      onClose()
-                    }}
-                    className="w-full text-left p-2.5 rounded-lg hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs group"
-                  >
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-slate-300 group-hover:text-white font-medium truncate">
-                          {item.query_text}
-                        </p>
-                        <p className="text-[10px] text-slate-600 mt-1">
-                          {new Date(item.created_at).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
+                          {isMenuOpen && (
+                            <div className="absolute right-0 top-6 w-32 bg-slate-900 border border-white/10 rounded-lg shadow-xl z-30 py-1 text-xs">
+                              <button
+                                onClick={(e) => startEdit(c, e)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5"
+                              >
+                                <Pencil className="w-3 h-3" /> Rename
+                              </button>
+                              <button
+                                onClick={(e) => handleDelete(c.id, e)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="w-3 h-3" /> Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB 2: Search History ── */}
+      {sidebarTab === 'history' && (
+        <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 scrollbar-thin">
+          {historyList.length === 0 ? (
+            <div className="text-center py-8 px-2">
+              <Clock className="w-7 h-7 text-slate-800 mx-auto mb-2" />
+              <p className="text-xs text-slate-600">No search history yet</p>
+              <p className="text-[11px] text-slate-700 mt-1">Queries will appear here automatically</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {historyList.map((item, i) => (
+                <motion.button
+                  key={item.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  onClick={() => {
+                    if (onHistorySelect) onHistorySelect(item)
+                    onClose()
+                  }}
+                  className="w-full text-left p-2.5 rounded-lg hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs group"
+                >
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-300 group-hover:text-white font-medium truncate">
+                        {item.query_text}
+                      </p>
+                      <p className="text-[10px] text-slate-600 mt-1">
+                        {new Date(item.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
                     </div>
-                  </motion.button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Pro / Downgrade CTA ── */}
       <div className="px-4 pb-3 shrink-0">
@@ -437,7 +423,7 @@ export default function Sidebar({
                 {togglingPro ? 'Switching…' : 'Upgrade to Pro — Free'}
               </span>
             </div>
-            <p className="text-xs text-amber-400/50 ml-5">Unlimited queries + SC precedents</p>
+            <p className="text-[11px] text-amber-400/50 ml-5">Unlimited queries + SC precedents</p>
           </motion.button>
         ) : (
           <button
@@ -452,10 +438,10 @@ export default function Sidebar({
       </div>
 
       {/* ── Logout ── */}
-      <div className="px-4 pb-4 pt-1 border-t border-indigo-500/8 shrink-0">
+      <div className="px-4 pb-4 pt-1 border-t border-indigo-500/10 shrink-0">
         <button
           onClick={onLogout}
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-2 rounded-lg hover:bg-red-500/6 w-full"
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-2 rounded-lg hover:bg-red-500/10 w-full"
         >
           <LogOut className="w-3.5 h-3.5" /> Sign out
         </button>

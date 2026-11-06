@@ -1,45 +1,44 @@
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+
 const client = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
-  timeout: 60000,
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000,
 })
 
-// Attach JWT token to every request
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('jurisai_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
+// Attach Bearer token to every request automatically
+client.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('jurisai_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
 
-// On 401: clear stored credentials and fire a custom event so
-// AuthContext can log out via React state (no hard page reload).
-// IMPORTANT: Do NOT redirect here — Login page also gets 401 on wrong password,
-// and a hard redirect would wipe the error message before it renders.
+// Intercept 401s — only redirect if explicitly on a protected route and not during active retry
 client.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      const isAuthEndpoint =
-        err.config?.url?.includes('/auth/login') ||
-        err.config?.url?.includes('/auth/signup') ||
-        err.config?.url?.includes('/auth/forgot-password') ||
-        err.config?.url?.includes('/auth/reset-password')
-
-      if (!isAuthEndpoint) {
-        // Only clear session + redirect for non-auth endpoints
-        // (e.g. expired token on /query, /cases, etc.)
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/signup')
+      if (!isAuthEndpoint && window.location.pathname !== '/login') {
         localStorage.removeItem('jurisai_token')
         localStorage.removeItem('jurisai_user')
-        // Fire a soft logout event — AuthContext listens and updates state
-        window.dispatchEvent(new Event('jurisai:logout'))
+        window.location.href = '/login'
       }
-      // For auth endpoints (wrong password), just reject — let the form show the error
     }
-    return Promise.reject(err)
+    return Promise.reject(error)
   }
 )
+
+export default client
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const apiSignup = (data) => client.post('/auth/signup', data)
@@ -52,9 +51,16 @@ export const apiForgotPassword = (email) => client.post('/auth/forgot-password',
 export const apiResetPassword = (token, new_password) =>
   client.post('/auth/reset-password', { token, new_password })
 
-// ── Query ─────────────────────────────────────────────────────────────────────
-export const apiQuery = (query, case_id = null, language = 'en') =>
-  client.post('/query', { query, ...(case_id ? { case_id } : {}), language })
+// ── Query (Robust dual-signature handler) ──────────────────────────────────────
+export const apiQuery = (query, case_id = null, language = 'en') => {
+  if (typeof query === 'object' && query !== null) {
+    const qText = query.query || query.query_text || ''
+    const cId = query.case_id !== undefined ? query.case_id : case_id
+    const lang = query.language || language || 'en'
+    return client.post('/query', { query: qText, ...(cId ? { case_id: cId } : {}), language: lang })
+  }
+  return client.post('/query', { query, ...(case_id ? { case_id } : {}), language })
+}
 
 // ── Cases ─────────────────────────────────────────────────────────────────────
 export const apiListCases = () => client.get('/cases')
@@ -76,12 +82,56 @@ export const apiUploadChatDocument = (sessionId, file) => {
   formData.append('file', file)
   return client.post(`/chat/sessions/${sessionId}/upload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000,
   })
 }
-export const apiSendChatMessage = (sessionId, message, tone = 'citizen', language = 'en') =>
-  client.post(`/chat/sessions/${sessionId}/message`, { message, tone, language })
+export const apiSendChatMessage = (sessionId, message, targetLanguage = 'en', mode = 'advocate') =>
+  client.post(`/chat/sessions/${sessionId}/message`, {
+    message,
+    target_language: targetLanguage,
+    mode,
+  })
 
-// ── Limitation & Chronology ──────────────────────────────────────────────────
+// ── Contract Redlining & Clause Risk Audit ─────────────────────────────────────
+export const apiAuditContract = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return client.post('/contracts/audit', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 90000,
+  })
+}
+
+// ── Official State Court Fees & Ad-Valorem Calculator (Section 10) ────────────
+export const apiGetCourtFeeStates = () => client.get('/court-fees/states')
+export const apiGetCourtFeeSuitTypes = (stateCode) => client.get(`/court-fees/suit-types/${stateCode}`)
+export const apiCalculateCourtFee = (data) => client.post('/court-fees/calculate', data)
+
+// ── Vernacular Pleading Translation ───────────────────────────────────────────
+export const apiTranslateDraft = (data) => client.post('/drafts/translate', data)
+
+// ── Advocate Digital Diary & Hearing NDOH Calendar ─────────────────────────────
+export const apiGetDiaryEntries = (filter = 'all', docChatId = null) => {
+  const params = {}
+  if (filter && filter !== 'all') params.filter = filter
+  if (docChatId) params.doc_chat_id = docChatId
+  return client.get('/diary/entries', { params })
+}
+export const apiGetDiaryStats = () => client.get('/diary/stats')
+export const apiCreateDiaryEntry = (data) => client.post('/diary/entries', data)
+export const apiUpdateDiaryEntry = (entryId, data) => client.put(`/diary/entries/${entryId}`, data)
+export const apiToggleDiaryComplete = (entryId) => client.patch(`/diary/entries/${entryId}/toggle-complete`)
+export const apiAdjournDiaryEntry = (entryId, data) => client.post(`/diary/entries/${entryId}/adjourn`, data)
+export const apiDeleteDiaryEntry = (entryId) => client.delete(`/diary/entries/${entryId}`)
+
+// ── DPDP 2023 Security & Redaction ─────────────────────────────────────────────
+export const apiRedactPreview = (text) => client.post('/redact/preview', { text })
+export const apiGetSecurityCertificate = (data) => client.post('/security/certificate', data)
+
+// ── Contract Clause Risk Audit ────────────────────────────────────────────────
+export const apiAuditChatClauses = (sessionId) => client.post(`/chat/sessions/${sessionId}/audit-clauses`)
+
+// ── Court Limitation & Chronology ──────────────────────────────────────────────
 export const apiGetLimitationPresets = () => client.get('/limitation/presets')
 export const apiCalculateLimitation = (data) => client.post('/limitation/calculate', data)
 export const apiExtractChronology = (text, language = 'en') => client.post('/chronology/extract', { text, language })
@@ -94,14 +144,6 @@ export const apiUploadAndExtractChronology = (file, language = 'en') => {
   })
 }
 
-// ── Precedents & Citations ───────────────────────────────────────────────────
-export const apiSearchPrecedents = (q = '') => client.get('/precedents/search', { params: { q } })
-export const apiGetPrecedent = (id) => client.get(`/precedents/${id}`)
-export const apiAnalyzePrecedent = (query_or_citation, language = 'en') =>
-  client.post('/precedents/analyze', { query_or_citation, language })
-
-// ── Privacy & PII Redaction (DPDP Act 2023) ──────────────────────────────────
-export const apiRedactPreview = (text) => client.post('/redact/preview', { text })
-
-export default client
-
+// ── Precedents & Citations Search ─────────────────────────────────────────────
+export const apiSearchPrecedents = (q) => client.get('/precedents/search', { params: { q } })
+export const apiAnalyzePrecedent = (data) => client.post('/precedents/analyze', data)

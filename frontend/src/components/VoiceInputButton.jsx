@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, MicOff, Check, X } from 'lucide-react'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 
-export default function VoiceInputButton({
+function VoiceInputButton({
   language = 'en',
   onTranscript,
   onError,
@@ -297,3 +297,5 @@ export default function VoiceInputButton({
     </>
   )
 }
+
+export default React.memo(VoiceInputButton)

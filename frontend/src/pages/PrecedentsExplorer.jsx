@@ -239,7 +239,7 @@ export default function PrecedentsExplorer() {
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-amber-300/90 font-mono font-medium mb-1.5">{item.citation}</p>
+                  <p className="text-[11px] text-emerald-300 font-mono font-medium mb-1.5">{item.citation}</p>
 
                   <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
                     {item.ratio_decidendi}
@@ -302,7 +302,7 @@ export default function PrecedentsExplorer() {
 
                 <h2 className="text-base font-bold text-white leading-snug">{selectedCase.title}</h2>
                 <div className="flex flex-wrap items-center gap-2 mt-2 text-xs font-mono">
-                  <span className="text-amber-300 font-bold">{selectedCase.citation}</span>
+                  <span className="text-emerald-300 font-bold">{selectedCase.citation}</span>
                   {selectedCase.equivalent_citations && (
                     <span className="text-slate-400">| Equiv: {selectedCase.equivalent_citations}</span>
                   )}
@@ -335,7 +335,7 @@ export default function PrecedentsExplorer() {
 
               {/* Ratio Decidendi (Binding Law) */}
               <div className="bg-gradient-to-br from-indigo-950/40 to-slate-900/60 border border-indigo-500/30 rounded-xl p-4 space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
                   <Award className="w-4 h-4" />
                   <span>Ratio Decidendi (Binding Rule of Law)</span>
                 </div>

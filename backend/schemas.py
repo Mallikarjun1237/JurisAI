@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 
 
@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
     is_pro: bool
     query_count: int
     daily_query_count: int
+    last_query_date: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -59,24 +60,25 @@ class MessageResponse(BaseModel):
 # ── Query ────────────────────────────────────────────────────────────────────
 
 class QueryRequest(BaseModel):
-    query: str
-    case_id: Optional[int] = None   # if None → auto-create new case
-    language: Optional[str] = "en"  # "en", "hi", "kn", "te"
+    query: Optional[str] = None
+    query_text: Optional[str] = None
+    case_id: Optional[int] = None
+    language: Optional[str] = "en"
 
 
 class StatuteItem(BaseModel):
-    title: str
-    citation: str
-    excerpt: str
-    doc_type: str
+    title: str = ""
+    citation: str = ""
+    excerpt: str = ""
+    doc_type: str = "Statute"
 
 
 class PrecedentItem(BaseModel):
-    title: str
-    citation: str
-    court: str
-    year: str
-    holding: str
+    title: str = ""
+    citation: str = ""
+    court: str = "Supreme Court of India"
+    year: Union[str, int] = ""
+    holding: str = ""
 
 
 class QueryResponse(BaseModel):
@@ -202,9 +204,125 @@ class PrecedentAnalyzeRequest(BaseModel):
     language: Optional[str] = "en"  # "en", "hi", "kn", "te"
 
 
+# ── Legal Draft Localization Schemas ─────────────────────────────────────────
+
+class DraftTranslateRequest(BaseModel):
+    query_text: str
+    plain_english_summary: str
+    target_language: str  # "kn", "hi", "te", "en"
+    draft_type: Optional[str] = "legal_notice"
+
+
+class DraftTranslateResponse(BaseModel):
+    translated_facts: str
+    translated_allegations: str
+    target_language: str
+
+
 # ── Privacy & PII Redaction Schemas (DPDP Act 2023) ──────────────────────────
 
 class RedactRequest(BaseModel):
     text: str
+
+
+class CertificateGenerateRequest(BaseModel):
+    advocate_name: Optional[str] = None
+    chamber_name: Optional[str] = None
+    bar_enrolment: Optional[str] = None
+
+
+# ── Court Fee & Ad-Valorem Calculator Schemas ────────────────────────────────
+
+class CourtFeeCalculateRequest(BaseModel):
+    state_code: str = "karnataka"  # "karnataka", "telangana", "delhi", "maharashtra"
+    suit_type_key: str = "money_recovery"
+    claim_valuation: float
+    num_defendants: Optional[int] = 1
+    is_joint_possession: Optional[bool] = True
+    annual_rent: Optional[float] = None
+
+
+class ContractAuditRequest(BaseModel):
+    document_text: Optional[str] = None
+    filename: Optional[str] = "Uploaded Legal Agreement"
+
+
+# ── Advocate Diary & Hearing Planner Schemas ─────────────────────────────────
+
+class DiaryEntryCreate(BaseModel):
+    case_number: str
+    court_name: str
+    judge_bench: Optional[str] = None
+    parties: str
+    hearing_date: str  # YYYY-MM-DD
+    hearing_time: Optional[str] = "10:30 AM"
+    item_number: Optional[str] = None
+    stage: str
+    priority: str = "must_do"  # "must_do", "intermediate", "optional"
+    task_notes: Optional[str] = None
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    doc_chat_id: Optional[int] = None
+    next_hearing_date: Optional[str] = None
+
+
+class DiaryEntryUpdate(BaseModel):
+    case_number: Optional[str] = None
+    court_name: Optional[str] = None
+    judge_bench: Optional[str] = None
+    parties: Optional[str] = None
+    hearing_date: Optional[str] = None
+    hearing_time: Optional[str] = None
+    item_number: Optional[str] = None
+    stage: Optional[str] = None
+    priority: Optional[str] = None
+    task_notes: Optional[str] = None
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    is_completed: Optional[bool] = None
+    next_hearing_date: Optional[str] = None
+    disposal_status: Optional[str] = None
+
+
+class DiaryAdjournRequest(BaseModel):
+    next_hearing_date: str  # YYYY-MM-DD
+    next_stage: Optional[str] = None
+    order_summary: Optional[str] = None
+
+
+class DiaryEntryResponse(BaseModel):
+    id: int
+    user_id: int
+    doc_chat_id: Optional[int] = None
+    case_number: str
+    court_name: str
+    judge_bench: Optional[str] = None
+    parties: str
+    hearing_date: str
+    hearing_time: Optional[str] = None
+    item_number: Optional[str] = None
+    stage: str
+    priority: str
+    task_notes: Optional[str] = None
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    is_completed: bool
+    next_hearing_date: Optional[str] = None
+    disposal_status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DiaryStatsResponse(BaseModel):
+    total_entries: int
+    today_count: int
+    this_week_count: int
+    must_do_pending: int
+    completed_count: int
+
+
 
 

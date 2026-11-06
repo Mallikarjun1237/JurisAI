@@ -57,33 +57,33 @@ export default function BNSConverterModal({ isOpen, onClose }) {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 16 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="relative w-full max-w-4xl bg-[#0c0d1e] border border-indigo-500/25 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(10,37,64,0.15)] overflow-hidden flex flex-col max-h-[92vh] text-slate-800"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-indigo-500/15 bg-indigo-950/30">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-                <Scale className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-slate-900 shadow-lg shadow-indigo-500/20">
+                <Scale className="w-5 h-5 text-slate-900" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-white flex items-center gap-1.5">
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
                     <span>IPC</span>
                     <span className="text-indigo-400 font-bold">⇄</span>
                     <span>BNS Statutory Law Converter</span>
                   </h2>
-                  <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold px-2 py-0.5 rounded-full">
                     Official Reform 2024–2026
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-600">
                   Government of India statutory concordance table for BNS, BNSS & BSA
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
+              className="text-slate-600 hover:text-slate-900 p-1 rounded-lg hover:bg-white/5 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -98,12 +98,12 @@ export default function BNSConverterModal({ isOpen, onClose }) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by section (e.g. 420, 302, 318) or offence (e.g. cheating, theft, bail, murder)..."
-                className="w-full bg-[#12132a] border border-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                className="w-full bg-[#12132a] border border-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 transition-all"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-900"
                 >
                   Clear
                 </button>
@@ -118,8 +118,8 @@ export default function BNSConverterModal({ isOpen, onClose }) {
                   onClick={() => setActiveCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                     activeCategory === cat
-                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                      : 'bg-white/4 text-slate-400 hover:text-white border border-white/6'
+                      ? 'bg-indigo-600 text-white indigo-glow shadow-sm shadow-indigo-600/30'
+                      : 'bg-white/4 text-slate-600 hover:text-slate-900 border border-white/6'
                   }`}
                 >
                   {cat === 'All' ? 'All Transitions' : cat}
@@ -136,7 +136,7 @@ export default function BNSConverterModal({ isOpen, onClose }) {
             {filteredData.length === 0 ? (
               <div className="text-center py-16">
                 <AlertCircle className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-                <p className="text-sm text-slate-400 font-medium">No matching legal provisions found</p>
+                <p className="text-sm text-slate-600 font-medium">No matching legal provisions found</p>
                 <p className="text-xs text-slate-600 mt-1">
                   Try searching for another section number, crime name, or select "All Transitions".
                 </p>
@@ -176,7 +176,7 @@ export default function BNSConverterModal({ isOpen, onClose }) {
                         <button
                           onClick={() => handleCopy(item, idx)}
                           title="Copy Citation"
-                          className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white px-2.5 py-1 rounded-md bg-white/4 hover:bg-white/8 border border-white/6 transition-all"
+                          className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white/4 hover:bg-white/8 border border-white/6 transition-all"
                         >
                           {copiedId === idx ? (
                             <>
@@ -193,11 +193,11 @@ export default function BNSConverterModal({ isOpen, onClose }) {
                       </div>
                     </div>
 
-                    <h3 className="text-sm font-semibold text-white mb-2 leading-snug">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-2 leading-snug">
                       {item.offence}
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-2 border-y border-white/5 text-xs text-slate-300 mb-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-2 border-y border-white/5 text-xs text-slate-700 mb-2.5">
                       <div>
                         <span className="text-slate-500 text-[11px] block">Punishment:</span>
                         <span className="font-medium text-slate-200">{item.punishment}</span>
@@ -214,14 +214,14 @@ export default function BNSConverterModal({ isOpen, onClose }) {
                       </div>
                       <div>
                         <span className="text-slate-500 text-[11px] block">Cognizability:</span>
-                        <span className="font-medium text-slate-300">{item.cognizability}</span>
+                        <span className="font-medium text-slate-700">{item.cognizability}</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-400 leading-relaxed flex items-start gap-1.5">
+                    <p className="text-xs text-slate-600 leading-relaxed flex items-start gap-1.5">
                       <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
                       <span>
-                        <strong className="text-slate-300">Statutory Reform Note: </strong>
+                        <strong className="text-slate-700">Statutory Reform Note: </strong>
                         {item.keyChange}
                       </span>
                     </p>
@@ -236,7 +236,7 @@ export default function BNSConverterModal({ isOpen, onClose }) {
             <span>Enacted under Acts 45, 46 & 47 of 2023, Ministry of Home Affairs, Govt. of India.</span>
             <button
               onClick={onClose}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-xs transition-colors"
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white indigo-glow rounded-lg font-medium text-xs transition-colors"
             >
               Done
             </button>

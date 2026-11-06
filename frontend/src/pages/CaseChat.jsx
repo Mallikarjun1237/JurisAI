@@ -5,12 +5,17 @@ import {
   Send, Paperclip, FileText, Trash2, Plus, ArrowLeft,
   Scale, MessageSquare, AlertTriangle, ShieldAlert,
   ShieldCheck, AlertCircle, Loader2, Sparkles, Check,
-  ChevronRight, UploadCloud, Users, Briefcase, Menu, X,
+  ChevronRight, UploadCloud, Users, Briefcase, Menu, X, Calendar,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LanguageSelector } from '../context/LanguageContext'
 import { redactPII } from '../utils/piiRedactor'
 import VoiceInputButton from '../components/VoiceInputButton'
+import ContractAuditModal from '../components/ContractAuditModal'
+import AdvocateDiaryModal from '../components/AdvocateDiaryModal'
+import DPDPSecurityModal from '../components/DPDPSecurityModal'
+import NotificationCenter from '../components/NotificationCenter'
+import NotificationPermissionModal from '../components/NotificationPermissionModal'
 import {
   apiCreateChatSession,
   apiListChatSessions,
@@ -18,6 +23,7 @@ import {
   apiDeleteChatSession,
   apiUploadChatDocument,
   apiSendChatMessage,
+  apiAuditChatClauses,
 } from '../api/client'
 
 export default function CaseChat() {
@@ -41,6 +47,16 @@ export default function CaseChat() {
   const [error, setError] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Contract Risk Auditor states
+  const [auditReport, setAuditReport] = useState(null)
+  const [auditModalOpen, setAuditModalOpen] = useState(false)
+  const [auditing, setAuditing] = useState(false)
+
+  // Advocate Digital Diary state
+  const [diaryModalOpen, setDiaryModalOpen] = useState(false)
+  const [notifModalOpen, setNotifModalOpen] = useState(false)
+  const [dpdpModalOpen, setDpdpModalOpen] = useState(false)
+
   // Scroll to bottom on new messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,44 +65,6 @@ export default function CaseChat() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
-
-  // Load chat sessions on mount
-  useEffect(() => {
-    loadSessions()
-  }, [])
-
-  const loadSessions = async () => {
-    try {
-      const res = await apiListChatSessions()
-      const list = res.data || []
-      setSessions(list)
-      if (list.length > 0 && !activeSessionId) {
-        selectSession(list[0].id)
-      } else if (list.length === 0) {
-        // Create initial session if none exists
-        handleNewSession()
-      }
-    } catch (err) {
-      console.error('Failed to load chat sessions:', err)
-    }
-  }
-
-  const selectSession = async (sessionId) => {
-    setActiveSessionId(sessionId)
-    setLoading(true)
-    setError('')
-    try {
-      const res = await apiGetChatSession(sessionId)
-      setCurrentSession(res.data)
-      setMessages(res.data.messages || [])
-      setDocuments(res.data.documents || [])
-    } catch (err) {
-      console.error('Failed to load session details:', err)
-      setError('Failed to load conversation history.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleNewSession = async () => {
     try {
@@ -113,6 +91,44 @@ export default function CaseChat() {
       setError('Failed to initialize new conversation.')
     }
   }
+
+  const selectSession = async (sessionId) => {
+    setActiveSessionId(sessionId)
+    setLoading(true)
+    setError('')
+    try {
+      const res = await apiGetChatSession(sessionId)
+      setCurrentSession(res.data)
+      setMessages(res.data.messages || [])
+      setDocuments(res.data.documents || [])
+    } catch (err) {
+      console.error('Failed to load session details:', err)
+      setError('Failed to load conversation history.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadSessions = async () => {
+    try {
+      const res = await apiListChatSessions()
+      const list = res.data || []
+      setSessions(list)
+      if (list.length > 0 && !activeSessionId) {
+        selectSession(list[0].id)
+      } else if (list.length === 0) {
+        // Create initial session if none exists
+        handleNewSession()
+      }
+    } catch (err) {
+      console.error('Failed to load chat sessions:', err)
+    }
+  }
+
+  // Load chat sessions on mount
+  useEffect(() => {
+    loadSessions()
+  }, [])
 
   const handleDeleteSession = async (sessionId, e) => {
     e.stopPropagation()
@@ -159,6 +175,29 @@ export default function CaseChat() {
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleAuditContractClauses = async () => {
+    if (!activeSessionId) return
+    if (documents.length === 0) {
+      setError('Please attach at least one contract or case document first.')
+      return
+    }
+    setAuditing(true)
+    setError('')
+    try {
+      const res = await apiAuditChatClauses(activeSessionId)
+      setAuditReport(res.data)
+      setAuditModalOpen(true)
+      // Refresh chat messages to display audit summary message
+      const sessionRes = await apiGetChatSession(activeSessionId)
+      setMessages(sessionRes.data.messages || [])
+    } catch (err) {
+      console.error('Audit error:', err)
+      setError(err.response?.data?.detail || 'Failed to complete statutory contract audit.')
+    } finally {
+      setAuditing(false)
     }
   }
 
@@ -220,25 +259,6 @@ export default function CaseChat() {
 
   return (
     <div className="min-h-screen bg-[#060714] text-slate-200 flex flex-col lg:flex-row overflow-hidden">
-      {/* ── MOBILE HEADER ── */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0a0b1c] border-b border-indigo-500/10 shrink-0">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="font-bold text-white text-sm">JurisAI Case Chat</span>
-        </div>
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
-        </button>
-      </div>
-
       {/* ── LEFT SIDEBAR: CASE SESSIONS & ATTACHMENTS ── */}
       <AnimatePresence>
         {(sidebarOpen || window.innerWidth >= 1024) && (
@@ -250,7 +270,7 @@ export default function CaseChat() {
             {/* Top Bar: Return to Dashboard */}
             <div className="p-4 border-b border-white/5 flex items-center justify-between">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/dashboard')}
                 className="flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors group"
               >
                 <ArrowLeft className="w-4 h-4 text-indigo-400 group-hover:-translate-x-1 transition-transform" />
@@ -275,7 +295,7 @@ export default function CaseChat() {
             </div>
 
             {/* Conversation Sessions List */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-[220px]">
               <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2 block mb-2">
                 Case Conversations ({sessions.length})
               </span>
@@ -326,7 +346,7 @@ export default function CaseChat() {
 
             {/* Attached Documents in Current Session */}
             {documents.length > 0 && (
-              <div className="p-3 border-t border-white/5 bg-[#070814] max-h-48 overflow-y-auto">
+              <div className="p-3 border-t border-white/5 bg-[#070814] max-h-28 overflow-y-auto">
                 <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-2">
                   Attached Files ({documents.length})
                 </span>
@@ -352,60 +372,120 @@ export default function CaseChat() {
 
       {/* ── MAIN CHAT AREA ── */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-[#050611]">
-        {/* Top Header */}
-        <header className="px-6 py-3.5 border-b border-white/5 bg-[#080918]/80 backdrop-blur-md flex items-center justify-between shrink-0 gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+        {/* Top Header — Clean, Non-wrapping, Fully Responsive */}
+        <header className="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-white/5 bg-[#080918]/80 backdrop-blur-md flex items-center justify-between shrink-0 gap-2 sm:gap-3">
+          {/* Left: Mobile Sidebar Toggle, Scales Logo, Title */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0"
+              aria-label="Open Sessions Menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
               <Scale className="w-4 h-4" />
             </div>
+
             <div className="min-w-0">
-              <h1 className="text-sm font-bold text-white truncate">
+              <h1 className="text-xs sm:text-sm font-bold text-white truncate max-w-[120px] sm:max-w-xs md:max-w-sm">
                 {currentSession?.title || 'Case Document Assistant'}
               </h1>
-              <p className="text-[11px] text-slate-400">
-                Cross-examines uploaded case files & provides strategic guidance
-              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
-            {/* DPDP Act 2023 Shield Badge */}
-            <div
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-medium cursor-help"
-              title="DPDP Act 2023 Compliance Active: All uploaded documents and messages are sanitized to mask Aadhaar, PAN, phone numbers, and bank details."
+          {/* Right: Actions, Dropdowns, and Dashboard Return */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Return to Dashboard */}
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+              title="Return to Research Dashboard"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>DPDP 2023 Shield</span>
-            </div>
+              <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </button>
 
-            {/* Vernacular Language Selector */}
-            <LanguageSelector compact={false} />
+            {/* Audit Clauses Action Button (When document is attached) */}
+            {documents.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={handleAuditContractClauses}
+                disabled={auditing}
+                className="flex items-center gap-1.5 text-xs text-white bg-gradient-to-r from-red-600 via-rose-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shadow-md shadow-red-600/25 border border-white/10 shrink-0"
+                title="Statutory audit of contract clauses against Indian Contract Act 1872 & Supreme Court ratios"
+              >
+                {auditing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                ) : (
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
+                )}
+                <span className="hidden md:inline">{auditing ? 'Auditing…' : 'Audit Clauses'}</span>
+                <span className="md:hidden">Audit</span>
+              </motion.button>
+            )}
+
+            {/* Advocate Digital Diary Button */}
+            <button
+              onClick={() => setDiaryModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1.5 rounded-xl transition-all font-semibold border border-emerald-500/30 hover:border-emerald-400 shrink-0"
+              title="Advocate Digital Diary & Hearing Daily Planner / Cause List"
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden md:inline">Advocate Diary</span>
+              <span className="md:hidden">Diary</span>
+            </button>
 
             {/* Tone Toggle Switcher */}
-            <div className="flex items-center gap-1 bg-[#0e1026] p-1 rounded-xl border border-white/8 shrink-0">
+            <div className="flex items-center gap-0.5 bg-[#0e1026] p-0.5 rounded-xl border border-white/8 shrink-0">
+              <button
+                onClick={() => setTone('citizen')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                  tone === 'citizen'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Citizen Friendly Analysis Mode"
+              >
+                <Users className="w-3 h-3 shrink-0" />
+                <span className="hidden lg:inline">Citizen</span>
+              </button>
+              <button
+                onClick={() => setTone('counsel')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                  tone === 'counsel'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Litigation Counsel Analysis Mode"
+              >
+                <Briefcase className="w-3 h-3 shrink-0" />
+                <span className="hidden lg:inline">Counsel</span>
+              </button>
+            </div>
+
+            {/* DPDP Act 2023 Shield Button */}
             <button
-              onClick={() => setTone('citizen')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                tone === 'citizen'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
+              onClick={() => setDpdpModalOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 text-xs font-semibold transition-all shrink-0"
+              title="DPDP Act 2023 Compliance & Section 132 BSA Privilege Suite"
             >
-              <Users className="w-3 h-3" />
-              <span className="hidden sm:inline">Citizen Friendly</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden xl:inline">DPDP 2023 Shield</span>
+              <span className="xl:hidden">DPDP</span>
             </button>
-            <button
-              onClick={() => setTone('counsel')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                tone === 'counsel'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Briefcase className="w-3 h-3" />
-              <span className="hidden sm:inline">Litigation Counsel</span>
-            </button>
-          </div>
+
+            {/* Vernacular Language Selector */}
+            <LanguageSelector compact={true} align="right" />
+
+            {/* Notification Center */}
+            <NotificationCenter
+              onOpenDiary={() => setDiaryModalOpen(true)}
+              onRequestPermissionModal={() => setNotifModalOpen(true)}
+              align="right"
+            />
           </div>
         </header>
 
@@ -611,6 +691,37 @@ export default function CaseChat() {
           </div>
         </footer>
       </main>
+
+      {/* ── CONTRACT RISK AUDITOR MODAL ── */}
+      <AnimatePresence>
+        {auditModalOpen && auditReport && (
+          <ContractAuditModal
+            isOpen={auditModalOpen}
+            onClose={() => { setAuditModalOpen(false) }}
+            auditData={auditReport}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── ADVOCATE DIGITAL DIARY & CAUSE LIST MODAL ── */}
+      <AdvocateDiaryModal
+        isOpen={diaryModalOpen}
+        onClose={() => setDiaryModalOpen(false)}
+        initialDocChatId={activeSessionId}
+        initialCaseTitle={currentSession?.title || ''}
+      />
+
+      {/* ── DPDP 2023 SECURITY & PRIVILEGE MODAL ── */}
+      <DPDPSecurityModal
+        isOpen={dpdpModalOpen}
+        onClose={() => setDpdpModalOpen(false)}
+      />
+
+      {/* ── NOTIFICATION PERMISSION MODAL ── */}
+      <NotificationPermissionModal
+        isOpen={notifModalOpen}
+        onClose={() => setNotifModalOpen(false)}
+      />
     </div>
   )
 }

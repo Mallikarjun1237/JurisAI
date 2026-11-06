@@ -95,3 +95,36 @@ class UploadedDoc(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     chat = relationship("DocChat", back_populates="documents")
+
+
+class AdvocateDiaryEntry(Base):
+    """
+    Advocate Digital Diary & Hearing Daily Planner / Cause List.
+    Stores hearing dates, case stages, item numbers, priority deadlines,
+    and client follow-up notes isolated strictly per user.
+    """
+    __tablename__ = "advocate_diary_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    doc_chat_id = Column(Integer, ForeignKey("doc_chats.id"), nullable=True)
+    case_number = Column(String, nullable=False)
+    court_name = Column(String, nullable=False)
+    judge_bench = Column(String, nullable=True)
+    parties = Column(String, nullable=False)
+    hearing_date = Column(String, nullable=False, index=True)  # YYYY-MM-DD
+    hearing_time = Column(String, nullable=True)  # e.g. "10:30 AM"
+    item_number = Column(String, nullable=True)  # e.g. "Item No. 12"
+    stage = Column(String, nullable=False)  # e.g. "Cross-Examination of PW-1"
+    priority = Column(String, default="must_do")  # "must_do" (Red), "intermediate" (Amber), "optional" (Blue)
+    task_notes = Column(Text, nullable=True)
+    client_name = Column(String, nullable=True)
+    client_phone = Column(String, nullable=True)
+    is_completed = Column(Boolean, default=False)
+    next_hearing_date = Column(String, nullable=True)  # NDOH: YYYY-MM-DD
+    disposal_status = Column(String, default="pending")  # "pending", "adjourned", "disposed"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", backref="diary_entries")
+    doc_chat = relationship("DocChat")

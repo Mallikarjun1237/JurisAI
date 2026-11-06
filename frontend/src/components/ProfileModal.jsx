@@ -48,7 +48,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
 
     const reader = new FileReader()
     reader.onload = (event) => {
-      const img = new Image()
+      const img = new window.Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
         const maxDim = 256
@@ -182,17 +182,17 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-indigo-500/15 bg-indigo-950/20">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-slate-900">
                 <User className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">Edit Profile & Account</h2>
-                <p className="text-[11px] text-slate-400">Update photo, name or password individually</p>
+                <h2 className="text-base font-bold text-slate-900">Edit Profile & Account</h2>
+                <p className="text-[11px] text-slate-600">Update photo, name or password individually</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
+              className="text-slate-600 hover:text-slate-900 p-1 rounded-lg hover:bg-white/5 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -225,7 +225,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-2xl">
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-slate-900 font-bold text-2xl">
                       {(fullName || user?.email || 'U')[0].toUpperCase()}
                     </div>
                   )}
@@ -235,7 +235,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 w-7 h-7 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg border-2 border-[#0d0e20] transition-transform group-hover:scale-110"
+                  className="absolute bottom-0 right-0 w-7 h-7 bg-indigo-600 hover:bg-indigo-500 text-white indigo-glow rounded-full flex items-center justify-center shadow-lg border-2 border-[#0d0e20] transition-transform group-hover:scale-110"
                   title="Upload photo"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -274,7 +274,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
 
             {/* Full Name */}
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5 flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-indigo-400" /> Full Name / Advocate Name
               </label>
               <input
@@ -282,14 +282,14 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Adv. Rajesh Sharma"
-                className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
             {/* Email (Read-only) */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-500" /> Email Address (Immutable)
                 </label>
                 <span className="text-[10px] text-slate-500 flex items-center gap-1">
@@ -300,21 +300,21 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="w-full bg-[#0a0b17] border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-slate-400 cursor-not-allowed select-none"
+                className="w-full bg-[#0a0b17] border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed select-none"
               />
             </div>
 
             {/* Password Change Section (Optional) */}
             <div className="pt-3 border-t border-white/5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-indigo-400" /> Change Password
                 </h3>
                 <span className="text-[10px] text-slate-500">Optional</span>
               </div>
 
               <div>
-                <label className="text-[11px] font-medium text-slate-400 block mb-1">
+                <label className="text-[11px] font-medium text-slate-600 block mb-1">
                   Current Password
                 </label>
                 <div className="relative">
@@ -323,12 +323,12 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Enter current password to authorize change"
-                    className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-600 pr-10 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-600 pr-10 focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowCurrentPw(!showCurrentPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
                   >
                     {showCurrentPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -337,7 +337,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] font-medium text-slate-400 block mb-1">
+                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
                     New Password
                   </label>
                   <div className="relative">
@@ -346,12 +346,12 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Min. 8 characters"
-                      className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 pr-9 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-600 pr-9 focus:outline-none focus:border-indigo-500"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPw(!showNewPw)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
                     >
                       {showNewPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
@@ -359,7 +359,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-400 block mb-1">
+                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
                     Confirm New Password
                   </label>
                   <input
@@ -367,7 +367,7 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter new password"
-                    className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#13142d] border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -378,14 +378,14 @@ export default function ProfileModal({ isOpen, onClose, user, onUserUpdated }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs text-slate-400 hover:text-white rounded-xl transition-colors"
+                className="px-4 py-2 text-xs text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all"
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white indigo-glow disabled:opacity-50 text-slate-900 font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all"
               >
                 {saving ? (
                   <>

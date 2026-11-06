@@ -6,6 +6,7 @@ import {
   Loader2, AlertTriangle, Scale, FileText, Zap,
   Plus, FolderOpen, ChevronLeft, Clock, MessageSquare,
   CheckCircle, ArrowRight, Download, Pencil, BookOpen, Calendar,
+  Calculator, ShieldCheck, Printer,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LanguageSelector } from '../context/LanguageContext'
@@ -16,6 +17,11 @@ import AdvocateView from '../components/AdvocateView'
 import ProfileModal from '../components/ProfileModal'
 import BNSConverterModal from '../components/BNSConverterModal'
 import LegalDraftModal from '../components/LegalDraftModal'
+import CourtFeeModal from '../components/CourtFeeModal'
+import AdvocateDiaryModal from '../components/AdvocateDiaryModal'
+import DPDPSecurityModal from '../components/DPDPSecurityModal'
+import NotificationCenter from '../components/NotificationCenter'
+import NotificationPermissionModal from '../components/NotificationPermissionModal'
 import TelemetryCard from '../components/TelemetryCard'
 import VoiceInputButton from '../components/VoiceInputButton'
 import { generateCourtLegalReport } from '../utils/courtReportGenerator'
@@ -64,6 +70,10 @@ export default function Dashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isBNSModalOpen, setIsBNSModalOpen] = useState(false)
   const [isDraftModalOpen, setIsDraftModalOpen] = useState(false)
+  const [isCourtFeeModalOpen, setIsCourtFeeModalOpen] = useState(false)
+  const [isDiaryModalOpen, setIsDiaryModalOpen] = useState(false)
+  const [isDPDPModalOpen, setIsDPDPModalOpen] = useState(false)
+  const [isNotifModalOpen, setIsNotifModalOpen] = useState(false)
 
   const refreshSidebar = () => {
     if (window._jurisRefreshCases) window._jurisRefreshCases()
@@ -97,7 +107,6 @@ export default function Dashboard() {
   // Load a case's queries when user clicks it in sidebar
   const handleCaseSelect = useCallback(async (caseId) => {
     if (!caseId) {
-      // "New case" — clear active case, show fresh query box
       setActiveCaseId(null)
       setCaseView(null)
       setResult(null)
@@ -111,7 +120,6 @@ export default function Dashboard() {
     try {
       const res = await apiGetCase(caseId)
       setCaseView(res.data)
-      // Automatically load the latest query result into the complete interface!
       if (res.data?.queries && res.data.queries.length > 0) {
         const latestQ = res.data.queries[res.data.queries.length - 1]
         const fullResult = parseQueryResponse(latestQ)
@@ -124,70 +132,65 @@ export default function Dashboard() {
         setResult(null)
         setSelectedQueryId(null)
       }
-    } catch {
-      setCaseView(null)
-      setResult(null)
-      setSelectedQueryId(null)
+    } catch (err) {
+      console.error('Failed to load case:', err)
+      showToast('Could not load case details.', 'error')
     } finally {
       setCaseViewLoading(false)
     }
-  }, [])
+  }, [showToast])
 
-  // Load a specific query from History into the complete search result interface
-  const handleHistorySelect = useCallback(async (historyItem) => {
-    if (!historyItem) return
-    setError('')
+  // Select a historical query from sidebar history tab
+  const handleHistorySelect = (historyItem) => {
+    setActiveCaseId(historyItem.case_id || null)
+    setCaseView(null)
     const fullResult = parseQueryResponse(historyItem)
     if (fullResult) {
       setResult(fullResult)
       setSelectedQueryId(historyItem.id)
       setActiveTab('citizen')
-      if (historyItem.case_id) {
-        setActiveCaseId(historyItem.case_id)
-        apiGetCase(historyItem.case_id)
-          .then((res) => setCaseView(res.data))
-          .catch(() => {})
-      } else {
-        setActiveCaseId(null)
-        setCaseView(null)
-      }
     }
-  }, [])
+  }
 
-  const executeQuery = async (queryText, targetCaseId = null) => {
-    const trimmed = queryText.trim()
+  const handleQuery = async () => {
+    const trimmed = query.trim()
     if (!trimmed || loading) return
+
+    setLoading(true)
     setError('')
     setLimitError(false)
-    setLoading(true)
 
     try {
-      const res = await apiQuery(trimmed, targetCaseId, language)
-      const data = res.data
-      setResult({
-        ...data,
+      const res = await apiQuery({
         query_text: trimmed,
-        created_at: new Date().toISOString(),
+        language,
+        case_id: activeCaseId || undefined,
       })
-      setSelectedQueryId(data.query_id)
-      setActiveTab('citizen')
-      setQuery('')
-      setFollowUpQuery('')
-      updateUser({ daily_query_count: (user?.daily_query_count || 0) + 1 })
 
-      if (data.case_id) {
-        setActiveCaseId(data.case_id)
-        apiGetCase(data.case_id)
+      const queryResult = res.data
+      setResult(queryResult)
+
+      if (queryResult.case_id) {
+        setActiveCaseId(queryResult.case_id)
+        apiGetCase(queryResult.case_id)
           .then((cRes) => setCaseView(cRes.data))
           .catch(() => {})
       }
+
+      setQuery('')
       refreshSidebar()
     } catch (err) {
-      if (err.response?.status === 429) {
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || ''
+
+      if (status === 429) {
         setLimitError(true)
-        showToast('Daily query limit reached (5/5). Upgrade to Pro for unlimited access.', 'warning')
+      } else if (status === 401) {
+        showToast('Your session has expired. Please sign in again.', 'error')
+        logout()
+        navigate('/login')
       } else {
-        const msg = err.response?.data?.detail || 'Something went wrong. Please try again.'
+        const msg = detail || t('errorGeneric') || 'Failed to analyze scenario. Please try again.'
         setError(msg)
         showToast(msg, 'error')
       }
@@ -196,8 +199,52 @@ export default function Dashboard() {
     }
   }
 
-  const handleQuery = () => executeQuery(query, activeCaseId)
-  const handleFollowUpQuery = () => executeQuery(followUpQuery, activeCaseId)
+  const handleFollowUpQuery = async () => {
+    const trimmed = followUpQuery.trim()
+    if (!trimmed || loading) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await apiQuery({
+        query_text: trimmed,
+        language,
+        case_id: activeCaseId || (result ? result.case_id : undefined),
+      })
+
+      const queryResult = res.data
+      setResult(queryResult)
+      setFollowUpQuery('')
+
+      if (queryResult.case_id) {
+        setActiveCaseId(queryResult.case_id)
+        apiGetCase(queryResult.case_id)
+          .then((cRes) => setCaseView(cRes.data))
+          .catch(() => {})
+      }
+
+      refreshSidebar()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (err) {
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || ''
+
+      if (status === 429) {
+        setLimitError(true)
+      } else if (status === 401) {
+        showToast('Your session has expired. Please sign in again.', 'error')
+        logout()
+        navigate('/login')
+      } else {
+        const msg = detail || 'Failed to process follow-up question. Please try again.'
+        setError(msg)
+        showToast(msg, 'error')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -213,36 +260,47 @@ export default function Dashboard() {
     }
   }
 
-  const handleLogout = () => { logout(); navigate('/login') }
-
-  const handleUpgrade = async (updatedUser) => {
-    if (updatedUser) {
-      updateUser(updatedUser)
-      setLimitError(false)
-      showToast(
-        updatedUser.is_pro
-          ? '🎉 Upgraded to Pro Plan! Unlimited queries & Supreme Court precedents unlocked.'
-          : 'Switched to Free Plan (5 queries/day).',
-        'warning'
-      )
-      return
+  const handleSuggestionClick = (text) => {
+    setQuery(text)
+    if (textareaRef.current) {
+      textareaRef.current.focus()
     }
-    // If called directly from the limit banner button
+  }
+
+  const handleVoiceTranscript = (transcriptText) => {
+    setQuery((prev) => (prev ? prev + ' ' + transcriptText : transcriptText))
+  }
+
+  const handleFollowUpVoiceTranscript = (transcriptText) => {
+    setFollowUpQuery((prev) => (prev ? prev + ' ' + transcriptText : transcriptText))
+  }
+
+  const handleVoiceError = (errorMsg) => {
+    showToast(errorMsg, 'error')
+  }
+
+  const handleUpgrade = async () => {
     try {
       const res = await apiTogglePro('upgrade')
       updateUser(res.data)
       setLimitError(false)
-      showToast('🎉 Upgraded to Pro Plan! Unlimited queries & Supreme Court precedents unlocked.', 'warning')
-    } catch (err) {
-      console.error('Upgrade failed:', err)
-      showToast('Failed to upgrade plan. Please try again.', 'error')
+      showToast('Account upgraded to Pro! Unlimited legal queries unlocked.', 'warning')
+      refreshSidebar()
+    } catch {
+      showToast('Failed to switch plan. Please try again.', 'error')
     }
   }
 
-  const handleSuggestionClick = (s) => {
-    setQuery(s)
-    textareaRef.current?.focus()
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
   }
+
+  const handleOpenProfile = useCallback(() => setIsProfileModalOpen(true), [])
+  const handleOpenBNS = useCallback(() => setIsBNSModalOpen(true), [])
+  const handleOpenCourtFee = useCallback(() => setIsCourtFeeModalOpen(true), [])
+  const handleOpenDiary = useCallback(() => setIsDiaryModalOpen(true), [])
+  const handleCloseSidebar = useCallback(() => setSidebarOpen(false), [])
 
   const showHero = !result && !loading && (!caseView || (caseView.queries && caseView.queries.length === 0)) && !caseViewLoading
 
@@ -252,11 +310,11 @@ export default function Dashboard() {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="min-h-screen bg-[#05050f] bg-grid flex"
+      className="min-h-screen text-slate-100 flex relative overflow-x-hidden"
     >
       <div className="fixed inset-0 bg-radial-glow pointer-events-none" />
 
-      {/* ── Top Toast Banner — always visible without scrolling ── */}
+      {/* ── Top Toast Banner ── */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -290,81 +348,97 @@ export default function Dashboard() {
         onUpgrade={handleUpgrade}
         onCaseSelect={handleCaseSelect}
         onHistorySelect={handleHistorySelect}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
-        onOpenBNS={() => setIsBNSModalOpen(true)}
+        onOpenProfile={handleOpenProfile}
+        onOpenBNS={handleOpenBNS}
+        onOpenCourtFee={handleOpenCourtFee}
+        onOpenDiary={handleOpenDiary}
+        onOpenDPDP={() => setIsDPDPModalOpen(true)}
         activeCaseId={activeCaseId}
         open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={handleCloseSidebar}
       />
 
       <main className="flex-1 flex flex-col min-h-screen relative">
-        <div className="max-w-3xl w-full mx-auto px-4 lg:px-6 py-6 flex flex-col flex-1">
+        <div className="max-w-5xl w-full mx-auto px-4 lg:px-6 py-5 flex flex-col flex-1">
 
-          {/* Top Bar with Profile Pill & Quick BNS Tool */}
-          <div className="flex items-center gap-2 sm:gap-3 mb-6">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden w-9 h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
-
-            {/* Case breadcrumb */}
-            {activeCaseId && caseView && (
-              <motion.button
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null); setSelectedQueryId(null) }}
-                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-400 transition-colors bg-white/4 px-3 py-1.5 rounded-lg border border-white/6"
+          {/* Top Header Bar — Dark Indigo Glass Theme */}
+          <header className="flex flex-wrap items-center justify-between gap-2.5 mb-6 pb-3 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl px-4 py-2">
+            {/* Left: Mobile Menu & Active Case Context */}
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden w-9 h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors shrink-0"
+                aria-label="Open Navigation"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span className="text-slate-500">Case:</span>
-                <span className="font-semibold text-white truncate max-w-[180px] sm:max-w-[240px]">
-                  {caseView.name}
-                </span>
-              </motion.button>
-            )}
+                <Menu className="w-4 h-4" />
+              </button>
 
-            <div className="flex items-center gap-2 ml-auto">
-              {/* Vernacular Language Switcher */}
-              <LanguageSelector compact={false} />
+              {activeCaseId && caseView ? (
+                <button
+                  onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null); setSelectedQueryId(null) }}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition-colors bg-white/4 px-3 py-1.5 rounded-xl border border-white/6 truncate"
+                  title="Click to exit case view"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
+                  <span className="text-slate-500">Case:</span>
+                  <span className="font-semibold text-white truncate max-w-[160px] sm:max-w-[220px]">
+                    {caseView.name}
+                  </span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 indigo-glow">
+                    <Scale className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm font-bold text-gradient tracking-wide">
+                    JurisAI
+                  </span>
+                </div>
+              )}
+            </div>
 
-              {/* Case Document Chatbot Quick Trigger */}
+            {/* Right: Quick Tools */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 ml-auto justify-end">
+              {/* Primary: Case Document Chat */}
               <button
                 onClick={() => navigate('/case-chat')}
-                className="flex items-center gap-1.5 text-xs text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 px-3 py-1.5 rounded-xl transition-all font-semibold shadow-md shadow-indigo-600/20 shrink-0"
+                className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition-all font-semibold indigo-glow shrink-0"
+                title="AI Co-Pilot for Case Documents & Contracts"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Case Document Chat</span>
                 <span className="sm:hidden">Chat</span>
               </button>
 
-              {/* Court Limitation Tool */}
+              {/* Advocate Diary */}
               <button
-                onClick={() => navigate('/limitation-chronology')}
-                className="hidden md:flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all font-medium"
-                title="Court Limitation Clock & List of Dates"
+                onClick={handleOpenDiary}
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Advocate Digital Diary & Daily Cause List"
               >
-                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Limitation</span>
+                <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Advocate Diary</span>
+                <span className="sm:hidden">Diary</span>
               </button>
 
-              {/* Landmark Precedents */}
+              {/* Court Fees Calculator */}
               <button
-                onClick={() => navigate('/precedents')}
-                className="hidden md:flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-2.5 py-1.5 rounded-xl transition-all font-medium"
-                title="Supreme Court Landmark Precedents & Citations"
+                onClick={handleOpenCourtFee}
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Section 10 Official Court Fee & Valuation Slip"
               >
-                <BookOpen className="w-3.5 h-3.5 text-purple-400" />
-                <span>Precedents</span>
+                <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Court Fees</span>
+                <span className="sm:hidden">Fees</span>
               </button>
 
-              {/* BNS Tool Quick Trigger */}
+              {/* IPC ⇄ BNS Tool */}
               <button
                 onClick={() => setIsBNSModalOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-medium"
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-medium shrink-0"
+                title="IPC to BNS Statutory Concordance"
               >
-                <Scale className="w-3.5 h-3.5 text-indigo-400" />
+                <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="flex items-center gap-1">
                   <span>IPC</span>
                   <span className="text-indigo-400 font-bold">⇄</span>
@@ -372,17 +446,34 @@ export default function Dashboard() {
                 </span>
               </button>
 
-              {/* Live engine badge */}
-              <div className="hidden lg:flex items-center gap-1.5 pl-1">
-                <motion.div
-                  className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                <span className="text-[11px] text-slate-500">Legal Intelligence Engine</span>
-              </div>
+              {/* DPDP Shield */}
+              <button
+                onClick={() => setIsDPDPModalOpen(true)}
+                className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="DPDP Act 2023 & Section 132 BSA Compliance Certificate"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="hidden md:inline">DPDP Shield</span>
+                <span className="md:hidden">DPDP</span>
+              </button>
+
+              {/* Divider */}
+              <div className="h-4 w-px bg-white/10 hidden sm:block mx-0.5" />
+
+              {/* Vernacular Language Selector */}
+              <LanguageSelector compact={false} align="right" />
+
+              {/* Notification Center */}
+              <NotificationCenter
+                onOpenDiary={handleOpenDiary}
+                onOpenCourtFee={handleOpenCourtFee}
+                onOpenPro={() => handleUpgrade()}
+                onOpenBNS={handleOpenBNS}
+                onRequestPermissionModal={() => setIsNotifModalOpen(true)}
+                align="right"
+              />
             </div>
-          </div>
+          </header>
 
           {/* Loading spinner for case selection */}
           <AnimatePresence>
@@ -393,7 +484,7 @@ export default function Dashboard() {
                 className="flex flex-col items-center justify-center py-16 gap-3"
               >
                 <Loader2 className="w-7 h-7 text-indigo-400 animate-spin" />
-                <p className="text-xs text-slate-500">Loading case intelligence...</p>
+                <p className="text-xs text-slate-400">Loading case intelligence...</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -410,13 +501,15 @@ export default function Dashboard() {
                 className="text-center mb-8"
               >
                 <div className="flex justify-center mb-5">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center indigo-glow-lg animate-float">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center indigo-glow text-white animate-float">
                     <Scale className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-gradient mb-2">{t('appTitle') || 'JurisAI'}</h1>
-                <p className="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed">
-                  {t('appSubtitle') || 'Describe your legal situation. Get verified statutes, landmark precedents, and actionable guidance — instantly.'}
+                <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight mb-2 text-gradient">
+                  JurisAI
+                </h1>
+                <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+                  {t('appSubtitle') || 'Sovereign Legal Intelligence for Indian Courts · Verified statutes, landmark precedents & authentic valuation slips.'}
                 </p>
               </motion.div>
             )}
@@ -424,16 +517,16 @@ export default function Dashboard() {
 
           {/* Initial Query input card — shown when no result is displayed */}
           {!result && !caseViewLoading && (
-            <motion.div layout="position" className="glass-card rounded-2xl p-4 mb-4">
+            <div className="glass-card rounded-2xl p-4 mb-4 border border-indigo-500/20">
               {activeCaseId && (
                 <div className="flex items-center gap-1.5 mb-2 px-0.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  <span className="text-xs text-indigo-400/80 font-medium">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  <span className="text-xs text-indigo-300 font-medium">
                     Adding to current case
                   </span>
                   <button
                     onClick={() => { setActiveCaseId(null); setCaseView(null) }}
-                    className="ml-auto text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                    className="ml-auto text-[10px] text-slate-400 hover:text-white transition-colors"
                   >
                     Start new case instead
                   </button>
@@ -446,26 +539,25 @@ export default function Dashboard() {
                 onKeyDown={handleKeyDown}
                 placeholder={t('searchPlaceholder') || 'Describe your legal scenario in plain language…\n\nPress Ctrl + Enter to submit.'}
                 rows={4}
-                className="w-full bg-transparent text-white placeholder-slate-700 text-sm resize-none focus:outline-none leading-relaxed"
+                className="w-full bg-transparent text-white placeholder-slate-500 text-sm resize-none focus:outline-none leading-relaxed"
               />
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-indigo-500/10 gap-3">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5 gap-3">
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                   {showHero && SUGGESTIONS.slice(0, 2).map((s) => (
                     <button
                       key={s}
                       onClick={() => handleSuggestionClick(s)}
-                      className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/8 border border-indigo-500/18 text-indigo-300/70 hover:text-indigo-300 hover:bg-indigo-500/14 transition-all truncate max-w-[160px]"
+                      className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-all truncate max-w-[160px]"
                     >
                       {s.slice(0, 22)}…
                     </button>
                   ))}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Voice Input Button — Vernacular dictation */}
                   <VoiceInputButton
                     language={language}
-                    onTranscript={(text) => setQuery((prev) => (prev ? prev + ' ' + text : text))}
-                    onError={(msg) => showToast(msg, 'error')}
+                    onTranscript={handleVoiceTranscript}
+                    onError={handleVoiceError}
                     size="md"
                   />
                   <motion.button
@@ -473,14 +565,14 @@ export default function Dashboard() {
                     disabled={loading || !query.trim()}
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.96 }}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-35 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors indigo-glow shrink-0"
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-35 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all indigo-glow shrink-0"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     {loading ? 'Analyzing…' : (t('searchBtn') || 'Analyze')}
                   </motion.button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Suggestion grid — shown only in hero state */}
@@ -501,9 +593,9 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.12 + i * 0.06 }}
                     onClick={() => handleSuggestionClick(s)}
-                    className="glass-card rounded-xl px-4 py-3 text-left text-xs text-slate-500 hover:text-slate-200 hover:border-indigo-500/25 transition-all group"
+                    className="glass-card rounded-xl px-4 py-3 text-left text-xs text-slate-400 hover:text-white hover:border-indigo-500/28 transition-all group"
                   >
-                    <Sparkles className="w-3 h-3 text-indigo-600 mb-1.5 group-hover:text-indigo-400 transition-colors" />
+                    <Sparkles className="w-3 h-3 text-indigo-400 mb-1.5 group-hover:text-indigo-300 transition-colors" />
                     {s}
                   </motion.button>
                 ))}
@@ -519,21 +611,21 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="glass-card rounded-2xl p-10 flex flex-col items-center gap-5 mb-5"
+                className="glass-card rounded-2xl p-10 flex flex-col items-center gap-5 mb-5 border border-indigo-500/20"
               >
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-indigo-600/15 border border-indigo-500/25 flex items-center justify-center">
-                    <Scale className="w-6 h-6 text-indigo-400" />
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white indigo-glow">
+                    <Scale className="w-6 h-6 text-white" />
                   </div>
                   <motion.div
-                    className="absolute -inset-1.5 rounded-2xl border border-indigo-500/25"
+                    className="absolute -inset-1.5 rounded-2xl border border-indigo-400/30"
                     animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-white mb-1">Analyzing your legal scenario…</p>
-                  <p className="text-xs text-slate-500">Retrieving statutes · Searching precedents · Verifying citations</p>
+                  <p className="text-xs text-slate-400">Retrieving statutes · Searching precedents · Verifying citations</p>
                 </div>
                 <div className="flex gap-1.5">
                   {[0, 1, 2, 3].map((i) => (
@@ -557,7 +649,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="glass-card rounded-xl p-5 mb-5 border-amber-500/20"
+                className="glass-card rounded-xl p-5 mb-5 border border-amber-500/20"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
@@ -586,7 +678,7 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center gap-3 glass-card rounded-xl p-4 mb-5 border-red-500/18"
+                className="flex items-center gap-3 glass-card rounded-xl p-4 mb-5 border border-red-500/20"
               >
                 <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 <p className="text-sm text-red-300">{error}</p>
@@ -595,7 +687,7 @@ export default function Dashboard() {
           </AnimatePresence>
 
           {/* ══════════════════════════════════════════════════════════════════════
-              FULL SEARCH RESULT INTERFACE (For Both New Search & Case History)
+              FULL SEARCH RESULT INTERFACE
              ══════════════════════════════════════════════════════════════════════ */}
           <AnimatePresence>
             {result && !caseViewLoading && (
@@ -607,18 +699,18 @@ export default function Dashboard() {
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                 className="space-y-5"
               >
-                {/* Action Toolbar: New Case / Follow-up / Court-PDF / Drafts */}
+                {/* Action Toolbar */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => { setResult(null); setQuery(''); setActiveCaseId(null); setCaseView(null); setSelectedQueryId(null) }}
-                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-white/6 hover:border-indigo-500/30 bg-white/4 px-3 py-1.5 rounded-lg transition-all"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all"
                     >
                       <Plus className="w-3 h-3 text-indigo-400" /> Start New Case
                     </button>
                     <button
                       onClick={() => { followUpRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-white/6 hover:border-indigo-500/30 bg-white/4 px-3 py-1.5 rounded-lg transition-all"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all"
                     >
                       <MessageSquare className="w-3 h-3 text-indigo-400" /> Ask Follow-up
                     </button>
@@ -628,9 +720,9 @@ export default function Dashboard() {
                     {/* Official Legal Drafts Button */}
                     <button
                       onClick={() => setIsDraftModalOpen(true)}
-                      className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg transition-all font-semibold"
+                      className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 px-3 py-1.5 rounded-lg transition-all font-semibold indigo-glow"
                     >
-                      <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                      <FileText className="w-3.5 h-3.5 text-white" />
                       <span>{t('officialDrafts') || 'Legal Notice & Drafts'}</span>
                     </button>
 
@@ -649,19 +741,31 @@ export default function Dashboard() {
                         }
                       }}
                       disabled={generatingPdf}
-                      className="flex items-center gap-1.5 text-xs text-amber-300 hover:text-white border border-amber-500/30 hover:border-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg transition-all font-semibold shadow-sm"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0"
                     >
                       {generatingPdf ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
-                        <Download className="w-3.5 h-3.5 text-amber-400" />
+                        <Download className="w-3.5 h-3.5 text-indigo-400" />
                       )}
-                      <span>{t('exportPdf') || 'Court-Standard PDF'}</span>
+                      <span className="hidden xs:inline">{t('exportPdf') || 'Court-Standard PDF'}</span>
+                      <span className="xs:hidden">PDF</span>
+                    </button>
+
+                    {/* Print Legal Advisory Report */}
+                    <button
+                      onClick={() => window.print()}
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0"
+                      title="Print pristine court legal intelligence report"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-indigo-400" />
+                      <span className="hidden xs:inline">{t('printReport') || 'Print Report'}</span>
+                      <span className="xs:hidden">Print</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Case Queries Switcher — when case has multiple questions */}
+                {/* Case Queries Switcher */}
                 {caseView?.queries && caseView.queries.length > 1 && (
                   <div className="glass-card rounded-xl p-3 border border-indigo-500/15">
                     <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
@@ -685,7 +789,7 @@ export default function Dashboard() {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
                               isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20'
+                                ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30'
                                 : 'bg-white/4 text-slate-400 hover:text-slate-200 border-white/6 hover:bg-white/8'
                             }`}
                           >
@@ -702,8 +806,8 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Scenario Banner — Displays the full question that was analyzed */}
-                <div className="glass-card rounded-2xl p-5 border border-indigo-500/20 relative overflow-hidden">
+                {/* Scenario Banner */}
+                <div className="glass-card rounded-2xl p-5 border border-indigo-500/20 relative overflow-hidden shadow-lg">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
                   <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
                     <span className="flex items-center gap-1.5 font-semibold text-indigo-400">
@@ -727,7 +831,7 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                {/* Hallucination & Faithfulness Telemetry + Fast Query Caching Badge */}
+                {/* Statutory Verification & Authority Telemetry */}
                 <TelemetryCard
                   telemetry={result.telemetry}
                   confidenceScore={result.confidence_score}
@@ -751,7 +855,7 @@ export default function Dashboard() {
                   />
                 </div>
 
-                {/* Full Tab Content — Citizen View vs Advocate View with all citations */}
+                {/* Tab Content */}
                 <AnimatePresence mode="wait">
                   {activeTab === 'citizen' ? (
                     <CitizenView key="citizen" data={result} />
@@ -760,7 +864,7 @@ export default function Dashboard() {
                   )}
                 </AnimatePresence>
 
-                {/* Follow-up Query Card right beneath the complete advice */}
+                {/* Follow-up Query Card */}
                 <div ref={followUpRef} className="pt-4 border-t border-indigo-500/15">
                   <div className="glass-card rounded-2xl p-4 border border-indigo-500/20">
                     <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-slate-300">
@@ -773,14 +877,13 @@ export default function Dashboard() {
                       onKeyDown={handleFollowUpKeyDown}
                       placeholder="Ask a clarifying question or explore legal next steps in detail… (Ctrl + Enter to send)"
                       rows={3}
-                      className="w-full bg-transparent text-white placeholder-slate-600 text-sm resize-none focus:outline-none leading-relaxed"
+                      className="w-full bg-transparent text-white placeholder-slate-500 text-sm resize-none focus:outline-none leading-relaxed"
                     />
                     <div className="flex items-center justify-end mt-2 pt-2 border-t border-white/5 gap-2">
-                      {/* Voice for follow-up */}
                       <VoiceInputButton
                         language={language}
-                        onTranscript={(text) => setFollowUpQuery((prev) => (prev ? prev + ' ' + text : text))}
-                        onError={(msg) => showToast(msg, 'error')}
+                        onTranscript={handleFollowUpVoiceTranscript}
+                        onError={handleVoiceError}
                         size="sm"
                       />
                       <motion.button
@@ -821,6 +924,27 @@ export default function Dashboard() {
         onClose={() => setIsDraftModalOpen(false)}
         result={result}
         user={user}
+      />
+
+      <CourtFeeModal
+        isOpen={isCourtFeeModalOpen}
+        onClose={() => setIsCourtFeeModalOpen(false)}
+      />
+
+      <AdvocateDiaryModal
+        isOpen={isDiaryModalOpen}
+        onClose={() => setIsDiaryModalOpen(false)}
+      />
+
+      <DPDPSecurityModal
+        isOpen={isDPDPModalOpen}
+        onClose={() => setIsDPDPModalOpen(false)}
+      />
+
+      <NotificationPermissionModal
+        isOpen={isNotifModalOpen}
+        onClose={() => setIsNotifModalOpen(false)}
+        onPermissionGranted={() => showToast('🔔 System Notifications Activated! Court hearing & limitation reminders are now active.', 'warning')}
       />
     </motion.div>
   )

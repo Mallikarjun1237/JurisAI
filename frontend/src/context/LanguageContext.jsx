@@ -24,7 +24,7 @@ export const SUPPORTED_LANGUAGES = [
     nativeLabel: 'ಕನ್ನಡ',
     region: 'ಕರ್ನಾಟಕ ನ್ಯಾಯಾಂಗ & ಹೈಕೋರ್ಟ್',
     stateBadge: 'ಕರ್ನಾಟಕ',
-    flag: '🟡🔴',
+    flag: '🇮🇳',
   },
   {
     code: 'te',
@@ -181,23 +181,25 @@ export function LanguageSelector({ compact = false, fullWidth = false, align = '
   const dropdownAlignClass = fullWidth
     ? 'left-0 right-0 w-full'
     : align === 'left'
-    ? 'left-0 w-60 sm:w-64 max-w-[90vw]'
-    : 'right-0 w-60 sm:w-64 max-w-[90vw]'
+    ? 'left-0 w-64 max-w-[calc(100vw-1.5rem)]'
+    : 'right-0 sm:right-0 max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:w-auto w-64 max-w-[calc(100vw-1.5rem)]'
 
   return (
-    <div className={`relative language-selector-root ${fullWidth ? 'w-full' : 'inline-block text-left'}`}>
+    <div className={`relative language-selector-root ${fullWidth ? 'w-full' : 'inline-block text-left shrink-0'}`}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 transition-all hover:border-indigo-500/40 shadow-sm ${
+        className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 transition-all hover:border-indigo-500/40 shadow-sm shrink-0 ${
           fullWidth ? 'w-full justify-between' : ''
         }`}
         title="Select Court & Regional Language (English, हिन्दी, ಕನ್ನಡ, తెలుగు)"
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-sm shrink-0">{currentLangObj.flag}</span>
-          <span className="font-semibold text-white truncate">{currentLangObj.nativeLabel}</span>
+          <span className="text-[10px] font-black text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
+            IN
+          </span>
+          <span className="font-semibold text-white whitespace-nowrap text-xs shrink-0">{currentLangObj.nativeLabel}</span>
           {!compact && (
-            <span className="text-[10px] text-indigo-300 bg-indigo-950/60 px-1.5 py-0.2 rounded border border-indigo-500/30 shrink-0">
+            <span className="hidden sm:inline text-[10px] text-indigo-300 bg-indigo-950/60 px-1.5 py-0.2 rounded border border-indigo-500/30 shrink-0">
               {currentLangObj.stateBadge}
             </span>
           )}
@@ -231,7 +233,9 @@ export function LanguageSelector({ compact = false, fullWidth = false, align = '
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-                    <span className="text-base shrink-0">{lang.flag}</span>
+                    <span className="text-[10px] font-black text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
+                      IN
+                    </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-bold text-white truncate">{lang.nativeLabel}</span>

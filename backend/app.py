@@ -17,6 +17,8 @@ import document_parser
 import limitation_service
 import precedents_service
 import pii_redactor
+import court_fee_service
+import contract_auditor_service
 from database import engine, get_db
 from rag_service import get_rag_service
 
@@ -80,6 +82,32 @@ def health_check():
     return {"status": "ok", "service": "JurisAI API v2.0"}
 
 
+@app.get("/api/llm/status", tags=["Health"])
+def get_llm_status():
+    """Returns current active LLM provider (Groq LPU vs Gemini vs Local Offline Engine)."""
+    rag = get_rag_service()
+    has_groq = bool(getattr(rag, "groq_api_key", ""))
+    has_gemini = bool(getattr(rag, "gemini_api_key", ""))
+
+    if has_groq:
+        provider = "Groq LPU Engine"
+        speed = "Ultra-Fast (~500-800 tok/sec)"
+    elif has_gemini:
+        provider = "Google Gemini"
+        speed = "Standard Cloud"
+    else:
+        provider = "JurisAI Local Engine"
+        speed = "Instant Local (Offline ChromaDB)"
+
+    return {
+        "provider": provider,
+        "active_model": getattr(rag, "_last_model_used", "JurisAI Statutory Engine"),
+        "groq_configured": has_groq,
+        "gemini_configured": has_gemini,
+        "speed": speed,
+    }
+
+
 # ─── AUTH ────────────────────────────────────────────────────────────────────
 
 @app.post("/api/auth/signup", response_model=schemas.TokenResponse,
@@ -103,7 +131,8 @@ def signup(payload: schemas.SignupRequest, db: Session = Depends(get_db)):
         user={"id": user.id, "email": user.email, "full_name": user.full_name,
               "profile_image": user.profile_image,
               "is_pro": user.is_pro, "query_count": user.query_count,
-              "daily_query_count": user.daily_query_count},
+              "daily_query_count": user.daily_query_count,
+              "last_query_date": user.last_query_date},
     )
 
 
@@ -119,7 +148,8 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
         user={"id": user.id, "email": user.email, "full_name": user.full_name,
               "profile_image": user.profile_image,
               "is_pro": user.is_pro, "query_count": user.query_count,
-              "daily_query_count": user.daily_query_count},
+              "daily_query_count": user.daily_query_count,
+              "last_query_date": user.last_query_date},
     )
 
 
@@ -318,14 +348,15 @@ def run_query(
     """Main RAG query endpoint — auto-creates a case if no case_id provided."""
 
     # Validate input
-    q = (payload.query or "").strip()
+    q = (payload.query or payload.query_text or "").strip()
     if not q:
         raise HTTPException(400, "Query cannot be empty.")
     if len(q) < 10:
         raise HTTPException(400, "Please describe your legal situation in more detail (min 10 chars).")
 
-    # Reset daily counter on new day
-    today_str = date.today().isoformat()
+    # Reset daily counter on new day (IST = UTC+5:30)
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    today_str = ist_now.date().isoformat()
     if current_user.last_query_date != today_str:
         current_user.daily_query_count = 0
         current_user.last_query_date = today_str
@@ -339,6 +370,7 @@ def run_query(
         )
 
     # Resolve / create case
+    conversation_history = []
     if payload.case_id:
         case = db.query(models.Case).filter(
             models.Case.id == payload.case_id,
@@ -346,6 +378,24 @@ def run_query(
         ).first()
         if not case:
             raise HTTPException(404, "Case not found.")
+
+        # Load previous conversation turns for this case to preserve case continuity
+        prev_logs = (
+            db.query(models.QueryLog)
+            .filter(models.QueryLog.case_id == case.id)
+            .order_by(models.QueryLog.created_at.asc())
+            .all()
+        )
+        for pl in prev_logs:
+            try:
+                rj = json.loads(pl.response_json) if isinstance(pl.response_json, str) else pl.response_json
+                summary_text = rj.get("plain_english_summary", "") if isinstance(rj, dict) else ""
+            except Exception:
+                summary_text = ""
+            conversation_history.append({
+                "query": pl.query_text,
+                "summary": summary_text[:400],
+            })
     else:
         # Auto-name from first 80 chars of query
         case_name = q[:80] + ("…" if len(q) > 80 else "")
@@ -360,6 +410,7 @@ def run_query(
             query=q,
             is_pro=current_user.is_pro,
             language=payload.language or "en",
+            conversation_history=conversation_history,
         )
     except RuntimeError as e:
         raise HTTPException(503, str(e))
@@ -380,20 +431,43 @@ def run_query(
     db.commit()
     db.refresh(log)
 
+    cleaned_statutes = []
+    for s in result.get("applicable_statutes", []):
+        if isinstance(s, dict):
+            try:
+                cleaned_statutes.append(
+                    schemas.StatuteItem(
+                        title=str(s.get("title", "") or "Statute"),
+                        citation=str(s.get("citation", "") or "N/A"),
+                        excerpt=str(s.get("excerpt", "") or ""),
+                        doc_type=str(s.get("doc_type", "") or "Statute"),
+                    )
+                )
+            except Exception:
+                pass
+
+    cleaned_precedents = []
+    for p in result.get("relevant_precedents", []):
+        if isinstance(p, dict):
+            try:
+                cleaned_precedents.append(
+                    schemas.PrecedentItem(
+                        title=str(p.get("title", "") or "Precedent"),
+                        citation=str(p.get("citation", "") or "N/A"),
+                        court=str(p.get("court", "") or "Supreme Court of India"),
+                        year=str(p.get("year", "") or ""),
+                        holding=str(p.get("holding", "") or ""),
+                    )
+                )
+            except Exception:
+                pass
+
     return schemas.QueryResponse(
-        plain_english_summary=result.get("plain_english_summary", ""),
-        applicable_statutes=[
-            schemas.StatuteItem(**s)
-            for s in result.get("applicable_statutes", [])
-            if isinstance(s, dict)
-        ],
-        relevant_precedents=[
-            schemas.PrecedentItem(**p)
-            for p in result.get("relevant_precedents", [])
-            if isinstance(p, dict)
-        ],
-        suggested_next_steps=result.get("suggested_next_steps", []),
-        confidence_score=result.get("confidence_score", 0.0),
+        plain_english_summary=str(result.get("plain_english_summary", "")),
+        applicable_statutes=cleaned_statutes,
+        relevant_precedents=cleaned_precedents,
+        suggested_next_steps=[str(step) for step in result.get("suggested_next_steps", []) if step],
+        confidence_score=float(result.get("confidence_score") or 0.95),
         query_id=log.id,
         case_id=case.id,
         telemetry=result.get("telemetry"),
@@ -594,6 +668,28 @@ def redact_preview_endpoint(
     return {"sanitized_text": sanitized, **meta}
 
 
+@app.post("/api/security/certificate", tags=["Privacy & Compliance"])
+def generate_security_certificate(
+    payload: Optional[schemas.CertificateGenerateRequest] = None,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Generate an official DPDP Act 2023 & Section 132 BSA 2023 Compliance
+    Attestation Certificate for the logged-in advocate or chamber.
+    """
+    adv_name = (payload.advocate_name if payload else None) or current_user.full_name or "Advocate"
+    chamber = (payload.chamber_name if payload else None) or f"Chamber of {adv_name}"
+    enrolment = (payload.bar_enrolment if payload else None) or "Verified State Bar Council"
+
+    cert = pii_redactor.issue_dpdp_chamber_certificate(
+        advocate_name=adv_name,
+        chamber_name=chamber,
+        bar_enrolment=enrolment,
+        user_email=current_user.email,
+    )
+    return cert
+
+
 @app.post("/api/chat/sessions/{session_id}/message", tags=["Document Chat"])
 def send_chat_message(
     session_id: int,
@@ -766,3 +862,365 @@ def analyze_custom_precedent(
     rag = get_rag_service()
     deep_analysis = rag.lookup_precedent_deep(q, language=payload.language or "en")
     return {"source": "deep_rag", "data": deep_analysis}
+
+
+# ─── LEGAL DRAFTS LOCALIZATION ───────────────────────────────────────────────
+
+@app.post("/api/drafts/translate", response_model=schemas.DraftTranslateResponse, tags=["Legal Drafts"])
+def translate_draft_content(
+    payload: schemas.DraftTranslateRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Translates case facts and substantive allegations into pure, formal vernacular court pleading language
+    (Kannada, Hindi, Telugu, or English) with zero awkward English contamination.
+    """
+    target_lang = (payload.target_language or "en").lower().strip()
+    if target_lang == "en":
+        return schemas.DraftTranslateResponse(
+            translated_facts=payload.query_text,
+            translated_allegations=payload.plain_english_summary,
+            target_language="en",
+        )
+
+    rag = get_rag_service()
+    translated = rag.translate_draft_sections(
+        query_text=payload.query_text,
+        summary=payload.plain_english_summary,
+        language=target_lang,
+        draft_type=payload.draft_type or "legal_notice",
+    )
+    return schemas.DraftTranslateResponse(
+        translated_facts=translated.get("translated_facts", payload.query_text),
+        translated_allegations=translated.get("translated_allegations", payload.plain_english_summary),
+        target_language=target_lang,
+    )
+
+
+# ── Court Fee & Ad-Valorem Calculator Endpoints ───────────────────────────────
+
+@app.get("/api/court-fees/states", tags=["Court Fees & Stamp Duty"])
+def get_supported_court_fee_states(
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Retrieve all supported Indian states with enacted Court Fees Act citations and gazette versions."""
+    svc = court_fee_service.get_court_fee_service()
+    return {"states": svc.get_supported_states()}
+
+
+@app.get("/api/court-fees/suit-types/{state_code}", tags=["Court Fees & Stamp Duty"])
+def get_court_fee_suit_types(
+    state_code: str,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Retrieve suit categories and valuation rules for a selected state."""
+    svc = court_fee_service.get_court_fee_service()
+    return {"suit_types": svc.get_suit_types_for_state(state_code)}
+
+
+@app.post("/api/court-fees/calculate", tags=["Court Fees & Stamp Duty"])
+def calculate_court_fees_endpoint(
+    payload: schemas.CourtFeeCalculateRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Calculate statutory court fees, welfare stamps, process fees, and itemized checkout receipt
+    grounded in latest state gazette schedules.
+    """
+    svc = court_fee_service.get_court_fee_service()
+    receipt = svc.calculate_court_fee(
+        state_code=payload.state_code,
+        suit_type_key=payload.suit_type_key,
+        claim_valuation=payload.claim_valuation,
+        num_defendants=payload.num_defendants or 1,
+        is_joint_possession=payload.is_joint_possession if payload.is_joint_possession is not None else True,
+        annual_rent=payload.annual_rent,
+    )
+    return receipt
+
+
+# ── Legal Document Clause Risk & Loophole Auditor Endpoints ────────────────────
+
+@app.post("/api/chat/sessions/{session_id}/audit-clauses", tags=["Contract Risk Auditor"])
+def audit_chat_session_document_clauses(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Strict statutory audit of uploaded contract clauses inside a chat session.
+    Checks against Section 23/27/28 Contract Act, Section 12(5) Arbitration Act,
+    and binding Supreme Court precedents (Perkins Eastman, Percept D'Mark).
+    """
+    session = (
+        db.query(models.DocChat)
+        .filter(models.DocChat.id == session_id, models.DocChat.user_id == current_user.id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(404, "Chat session not found.")
+
+    if not session.documents or len(session.documents) == 0:
+        raise HTTPException(400, "No document uploaded in this session to audit. Please upload a PDF or DOCX first.")
+
+    combined_text = "\n\n".join(
+        f"--- DOCUMENT: {d.filename} ---\n{d.extracted_text}"
+        for d in session.documents
+    )
+    primary_filename = session.documents[-1].filename
+
+    auditor = contract_auditor_service.get_contract_auditor_service()
+    audit_report = auditor.audit_document_clauses(combined_text, filename=primary_filename)
+
+    # Save summary message in chat history so it persists
+    crit_count = audit_report.get("critical_risks_count", 0)
+    high_count = audit_report.get("high_risks_count", 0)
+    health = audit_report.get("overall_health_score", 100)
+
+    summary_content = (
+        f"🛡️ **Contract Clause Risk Audit Completed: `{primary_filename}`**\n\n"
+        f"• **Overall Safety Score:** **{health}/100** ({audit_report.get('statutory_compliance_badge', 'AUDITED')})\n"
+        f"• **Critical / Void Ab Initio Clauses:** **{crit_count}**\n"
+        f"• **High Liability / Unfair Clauses:** **{high_count}**\n\n"
+        f"{audit_report.get('risk_summary', '')}"
+    )
+
+    sys_msg = models.DocChatMessage(
+        chat_id=session.id,
+        role="assistant",
+        content=summary_content,
+        risk_level="high" if crit_count > 0 else ("medium" if high_count > 0 else "low"),
+    )
+    db.add(sys_msg)
+    session.updated_at = datetime.utcnow()
+    db.commit()
+
+    return audit_report
+
+
+@app.post("/api/documents/audit-clauses", tags=["Contract Risk Auditor"])
+def audit_raw_document_clauses(
+    payload: schemas.ContractAuditRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Direct statutory audit of raw text against enacted Indian laws and Supreme Court ratios."""
+    text = payload.document_text or ""
+    if len(text.strip()) < 50:
+        raise HTTPException(400, "Document text must be at least 50 characters to audit.")
+
+    auditor = contract_auditor_service.get_contract_auditor_service()
+    return auditor.audit_document_clauses(text, filename=payload.filename or "Agreement")
+
+
+# ── Advocate Digital Diary & Cause List Daily Planner Endpoints ───────────────
+
+@app.get("/api/diary/entries", response_model=List[schemas.DiaryEntryResponse], tags=["Advocate Diary"])
+def get_diary_entries(
+    filter: str = "all",  # "all", "today", "this_week", "this_month", "must_do", "pending"
+    doc_chat_id: Optional[int] = None,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.AdvocateDiaryEntry).filter(models.AdvocateDiaryEntry.user_id == current_user.id)
+
+    if doc_chat_id:
+        query = query.filter(models.AdvocateDiaryEntry.doc_chat_id == doc_chat_id)
+
+    today = date.today().strftime("%Y-%m-%d")
+
+    if filter == "today":
+        query = query.filter(models.AdvocateDiaryEntry.hearing_date == today)
+    elif filter == "this_week":
+        start_of_week = date.today() - timedelta(days=date.today().weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        query = query.filter(
+            models.AdvocateDiaryEntry.hearing_date >= start_of_week.strftime("%Y-%m-%d"),
+            models.AdvocateDiaryEntry.hearing_date <= end_of_week.strftime("%Y-%m-%d"),
+        )
+    elif filter == "this_month":
+        start_of_month = date.today().replace(day=1).strftime("%Y-%m-%d")
+        next_month = (date.today().replace(day=28) + timedelta(days=4)).replace(day=1)
+        end_of_month = (next_month - timedelta(days=1)).strftime("%Y-%m-%d")
+        query = query.filter(
+            models.AdvocateDiaryEntry.hearing_date >= start_of_month,
+            models.AdvocateDiaryEntry.hearing_date <= end_of_month,
+        )
+    elif filter == "must_do":
+        query = query.filter(models.AdvocateDiaryEntry.priority == "must_do")
+    elif filter == "pending":
+        query = query.filter(models.AdvocateDiaryEntry.is_completed == False)
+
+    entries = query.order_by(
+        models.AdvocateDiaryEntry.hearing_date.asc(),
+        models.AdvocateDiaryEntry.priority.desc(),
+        models.AdvocateDiaryEntry.id.asc(),
+    ).all()
+
+    return entries
+
+
+@app.get("/api/diary/stats", response_model=schemas.DiaryStatsResponse, tags=["Advocate Diary"])
+def get_diary_stats(
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    all_user_entries = db.query(models.AdvocateDiaryEntry).filter(models.AdvocateDiaryEntry.user_id == current_user.id).all()
+    today_str = date.today().strftime("%Y-%m-%d")
+    start_of_week = (date.today() - timedelta(days=date.today().weekday())).strftime("%Y-%m-%d")
+    end_of_week = (date.today() - timedelta(days=date.today().weekday()) + timedelta(days=6)).strftime("%Y-%m-%d")
+
+    total = len(all_user_entries)
+    today_c = sum(1 for e in all_user_entries if e.hearing_date == today_str)
+    week_c = sum(1 for e in all_user_entries if start_of_week <= e.hearing_date <= end_of_week)
+    must_do_p = sum(1 for e in all_user_entries if e.priority == "must_do" and not e.is_completed)
+    completed_c = sum(1 for e in all_user_entries if e.is_completed)
+
+    return {
+        "total_entries": total,
+        "today_count": today_c,
+        "this_week_count": week_c,
+        "must_do_pending": must_do_p,
+        "completed_count": completed_c,
+    }
+
+
+@app.post("/api/diary/entries", response_model=schemas.DiaryEntryResponse, tags=["Advocate Diary"])
+def create_diary_entry(
+    payload: schemas.DiaryEntryCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = models.AdvocateDiaryEntry(
+        user_id=current_user.id,
+        doc_chat_id=payload.doc_chat_id,
+        case_number=payload.case_number.strip(),
+        court_name=payload.court_name.strip(),
+        judge_bench=payload.judge_bench.strip() if payload.judge_bench else None,
+        parties=payload.parties.strip(),
+        hearing_date=payload.hearing_date.strip(),
+        hearing_time=payload.hearing_time.strip() if payload.hearing_time else "10:30 AM",
+        item_number=payload.item_number.strip() if payload.item_number else None,
+        stage=payload.stage.strip(),
+        priority=payload.priority,
+        task_notes=payload.task_notes.strip() if payload.task_notes else None,
+        client_name=payload.client_name.strip() if payload.client_name else None,
+        client_phone=payload.client_phone.strip() if payload.client_phone else None,
+        next_hearing_date=payload.next_hearing_date.strip() if payload.next_hearing_date else None,
+        is_completed=False,
+        disposal_status="pending",
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@app.put("/api/diary/entries/{entry_id}", response_model=schemas.DiaryEntryResponse, tags=["Advocate Diary"])
+def update_diary_entry(
+    entry_id: int,
+    payload: schemas.DiaryEntryUpdate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = db.query(models.AdvocateDiaryEntry).filter(
+        models.AdvocateDiaryEntry.id == entry_id,
+        models.AdvocateDiaryEntry.user_id == current_user.id,
+    ).first()
+    if not entry:
+        raise HTTPException(404, "Diary entry not found.")
+
+    update_data = payload.dict(exclude_unset=True)
+    for key, val in update_data.items():
+        setattr(entry, key, val)
+
+    entry.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@app.patch("/api/diary/entries/{entry_id}/toggle-complete", response_model=schemas.DiaryEntryResponse, tags=["Advocate Diary"])
+def toggle_diary_entry_complete(
+    entry_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = db.query(models.AdvocateDiaryEntry).filter(
+        models.AdvocateDiaryEntry.id == entry_id,
+        models.AdvocateDiaryEntry.user_id == current_user.id,
+    ).first()
+    if not entry:
+        raise HTTPException(404, "Diary entry not found.")
+
+    entry.is_completed = not entry.is_completed
+    entry.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@app.post("/api/diary/entries/{entry_id}/adjourn", response_model=schemas.DiaryEntryResponse, tags=["Advocate Diary"])
+def adjourn_diary_entry(
+    entry_id: int,
+    payload: schemas.DiaryAdjournRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = db.query(models.AdvocateDiaryEntry).filter(
+        models.AdvocateDiaryEntry.id == entry_id,
+        models.AdvocateDiaryEntry.user_id == current_user.id,
+    ).first()
+    if not entry:
+        raise HTTPException(404, "Diary entry not found.")
+
+    entry.next_hearing_date = payload.next_hearing_date.strip()
+    entry.disposal_status = "adjourned"
+    entry.is_completed = True
+    if payload.order_summary:
+        entry.task_notes = (entry.task_notes or "") + f"\n[Order/Outcome]: {payload.order_summary}"
+    entry.updated_at = datetime.utcnow()
+
+    # Automatically create the next hearing entry on the new date
+    next_stage = payload.next_stage.strip() if payload.next_stage else entry.stage
+    next_entry = models.AdvocateDiaryEntry(
+        user_id=current_user.id,
+        doc_chat_id=entry.doc_chat_id,
+        case_number=entry.case_number,
+        court_name=entry.court_name,
+        judge_bench=entry.judge_bench,
+        parties=entry.parties,
+        hearing_date=payload.next_hearing_date.strip(),
+        hearing_time=entry.hearing_time,
+        item_number=None,
+        stage=next_stage,
+        priority=entry.priority,
+        task_notes=f"Adjourned from {entry.hearing_date}. {payload.order_summary or ''}".strip(),
+        client_name=entry.client_name,
+        client_phone=entry.client_phone,
+        is_completed=False,
+        disposal_status="pending",
+    )
+    db.add(next_entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@app.delete("/api/diary/entries/{entry_id}", tags=["Advocate Diary"])
+def delete_diary_entry(
+    entry_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = db.query(models.AdvocateDiaryEntry).filter(
+        models.AdvocateDiaryEntry.id == entry_id,
+        models.AdvocateDiaryEntry.user_id == current_user.id,
+    ).first()
+    if not entry:
+        raise HTTPException(404, "Diary entry not found.")
+
+    db.delete(entry)
+    db.commit()
+    return {"status": "success", "message": "Hearing entry deleted successfully."}
+
+
