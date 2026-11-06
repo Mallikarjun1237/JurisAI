@@ -26,6 +26,108 @@ import {
   apiAuditChatClauses,
 } from '../api/client'
 
+function FormattedMessage({ content, isUser = false }) {
+  if (isUser || !content) {
+    return <div className="whitespace-pre-wrap font-sans space-y-1">{content}</div>
+  }
+
+  const renderInline = (str) => {
+    if (!str) return null
+    const parts = []
+    let lastIdx = 0
+    const regex = /(\*\*.*?\*\*|`.*?`)/g
+    let match
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIdx) {
+        parts.push(str.substring(lastIdx, match.index))
+      }
+      const token = match[0]
+      if (token.startsWith('**') && token.endsWith('**')) {
+        parts.push(
+          <strong key={match.index} className="font-bold text-white">
+            {token.slice(2, -2)}
+          </strong>
+        )
+      } else if (token.startsWith('`') && token.endsWith('`')) {
+        parts.push(
+          <code
+            key={match.index}
+            className="px-1.5 py-0.5 rounded bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 font-mono text-[11px]"
+          >
+            {token.slice(1, -1)}
+          </code>
+        )
+      }
+      lastIdx = regex.lastIndex
+    }
+    if (lastIdx < str.length) {
+      parts.push(str.substring(lastIdx))
+    }
+    return parts
+  }
+
+  const lines = content.split('\n')
+  return (
+    <div className="font-sans space-y-2 text-xs sm:text-sm leading-relaxed">
+      {lines.map((rawLine, idx) => {
+        const line = rawLine.trimEnd()
+        if (!line.trim()) {
+          return <div key={idx} className="h-1" />
+        }
+
+        // 1. Heading (#, ##, ###, etc.) -> remove hashes and render styled header
+        const headingMatch = line.match(/^#{1,6}\s*(.*)$/)
+        if (headingMatch) {
+          const headingText = headingMatch[1].replace(/^\*\*|\*\*$/g, '')
+          return (
+            <div
+              key={idx}
+              className="text-xs sm:text-sm font-bold text-indigo-300 mt-3 mb-1 pt-1 border-b border-indigo-500/20 flex items-center gap-1.5"
+            >
+              <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>{renderInline(headingText)}</span>
+            </div>
+          )
+        }
+
+        // 2. Numbered list point
+        const numMatch = line.match(/^(\d+)[.)]\s+(.*)$/)
+        if (numMatch) {
+          const num = numMatch[1]
+          const rest = numMatch[2]
+          return (
+            <div key={idx} className="flex items-start gap-2 ml-1 my-1">
+              <span className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
+                {num}
+              </span>
+              <div className="flex-1 min-w-0">{renderInline(rest)}</div>
+            </div>
+          )
+        }
+
+        // 3. Bullet point
+        const bulletMatch = line.match(/^[-*•]\s+(.*)$/)
+        if (bulletMatch) {
+          const rest = bulletMatch[1]
+          return (
+            <div key={idx} className="flex items-start gap-2 ml-2 my-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
+              <div className="flex-1 min-w-0">{renderInline(rest)}</div>
+            </div>
+          )
+        }
+
+        // 4. Standard text line
+        return (
+          <p key={idx} className="my-1">
+            {renderInline(line)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function CaseChat() {
   const { user } = useAuth()
   const { language } = useLanguage()
@@ -566,7 +668,7 @@ export default function CaseChat() {
                   </div>
                 )}
 
-                <div className="whitespace-pre-wrap font-sans space-y-1">{msg.content}</div>
+                <FormattedMessage content={msg.content} isUser={msg.role === 'user'} />
 
                 <div className="mt-2 flex items-center justify-end gap-2 text-[10px] text-slate-400/70">
                   <span>

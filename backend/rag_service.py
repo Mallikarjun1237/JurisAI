@@ -178,7 +178,7 @@ def _call_groq(
     if "valid JSON" in prompt or "JSON object" in prompt:
         payload["response_format"] = {"type": "json_object"}
 
-    res = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=25)
+    res = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=6)
     if res.status_code != 200:
         raise RuntimeError(f"Groq API error ({res.status_code}): {res.text[:200]}")
     data = res.json()
@@ -449,7 +449,11 @@ class RAGService:
                     print(f"[OK] Groq response from {groq_model} in {elapsed}ms")
                     return text
                 except Exception as e:
-                    print(f"[..] Groq {groq_model} warning: {e}. Trying next provider/model...")
+                    err_msg = str(e).lower()
+                    print(f"[..] Groq {groq_model} warning: {str(e)[:120]}.")
+                    if "nameresolutionerror" in err_msg or "getaddrinfo" in err_msg or "connection refused" in err_msg or "timeout" in err_msg:
+                        print("[..] Groq network unreachable or timed out. Skipping remaining Groq models.")
+                        break
 
         # ── 2. Google Gemini Cloud Inference ──
         if self._client and self.gemini_api_key:
@@ -462,7 +466,11 @@ class RAGService:
                     print(f"[OK] Gemini response from {gemini_model} in {elapsed}ms")
                     return text
                 except Exception as e:
+                    err_msg = str(e).lower()
                     print(f"[..] Gemini {gemini_model} busy/error: {str(e)[:100]}")
+                    if "nameresolutionerror" in err_msg or "getaddrinfo" in err_msg or "connection refused" in err_msg:
+                        print("[..] Gemini network unreachable. Skipping remaining Gemini models.")
+                        break
                     if not _is_overload_error(e):
                         continue
 

@@ -252,17 +252,17 @@ export default function AdvocateDiaryModal({
         initial={{ opacity: 0, scale: 0.94, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 14 }}
-        className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(10,37,64,0.15)] overflow-hidden flex flex-col max-h-[92vh] text-slate-800"
+        className="relative w-full max-w-4xl bg-[#0c0d26] border border-indigo-500/25 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[92vh] text-slate-100 backdrop-blur-2xl"
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/90 shrink-0 gap-2">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-indigo-500/20 bg-[#0f1133] shrink-0 gap-2">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/10 shrink-0">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-wide truncate">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-wide truncate">
                   Advocate Digital Diary
                 </h2>
                 <span className="text-[9px] sm:text-[10px] bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-1.5 sm:px-2 py-0.5 rounded-full font-semibold shrink-0">
@@ -274,7 +274,7 @@ export default function AdvocateDiaryModal({
                   </span>
                 )}
               </div>
-              <p className="hidden sm:block text-xs text-slate-600 truncate">
+              <p className="hidden sm:block text-xs text-slate-400 truncate">
                 Track court appearances, cause list items, statutory stages & priority deadlines
               </p>
             </div>
@@ -290,7 +290,7 @@ export default function AdvocateDiaryModal({
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 sm:p-2 text-slate-600 hover:text-slate-900 hover:bg-white/10 rounded-full transition-colors ml-0.5 sm:ml-1"
+              className="p-1.5 sm:p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5 sm:ml-1"
               title="Close"
             >
               <X className="w-5 h-5" />
@@ -299,38 +299,38 @@ export default function AdvocateDiaryModal({
         </div>
 
         {/* ── Subheader Stats & Date Filters ── */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b border-emerald-500/15 bg-white/2 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b border-indigo-500/20 bg-indigo-950/20 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           {/* Quick Metrics Bar */}
           <div className="flex items-center gap-3 sm:gap-4 text-xs font-medium overflow-x-auto scrollbar-none py-0.5">
-            <div className="flex items-center gap-1.5 text-slate-700 shrink-0">
+            <div className="flex items-center gap-1.5 text-slate-300 shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>Today:</span>
-              <span className="font-bold text-slate-900 font-mono">{stats.today_count || 0}</span>
+              <span className="font-bold text-white font-mono">{stats.today_count || 0}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-slate-700 shrink-0">
+            <div className="flex items-center gap-1.5 text-slate-300 shrink-0">
               <span className="w-2 h-2 rounded-full bg-red-400" />
               <span>Must Do:</span>
               <span className="font-bold text-red-300 font-mono">{stats.must_do_pending || 0}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-slate-700 shrink-0">
+            <div className="flex items-center gap-1.5 text-slate-300 shrink-0">
               <span className="w-2 h-2 rounded-full bg-indigo-400" />
               <span>This Week:</span>
-              <span className="font-bold text-slate-900 font-mono">{stats.this_week_count || 0}</span>
+              <span className="font-bold text-white font-mono">{stats.this_week_count || 0}</span>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-slate-600 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5 text-slate-400 shrink-0">
               <span>Completed:</span>
               <span className="font-bold text-emerald-400 font-mono">{stats.completed_count || 0}</span>
             </div>
           </div>
 
           {/* Date Filter Tabs */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-white/10 rounded-xl p-1 text-xs">
+          <div className="flex items-center gap-1 bg-[#070817] border border-indigo-500/20 rounded-xl p-1 text-xs">
             <button
               onClick={() => setFilter('today')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 filter === 'today'
                   ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               Today
@@ -340,7 +340,7 @@ export default function AdvocateDiaryModal({
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 filter === 'this_week'
                   ? 'bg-indigo-600 text-white indigo-glow shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               This Week
@@ -350,7 +350,7 @@ export default function AdvocateDiaryModal({
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 filter === 'this_month'
                   ? 'bg-indigo-600 text-white indigo-glow shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               This Month
@@ -360,7 +360,7 @@ export default function AdvocateDiaryModal({
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 filter === 'must_do'
                   ? 'bg-red-500/20 text-red-300 border border-red-500/40'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               Must Do (High)
@@ -369,8 +369,8 @@ export default function AdvocateDiaryModal({
               onClick={() => setFilter('all')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
                 filter === 'all'
-                  ? 'bg-white/10 text-slate-900'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               All
@@ -386,22 +386,22 @@ export default function AdvocateDiaryModal({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               onSubmit={handleCreateEntry}
-              className="bg-white border border-emerald-500/25 rounded-2xl p-5 sm:p-6 max-w-2xl mx-auto space-y-4"
+              className="bg-[#0e1030] border border-indigo-500/30 rounded-2xl p-5 sm:p-6 max-w-2xl mx-auto space-y-4 shadow-xl text-slate-100"
             >
-              <div className="border-b border-white/10 pb-3 flex items-center justify-between">
+              <div className="border-b border-indigo-500/20 pb-3 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Scale className="w-4 h-4 text-emerald-400" />
                     <span>Enter Case Hearing & Daily Task</span>
                   </h3>
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-slate-400">
                     Record into your persistent advocate cause list
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="text-xs text-slate-600 hover:text-slate-900"
+                  className="text-xs text-slate-400 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -409,7 +409,7 @@ export default function AdvocateDiaryModal({
 
               {/* 3 Priority Buttons (The 3 distinct colors requested) */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
                   Priority & Urgency Level (Select Color):
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -457,7 +457,7 @@ export default function AdvocateDiaryModal({
               {/* Case No. & Court Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Case Number / CNR <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -466,12 +466,12 @@ export default function AdvocateDiaryModal({
                     value={caseNumber}
                     onChange={(e) => setCaseNumber(e.target.value)}
                     placeholder="e.g. O.S. 412/2026 or WP 14022/2026"
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Court & Hall Number <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -480,14 +480,14 @@ export default function AdvocateDiaryModal({
                     value={courtName}
                     onChange={(e) => setCourtName(e.target.value)}
                     placeholder="e.g. City Civil Court Hall 14 / HC Court 3"
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                   />
                 </div>
               </div>
 
               {/* Parties Title */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
                   Cause Title (Plaintiff vs. Defendant)
                 </label>
                 <input
@@ -495,14 +495,14 @@ export default function AdvocateDiaryModal({
                   value={parties}
                   onChange={(e) => setParties(e.target.value)}
                   placeholder="e.g. Apex Technologies Ltd vs Union of India"
-                  className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                 />
               </div>
 
               {/* Hearing Date, Time & Item No. */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Hearing Date <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -510,12 +510,12 @@ export default function AdvocateDiaryModal({
                     required
                     value={hearingDate}
                     onChange={(e) => setHearingDate(e.target.value)}
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Hearing Time
                   </label>
                   <input
@@ -523,12 +523,12 @@ export default function AdvocateDiaryModal({
                     value={hearingTime}
                     onChange={(e) => setHearingTime(e.target.value)}
                     placeholder="10:30 AM"
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Cause List Item No.
                   </label>
                   <input
@@ -536,23 +536,23 @@ export default function AdvocateDiaryModal({
                     value={itemNumber}
                     onChange={(e) => setItemNumber(e.target.value)}
                     placeholder="e.g. Item 14 (Motion)"
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                   />
                 </div>
               </div>
 
               {/* Case Stage */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
                   Court Hearing Stage
                 </label>
                 <select
                   value={stage}
                   onChange={(e) => setStage(e.target.value)}
-                  className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-400"
                 >
                   {COURT_STAGES.map((st) => (
-                    <option key={st} value={st}>
+                    <option key={st} value={st} className="bg-[#070817] text-white">
                       {st}
                     </option>
                   ))}
@@ -561,7 +561,7 @@ export default function AdvocateDiaryModal({
 
               {/* Actionable Notes / Tasks for Hearing */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
                   Actionable Hearing Notes / Tasks for the Day
                 </label>
                 <textarea
@@ -569,14 +569,14 @@ export default function AdvocateDiaryModal({
                   value={taskNotes}
                   onChange={(e) => setTaskNotes(e.target.value)}
                   placeholder="e.g. Bring original lease agreement; cross-examine PW-1 on receipt voucher; file rejoinder affidavit."
-                  className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none focus:border-emerald-400 resize-none"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400 resize-none"
                 />
               </div>
 
               {/* Client Follow-up Contact */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Client Name
                   </label>
                   <input
@@ -584,11 +584,11 @@ export default function AdvocateDiaryModal({
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Client Contact"
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
                     Client Phone / WhatsApp
                   </label>
                   <input
@@ -596,17 +596,17 @@ export default function AdvocateDiaryModal({
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-[#0e1c26] border border-emerald-500/25 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none"
                   />
                 </div>
               </div>
 
               {/* Form Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-indigo-500/20">
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-600 hover:text-slate-900"
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -622,7 +622,7 @@ export default function AdvocateDiaryModal({
             /* ═══ LIST: ADVOCATE DAILY CAUSE LIST & ENTRIES ═══ */
             <div className="space-y-3">
               {/* Action Toolbar */}
-              <div className="flex items-center justify-between gap-3 text-xs text-slate-600 mb-2">
+              <div className="flex items-center justify-between gap-3 text-xs text-slate-400 mb-2">
                 <span>
                   Showing <strong>{entries.length}</strong> hearing{entries.length !== 1 ? 's' : ''} for{' '}
                   <span className="text-emerald-400 font-bold uppercase">{filter.replace('_', ' ')}</span>
@@ -630,7 +630,7 @@ export default function AdvocateDiaryModal({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handlePrintCauseList}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 hover:border-emerald-400/40 bg-white/4 hover:bg-white/8 text-slate-700 text-xs transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/20 hover:border-emerald-400/40 bg-white/5 hover:bg-white/10 text-slate-200 text-xs transition-all"
                     title="Print cause list for court hall / notice board"
                   >
                     <Printer className="w-3.5 h-3.5 text-emerald-400" />
@@ -639,7 +639,7 @@ export default function AdvocateDiaryModal({
                   </button>
                   <button
                     onClick={handleCopyCauseList}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 hover:border-emerald-400/40 bg-white/4 hover:bg-white/8 text-slate-700 text-xs transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/20 hover:border-emerald-400/40 bg-white/5 hover:bg-white/10 text-slate-200 text-xs transition-all"
                     title="Copy formatted cause list for WhatsApp / Clerk"
                   >
                     {copied ? (
@@ -658,15 +658,15 @@ export default function AdvocateDiaryModal({
               </div>
 
               {loading ? (
-                <div className="text-center py-16 text-slate-600 text-xs">
+                <div className="text-center py-16 text-slate-400 text-xs">
                   Loading hearing cause list...
                 </div>
               ) : entries.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl bg-white/2 space-y-3">
-                  <Calendar className="w-10 h-10 text-slate-600 mx-auto" />
+                <div className="text-center py-16 border border-dashed border-indigo-500/25 rounded-2xl bg-indigo-950/20 space-y-3">
+                  <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-700">No hearings found for this period</p>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    <p className="text-sm font-semibold text-slate-200">No hearings found for this period</p>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
                       No court appearances recorded under {filter.replace('_', ' ')}. Add hearings to keep your daily timetable organized.
                     </p>
                   </div>
@@ -693,15 +693,15 @@ export default function AdvocateDiaryModal({
                       key={entry.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`bg-white border border-emerald-500/20 ${priorityBorder} rounded-2xl p-4 transition-all shadow-md ${
-                        entry.is_completed ? 'opacity-60 bg-slate-50' : 'hover:border-emerald-400/40'
+                      className={`bg-[#0e1030]/90 border border-indigo-500/20 ${priorityBorder} rounded-2xl p-4 transition-all shadow-lg ${
+                        entry.is_completed ? 'opacity-50 bg-[#08091a]' : 'hover:border-indigo-400/40'
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         {/* Checkbox */}
                         <button
                           onClick={() => handleToggleComplete(entry.id)}
-                          className="mt-0.5 text-slate-600 hover:text-emerald-400 transition-colors shrink-0"
+                          className="mt-0.5 text-slate-400 hover:text-emerald-400 transition-colors shrink-0"
                           title={entry.is_completed ? 'Mark Pending' : 'Mark Completed'}
                         >
                           {entry.is_completed ? (
@@ -716,7 +716,7 @@ export default function AdvocateDiaryModal({
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span
                               className={`text-xs font-mono font-bold ${
-                                entry.is_completed ? 'line-through text-slate-600' : 'text-slate-900'
+                                entry.is_completed ? 'line-through text-slate-500' : 'text-white'
                               }`}
                             >
                               {entry.case_number}
@@ -746,7 +746,7 @@ export default function AdvocateDiaryModal({
                             </span>
 
                             {/* Stage Badge */}
-                            <span className="text-[10px] bg-white/5 border border-white/10 text-slate-700 px-2 py-0.5 rounded font-medium">
+                            <span className="text-[10px] bg-white/5 border border-white/10 text-slate-300 px-2 py-0.5 rounded font-medium">
                               {entry.stage}
                             </span>
 
@@ -772,23 +772,23 @@ export default function AdvocateDiaryModal({
                             {entry.parties}
                           </p>
 
-                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-600 mt-1">
-                            <span className="flex items-center gap-1 text-slate-700">
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mt-1">
+                            <span className="flex items-center gap-1 text-slate-300">
                               <Building2 className="w-3 h-3 text-emerald-400" />
                               <span>{entry.court_name}</span>
                             </span>
-                            <span className="flex items-center gap-1 text-slate-600">
+                            <span className="flex items-center gap-1 text-slate-400">
                               <Calendar className="w-3 h-3 text-indigo-400" />
                               <span>{entry.hearing_date}</span>
                             </span>
                             {entry.hearing_time && (
-                              <span className="flex items-center gap-1 text-slate-600 font-mono">
+                              <span className="flex items-center gap-1 text-slate-400 font-mono">
                                 <Clock className="w-3 h-3" />
                                 <span>{entry.hearing_time}</span>
                               </span>
                             )}
                             {entry.client_phone && (
-                              <span className="flex items-center gap-1 text-slate-600">
+                              <span className="flex items-center gap-1 text-slate-400">
                                 <Phone className="w-3 h-3 text-emerald-400" />
                                 <span>{entry.client_phone}</span>
                               </span>
@@ -797,7 +797,7 @@ export default function AdvocateDiaryModal({
 
                           {/* Actionable Notes / Tasks */}
                           {entry.task_notes && (
-                            <div className="mt-2 p-2.5 bg-black/30 border border-white/5 rounded-xl text-xs text-slate-700 font-sans whitespace-pre-wrap">
+                            <div className="mt-2 p-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-slate-300 font-sans whitespace-pre-wrap">
                               <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-0.5">
                                 Hearing Notes & Task:
                               </span>
@@ -824,7 +824,7 @@ export default function AdvocateDiaryModal({
                           {/* Delete Button */}
                           <button
                             onClick={() => handleDelete(entry.id)}
-                            className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
                             title="Delete hearing"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -845,27 +845,27 @@ export default function AdvocateDiaryModal({
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white border-2 border-emerald-400/40 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4"
+              className="bg-[#0c0d26] border-2 border-emerald-400/40 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100"
             >
-              <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <div className="flex justify-between items-center border-b border-indigo-500/20 pb-2">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-emerald-400" />
                   <span>Adjourn Hearing: {adjournTarget.case_number}</span>
                 </h4>
                 <button
                   onClick={() => setAdjournTarget(null)}
-                  className="text-slate-600 hover:text-slate-900"
+                  className="text-slate-400 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <p className="text-xs text-slate-700">
+              <p className="text-xs text-slate-300">
                 Mark today's hearing as attended/adjourned and automatically create the next hearing entry in your diary.
               </p>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
                   Next Date of Hearing (NDOH) <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -873,21 +873,21 @@ export default function AdvocateDiaryModal({
                   required
                   value={nextDate}
                   onChange={(e) => setNextDate(e.target.value)}
-                  className="w-full bg-[#0e1c26] border border-emerald-400/40 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
                   Next Stage in Court
                 </label>
                 <select
                   value={nextStage}
                   onChange={(e) => setNextStage(e.target.value)}
-                  className="w-full bg-[#0e1c26] border border-white/15 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-400"
                 >
                   {COURT_STAGES.map((st) => (
-                    <option key={st} value={st}>
+                    <option key={st} value={st} className="bg-[#070817] text-white">
                       {st}
                     </option>
                   ))}
@@ -895,7 +895,7 @@ export default function AdvocateDiaryModal({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
                   Court Order / Daily Proceedings Summary
                 </label>
                 <textarea
@@ -903,15 +903,15 @@ export default function AdvocateDiaryModal({
                   value={orderSummary}
                   onChange={(e) => setOrderSummary(e.target.value)}
                   placeholder="e.g. Plaintiff completed cross examination; adjourned on defendant's counsel request for DW-1 affidavit."
-                  className="w-full bg-[#0e1c26] border border-white/15 rounded-xl px-3 py-2 text-slate-900 text-xs outline-none resize-none"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400 resize-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+              <div className="flex justify-end gap-2 pt-2 border-t border-indigo-500/20">
                 <button
                   type="button"
                   onClick={() => setAdjournTarget(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
+                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -928,12 +928,12 @@ export default function AdvocateDiaryModal({
         )}
 
         {/* Modal Footer */}
-        <div className="px-6 py-2.5 bg-black/60 border-t border-emerald-500/15 flex items-center justify-between text-[10px] text-slate-600">
+        <div className="px-6 py-2.5 bg-slate-950/80 border-t border-indigo-500/20 flex items-center justify-between text-[10px] text-slate-400">
           <span className="flex items-center gap-1.5 text-emerald-300">
             <Bookmark className="w-3.5 h-3.5 text-emerald-400" />
             <span>Digital Vakil Diary · Isolated per user account with SQLite backend</span>
           </span>
-          <span className="hidden sm:inline text-slate-500">
+          <span className="hidden sm:inline text-slate-400">
             Advocate Cause List Suite · JurisAI 2026
           </span>
         </div>

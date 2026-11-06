@@ -412,8 +412,14 @@ def run_query(
             language=payload.language or "en",
             conversation_history=conversation_history,
         )
-    except RuntimeError as e:
-        raise HTTPException(503, str(e))
+    except Exception as e:
+        print(f"[RECOVERY] Exception during query generation ({e}). Falling back to sovereign statutory engine.")
+        result = rag._synthesize_offline_response(
+            query=q,
+            retrieved_docs=[],
+            is_pro=current_user.is_pro,
+            language=payload.language or "en",
+        )
 
     # Persist log
     log = models.QueryLog(

@@ -148,24 +148,24 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
         initial={{ opacity: 0, scale: 0.94, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 14 }}
-        className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(10,37,64,0.15)] overflow-hidden flex flex-col max-h-[92vh] text-slate-800"
+        className="relative w-full max-w-4xl bg-[#0c0d26] border border-indigo-500/25 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[92vh] text-slate-100 backdrop-blur-2xl"
       >
         {/* ── Modal Header ── */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-slate-200 bg-slate-50/90 shrink-0 gap-3">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-indigo-500/20 bg-[#0f1133] shrink-0 gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/20 shrink-0">
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-wide truncate">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-wide truncate">
                   DPDP 2023 Shield & Legal Privilege Suite
                 </h2>
                 <span className="text-[10px] bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded-full font-semibold shrink-0">
                   Sec 132 BSA 2023 Verified
                 </span>
               </div>
-              <p className="hidden sm:block text-xs text-slate-600 truncate">
+              <p className="hidden sm:block text-xs text-slate-400 truncate">
                 In-memory Indian PII redaction, attorney-client privilege protection, and official chamber attestation
               </p>
             </div>
@@ -173,13 +173,13 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Desktop Tabs */}
-            <div className="hidden md:flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-1 text-xs font-semibold">
+            <div className="hidden md:flex items-center bg-[#070817] border border-indigo-500/20 rounded-xl p-1 gap-1 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('sanitizer')}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                   activeTab === 'sanitizer'
                     ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/30'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -190,7 +190,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                   activeTab === 'privilege'
                     ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/30'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <Lock className="w-3.5 h-3.5" />
@@ -201,7 +201,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                   activeTab === 'certificate'
                     ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/30'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <Award className="w-3.5 h-3.5" />
@@ -211,7 +211,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-white/10 rounded-full transition-colors ml-1"
+              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-1"
               title="Close"
             >
               <X className="w-5 h-5" />
@@ -220,11 +220,11 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
         </div>
 
         {/* Mobile Tab Switcher */}
-        <div className="md:hidden flex border-b border-emerald-500/15 bg-white/2 p-1 gap-1 text-xs font-semibold">
+        <div className="md:hidden flex border-b border-emerald-500/15 bg-indigo-950/20 p-1 gap-1 text-xs font-semibold">
           <button
             onClick={() => setActiveTab('sanitizer')}
             className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
-              activeTab === 'sanitizer' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-600'
+              activeTab === 'sanitizer' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400'
             }`}
           >
             Sanitizer
@@ -232,7 +232,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
           <button
             onClick={() => setActiveTab('privilege')}
             className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
-              activeTab === 'privilege' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-600'
+              activeTab === 'privilege' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400'
             }`}
           >
             Privilege
@@ -240,7 +240,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
           <button
             onClick={() => setActiveTab('certificate')}
             className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
-              activeTab === 'certificate' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-600'
+              activeTab === 'certificate' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400'
             }`}
           >
             Certificate
@@ -256,16 +256,16 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
           {activeTab === 'sanitizer' && (
             <div className="space-y-5">
               {/* Trust Metric Banner */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-[#071720] to-teal-950/40 border border-emerald-500/25 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-[#0a0d24] to-teal-950/40 border border-emerald-500/25 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                    <h4 className="text-xs sm:text-sm font-bold text-white">
                       Automatic In-Memory Indian PII Redactor
                     </h4>
-                    <p className="text-[11px] text-slate-600">
+                    <p className="text-[11px] text-slate-400">
                       All Aadhaar, PAN, phone numbers, bank details, and IFSC codes are masked before submission.
                     </p>
                   </div>
@@ -274,13 +274,13 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleLoadSampleFIR}
-                    className="text-[11px] font-semibold text-emerald-300 hover:text-slate-900 bg-emerald-500/10 hover:bg-[#0369a1]/20 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl transition-all"
+                    className="text-[11px] font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-[#0369a1]/20 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl transition-all"
                   >
                     Sample FIR
                   </button>
                   <button
                     onClick={handleLoadSampleContract}
-                    className="text-[11px] font-semibold text-indigo-300 hover:text-slate-900 bg-indigo-500/10 hover:bg-[#0369a1]/20 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl transition-all"
+                    className="text-[11px] font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-[#0369a1]/20 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl transition-all"
                   >
                     Sample Contract
                   </button>
@@ -288,9 +288,9 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
               </div>
 
               {/* Textarea Input Card */}
-              <div className="glass-card rounded-2xl p-4 border border-white/10 space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-600">
-                  <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+              <div className="bg-[#0e1030] rounded-2xl p-4 border border-indigo-500/25 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-semibold text-slate-300 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-emerald-400" /> Paste Raw Court Brief, FIR, Notice, or Contract
                   </span>
                   <span className="text-[11px] text-slate-500 font-mono">
@@ -303,11 +303,11 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Paste legal notice, charge-sheet excerpt, or contract containing Aadhaar, PAN, phone numbers, or bank details to test live redaction..."
                   rows={5}
-                  className="w-full bg-[#04080c] border border-white/10 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 leading-relaxed font-mono"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 leading-relaxed font-mono"
                 />
 
                 <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>Protected under DPDP Act 2023 · Safe for Court Submission</span>
                   </div>
@@ -332,19 +332,19 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="glass-card rounded-2xl p-4 border border-emerald-500/30 space-y-4"
+                  className="bg-[#0e1030] rounded-2xl p-4 border border-emerald-500/30 space-y-4 shadow-lg"
                 >
                   <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <h4 className="text-xs font-bold text-slate-900">
+                      <h4 className="text-xs font-bold text-white">
                         DPDP 2023 Redaction Result: {sanitizedResult.total_redacted} Sensitive Entities Masked
                       </h4>
                     </div>
 
                     <button
                       onClick={handleCopySanitized}
-                      className="flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-slate-900 bg-emerald-500/10 hover:bg-[#0369a1]/20 border border-emerald-500/30 px-3 py-1.5 rounded-xl transition-all"
+                      className="flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-[#0369a1]/20 border border-emerald-500/30 px-3 py-1.5 rounded-xl transition-all"
                     >
                       {copiedSanitized ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-emerald-400" />}
                       <span>{copiedSanitized ? 'Copied Masked Text!' : 'Copy Masked Text'}</span>
@@ -362,14 +362,14 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                         >
                           <ShieldCheck className="w-3 h-3 text-emerald-400" />
                           <span className="capitalize">{key.replace('_', ' ')}:</span>
-                          <strong className="text-slate-900 font-mono">{count}</strong>
+                          <strong className="text-white font-mono">{count}</strong>
                         </span>
                       )
                     })}
                   </div>
 
                   {/* Sanitized Text Display Box */}
-                  <div className="bg-[#03060a] border border-white/10 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
+                  <div className="bg-[#070817] border border-indigo-500/20 rounded-xl p-3.5 text-xs text-slate-200 font-mono leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
                     {sanitizedResult.sanitized_text}
                   </div>
                 </motion.div>
@@ -384,49 +384,49 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Legal Privilege Card */}
-                <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0e1c26] to-[#071219] border border-emerald-500/25 space-y-3">
+                <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0e1030] to-[#0a0d24] border border-emerald-500/25 space-y-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                       <Scale className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                      <h4 className="text-xs sm:text-sm font-bold text-white">
                         Section 132, Bharatiya Sakshya Adhiniyam, 2023
                       </h4>
-                      <p className="text-[10px] text-slate-600">
+                      <p className="text-[10px] text-slate-400">
                         Formerly Section 126, Indian Evidence Act, 1872
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed text-justify">
+                  <p className="text-xs text-slate-300 leading-relaxed text-justify">
                     No advocate, barrister, attorney, or pleader shall at any time be permitted to disclose any communication made to them by or on behalf of their client in the course and for the purpose of their employment. JurisAI's architecture enforces strict client confidentiality by performing zero unmasked retention.
                   </p>
                 </div>
 
                 {/* DPDP Act 2023 Card */}
-                <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0e1c26] to-[#071219] border border-emerald-500/25 space-y-3">
+                <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0e1030] to-[#0a0d24] border border-emerald-500/25 space-y-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                       <Landmark className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                      <h4 className="text-xs sm:text-sm font-bold text-white">
                         Digital Personal Data Protection Act, 2023
                       </h4>
-                      <p className="text-[10px] text-slate-600">
+                      <p className="text-[10px] text-slate-400">
                         Enacted by Parliament of India (Act No. 22 of 2023)
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed text-justify">
+                  <p className="text-xs text-slate-300 leading-relaxed text-justify">
                     Litigants are 'Data Principals' entitled to absolute privacy over financial, identification, and biometric data. JurisAI operates as a zero-trust processing environment where Aadhaar, PAN, phone numbers, and financial details are stripped in memory before semantic vector indexing.
                   </p>
                 </div>
               </div>
 
               {/* Technical Architecture Flow */}
-              <div className="glass-card rounded-2xl p-5 border border-white/10 space-y-4">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <div className="bg-[#0e1030] rounded-2xl p-5 border border-indigo-500/25 space-y-4 shadow-lg">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <Lock className="w-4 h-4 text-emerald-400" />
                   Privilege-Preserving Data Pipeline (Zero Persistent Client Storage)
                 </h4>
@@ -434,26 +434,26 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                   <div className="p-3 bg-white/3 border border-white/8 rounded-xl space-y-1">
                     <span className="text-[10px] text-emerald-400 font-bold block">1. LOCAL INGESTION</span>
-                    <p className="text-slate-700 font-medium text-[11px]">User uploads FIR, Pleading, or Contract</p>
+                    <p className="text-slate-300 font-medium text-[11px]">User uploads FIR, Pleading, or Contract</p>
                     <p className="text-[10px] text-slate-500">Document parsed in isolated memory buffer.</p>
                   </div>
 
                   <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
                     <span className="text-[10px] text-emerald-300 font-bold block">2. PII SCRUBBING</span>
-                    <p className="text-slate-900 font-medium text-[11px]">Regex Redactor sanitizes 10 PII entities</p>
-                    <p className="text-[10px] text-slate-600">Aadhaar, PAN, phones replaced with tokens.</p>
+                    <p className="text-white font-medium text-[11px]">Regex Redactor sanitizes 10 PII entities</p>
+                    <p className="text-[10px] text-slate-400">Aadhaar, PAN, phones replaced with tokens.</p>
                   </div>
 
                   <div className="p-3 bg-white/3 border border-white/8 rounded-xl space-y-1">
                     <span className="text-[10px] text-indigo-400 font-bold block">3. LEGAL SYNTHESIS</span>
-                    <p className="text-slate-700 font-medium text-[11px]">Only sanitized legal facts processed</p>
+                    <p className="text-slate-300 font-medium text-[11px]">Only sanitized legal facts processed</p>
                     <p className="text-[10px] text-slate-500">Cross-referenced with SC/HC precedent corpus.</p>
                   </div>
 
                   <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
                     <span className="text-[10px] text-emerald-300 font-bold block">4. COURT-READY OUTPUT</span>
-                    <p className="text-slate-900 font-medium text-[11px]">Verified ratios & drafts returned</p>
-                    <p className="text-[10px] text-slate-600">Zero persistent unencrypted logs stored.</p>
+                    <p className="text-white font-medium text-[11px]">Verified ratios & drafts returned</p>
+                    <p className="text-[10px] text-slate-400">Zero persistent unencrypted logs stored.</p>
                   </div>
                 </div>
               </div>
@@ -468,29 +468,29 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
               {/* Customization Bar */}
               <div className="p-4 bg-white/3 border border-white/8 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                     Advocate Full Name:
                   </label>
                   <input
                     type="text"
                     value={advocateName}
                     onChange={(e) => setAdvocateName(e.target.value)}
-                    className="w-full bg-[#04080c] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-900"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-1.5 text-xs text-white"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                     Chamber / Law Firm Name:
                   </label>
                   <input
                     type="text"
                     value={chamberName}
                     onChange={(e) => setChamberName(e.target.value)}
-                    className="w-full bg-[#04080c] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-900"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-1.5 text-xs text-white"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                     Bar Council Enrolment No:
                   </label>
                   <div className="flex gap-2">
@@ -498,7 +498,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                       type="text"
                       value={barEnrolment}
                       onChange={(e) => setBarEnrolment(e.target.value)}
-                      className="w-full bg-[#04080c] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-900"
+                      className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-1.5 text-xs text-white"
                     />
                     <button
                       onClick={loadCertificate}
@@ -519,7 +519,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopyAttestation}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-slate-700 text-xs font-semibold transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition-all"
                   >
                     {copiedCert ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-emerald-400" />}
                     <span>{copiedCert ? 'Copied Attestation!' : 'Copy Attestation'}</span>
@@ -536,7 +536,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
 
               {/* ── Screen Preview of the Formal A4 Certificate ── */}
               {certificate && (
-                <div className="bg-slate-200/90 p-4 sm:p-8 rounded-2xl flex justify-center overflow-x-auto">
+                <div className="bg-[#070817] border border-indigo-500/20 p-4 sm:p-8 rounded-2xl flex justify-center overflow-x-auto">
                   <div className="bg-white text-black font-serif shadow-xl rounded-xl p-8 sm:p-12 w-full max-w-[210mm] border border-slate-300 min-h-[600px] text-xs sm:text-sm leading-relaxed relative">
                     
                     {/* Header */}
@@ -619,7 +619,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
         </div>
 
         {/* ── Modal Footer ── */}
-        <div className="px-6 py-2.5 bg-black/60 border-t border-emerald-500/15 flex items-center justify-between text-[10px] text-slate-600 shrink-0">
+        <div className="px-6 py-2.5 bg-slate-950/80 border-t border-indigo-500/20 flex items-center justify-between text-[10px] text-slate-600 shrink-0">
           <span className="flex items-center gap-1.5 text-emerald-300 font-medium">
             <Lock className="w-3.5 h-3.5 text-emerald-400" />
             <span>End-to-End Litigant Confidentiality Guaranteed</span>

@@ -26,14 +26,40 @@ import TelemetryCard from '../components/TelemetryCard'
 import VoiceInputButton from '../components/VoiceInputButton'
 import { generateCourtLegalReport } from '../utils/courtReportGenerator'
 
-const SUGGESTIONS = [
-  'My employer withheld my salary and terminated me without notice',
-  'Right to privacy violation by a government authority collecting biometric data',
-  'Online defamation on social media — what are my legal options?',
-  'Landlord refusing to return security deposit after 2 months of vacating',
-  'Consumer complaint against e-commerce site for defective product delivery',
-  'Sexual harassment complaint at workplace — POSH Act procedure',
-]
+const SUGGESTIONS_MAP = {
+  en: [
+    'Online defamation on social media — what are my legal options?',
+    'Landlord refusing to return security deposit after 2 months of vacating',
+    'My employer withheld my salary and terminated me without notice',
+    'Cheque bounced due to insufficient funds what is the notice period under 138',
+    'Consumer complaint against e-commerce site for defective product delivery',
+    'Right to privacy violation by a government authority collecting biometric data',
+  ],
+  kn: [
+    'ಆನ್‌ಲೈನ್ ಸಾಮಾಜಿಕ ಜಾಲತಾಣಗಳಲ್ಲಿ ನಿಂದನೆ ಮತ್ತು ಮಾನನಷ್ಟ — ನನ್ನ ಕಾನೂನು ಆಯ್ಕೆಗಳೇನು?',
+    'ಮನೆ ಖಾಲಿ ಮಾಡಿ 2 ತಿಂಗಳಾದರೂ ಮಾಲೀಕರು ಅಡ್ವಾನ್ಸ್ ಡೆಪಾಸಿಟ್ ಹಣ ಮರುಪಾವತಿಸುತ್ತಿಲ್ಲ',
+    'ಕಂಪನಿಯು ನೋಟೀಸ್ ನೀಡದೆ ನನ್ನ ಸಂಬಳವನ್ನು ತಡೆಹಿಡಿದು ಕೆಲಸದಿಂದ ವಜಾಗೊಳಿಸಿದೆ',
+    'ಖಾತೆಯಲ್ಲಿ ಹಣದ ಕೊರತೆಯಿಂದ ಚೆಕ್ ಬೌನ್ಸ್ ಆಗಿದೆ — ಸೆಕ್ಷನ್ 138 ರ ಅಡಿಯಲ್ಲಿ ಲೀಗಲ್ ನೋಟೀಸ್',
+    'ದೋಷಯುಕ್ತ ಉತ್ಪನ್ನ ಡೆಲಿವರಿ ವಿರುದ್ಧ ಇ-ಕಾಮರ್ಸ್ ಸಂಸ್ಥೆಯ ಮೇಲೆ ಗ್ರಾಹಕರ ಆಯೋಗಕ್ಕೆ ದೂರು',
+    'ಸರ್ಕಾರಿ ಪ್ರಾಧಿಕಾರದಿಂದ ಬಯೋಮೆಟ್ರಿಕ್ ಡೇಟಾ ಸಂಗ್ರಹಣೆ ಹಾಗೂ ವೈಯಕ್ತಿಕ ಗೌಪ್ಯತೆ ಹಕ್ಕು ಉಲ್ಲಂಘನೆ',
+  ],
+  hi: [
+    'सोशल मीडिया पर ऑनलाइन मानहानि — मेरे विधिक अधिकार एवं विकल्प क्या हैं?',
+    'मकान खाली करने के 2 माह बाद भी मकान मालिक सिक्योरिटी डिपॉजिट नहीं लौटा रहा है',
+    'नियोक्ता ने बिना किसी नोटिस के वेतन रोककर नौकरी से बर्खास्त कर दिया',
+    'अकाउंट में राशि न होने पर चेक बाउंस — धारा 138 NI Act के तहत विधिक नोटिस',
+    'दोषपूर्ण उत्पाद डिलीवरी पर ई-कॉमर्स कंपनी के विरुद्ध उपभोक्ता आयोग में शिकायत',
+    'बायोमेट्रिक डेटा संग्रह द्वारा सरकारी प्राधिकरण द्वारा निजता के अधिकार का उल्लंघन',
+  ],
+  te: [
+    'సోషల్ మీడియాలో ఆన్‌లైన్ పరువు నష్టం — నా చట్టపరమైన పరిష్కారాలు ఏమిటి?',
+    'ఇల్లు ఖాళీ చేసి 2 నెలలైనా యజమాని సెక్యూరిటీ డిపాజిట్ తిరిగి ఇవ్వడం లేదు',
+    'యజమాని నోటీసు లేకుండా జీతం నిలిపివేసి ఉద్యోగం నుండి తొలగించారు',
+    'ఖాతాలో డబ్బులు లేక చెక్ బౌన్స్ — సెక్షన్ 138 ప్రకారం లీగల్ నోటీసు',
+    'లోపభూయిష్ట వస్తువు డెలివరీపై ఈ-కామర్స్ సైట్‌పై వినియోగదారుల కమిషన్‌లో ఫిర్యాదు',
+    'బయోమెట్రిక్ డేటా సేకరణ ద్వారా ప్రభుత్వ అధికారి వ్యక్తిగత గోప్యతా హక్కు ఉల్లంఘన',
+  ],
+}
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -44,6 +70,7 @@ const pageVariants = {
 export default function Dashboard() {
   const { user, logout, updateUser } = useAuth()
   const { language, t } = useLanguage()
+  const suggestions = SUGGESTIONS_MAP[language] || SUGGESTIONS_MAP.en
   const navigate = useNavigate()
   const textareaRef = useRef(null)
   const followUpRef = useRef(null)
@@ -362,7 +389,7 @@ export default function Dashboard() {
         <div className="max-w-5xl w-full mx-auto px-4 lg:px-6 py-5 flex flex-col flex-1">
 
           {/* Top Header Bar — Dark Indigo Glass Theme */}
-          <header className="flex flex-wrap items-center justify-between gap-2.5 mb-6 pb-3 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl px-4 py-2">
+          <header className="flex flex-wrap items-center justify-between gap-2.5 mb-6 pb-3 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl px-4 py-2 relative z-40">
             {/* Left: Mobile Menu & Active Case Context */}
             <div className="flex items-center gap-2 min-w-0">
               <button
@@ -406,8 +433,8 @@ export default function Dashboard() {
                 title="AI Co-Pilot for Case Documents & Contracts"
               >
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Case Document Chat</span>
-                <span className="sm:hidden">Chat</span>
+                <span className="hidden sm:inline">{t('chatNav') || 'Case Document Chat'}</span>
+                <span className="sm:hidden">{t('chatNav')?.slice(0, 4) || 'Chat'}</span>
               </button>
 
               {/* Advocate Diary */}
@@ -417,8 +444,8 @@ export default function Dashboard() {
                 title="Advocate Digital Diary & Daily Cause List"
               >
                 <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="hidden sm:inline">Advocate Diary</span>
-                <span className="sm:hidden">Diary</span>
+                <span className="hidden sm:inline">{t('advocateDiary') || 'Advocate Diary'}</span>
+                <span className="sm:hidden">{t('advocateDiary')?.slice(0, 5) || 'Diary'}</span>
               </button>
 
               {/* Court Fees Calculator */}
@@ -428,8 +455,8 @@ export default function Dashboard() {
                 title="Section 10 Official Court Fee & Valuation Slip"
               >
                 <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="hidden sm:inline">Court Fees</span>
-                <span className="sm:hidden">Fees</span>
+                <span className="hidden sm:inline">{t('courtFees') || 'Court Fees'}</span>
+                <span className="sm:hidden">{t('courtFees')?.slice(0, 4) || 'Fees'}</span>
               </button>
 
               {/* IPC ⇄ BNS Tool */}
@@ -453,7 +480,7 @@ export default function Dashboard() {
                 title="DPDP Act 2023 & Section 132 BSA Compliance Certificate"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="hidden md:inline">DPDP Shield</span>
+                <span className="hidden md:inline">{t('dpdpShield') || 'DPDP Shield'}</span>
                 <span className="md:hidden">DPDP</span>
               </button>
 
@@ -543,7 +570,7 @@ export default function Dashboard() {
               />
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5 gap-3">
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  {showHero && SUGGESTIONS.slice(0, 2).map((s) => (
+                  {showHero && suggestions.slice(0, 2).map((s) => (
                     <button
                       key={s}
                       onClick={() => handleSuggestionClick(s)}
@@ -586,7 +613,7 @@ export default function Dashboard() {
                 transition={{ delay: 0.1, duration: 0.35 }}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-8"
               >
-                {SUGGESTIONS.map((s, i) => (
+                {suggestions.map((s, i) => (
                   <motion.button
                     key={s}
                     initial={{ opacity: 0, y: 8 }}
