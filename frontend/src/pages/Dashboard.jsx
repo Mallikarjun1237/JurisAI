@@ -373,7 +373,7 @@ export default function Dashboard() {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="min-h-screen text-slate-100 flex relative overflow-x-hidden"
+      className="min-h-screen text-slate-100 flex relative overflow-x-hidden w-full max-w-full"
     >
       <div className="fixed inset-0 bg-radial-glow pointer-events-none" />
 
@@ -421,11 +421,11 @@ export default function Dashboard() {
         onClose={handleCloseSidebar}
       />
 
-      <main className="flex-1 lg:pl-64 flex flex-col min-h-screen relative">
-        <div className="max-w-5xl w-full mx-auto px-4 lg:px-6 py-5 flex flex-col flex-1">
+      <main className="flex-1 min-w-0 w-full max-w-full lg:pl-64 flex flex-col min-h-screen relative overflow-x-hidden">
+        <div className="max-w-5xl w-full min-w-0 mx-auto px-3.5 sm:px-4 lg:px-6 py-3.5 sm:py-5 flex flex-col flex-1">
 
           {/* Top Header Bar — Responsive Two-Tier Architecture */}
-          <header className="flex flex-col gap-2 mb-6 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 relative z-40">
+          <header className="flex flex-col gap-2 mb-5 sm:mb-6 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 relative z-40 w-full min-w-0 max-w-full">
             {/* Row 1: Identity & Primary Controls */}
             <div className="flex items-center justify-between gap-2 w-full">
               {/* Left: Mobile Menu & Active Case Context */}
@@ -477,11 +477,11 @@ export default function Dashboard() {
             </div>
 
             {/* Row 2: Smooth Horizontal Scrollable Legal Suite Tools (Zero text clipping, zero single-character vertical stacking) */}
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1 px-0.5 whitespace-nowrap -webkit-overflow-scrolling-touch w-full border-t border-white/5">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1 px-0.5 whitespace-nowrap -webkit-overflow-scrolling-touch w-full min-w-0 max-w-full border-t border-white/5">
               {/* Primary: Case Document Chat */}
               <button
                 onClick={() => navigate('/case-chat')}
-                className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition-all font-semibold indigo-glow shrink-0 whitespace-nowrap shadow-sm"
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition-all font-semibold indigo-glow shrink-0 whitespace-nowrap shadow-sm"
                 title="AI Co-Pilot for Case Documents & Contracts"
               >
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
@@ -491,7 +491,7 @@ export default function Dashboard() {
               {/* Advocate Diary */}
               <button
                 onClick={handleOpenDiary}
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
                 title="Advocate Digital Diary & Daily Cause List"
               >
                 <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -501,7 +501,7 @@ export default function Dashboard() {
               {/* Court Fees Calculator */}
               <button
                 onClick={handleOpenCourtFee}
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
                 title="Section 10 Official Court Fee & Valuation Slip"
               >
                 <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -511,7 +511,7 @@ export default function Dashboard() {
               {/* IPC ⇄ BNS Tool */}
               <button
                 onClick={() => setIsBNSModalOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-medium shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-medium shrink-0 whitespace-nowrap"
                 title="IPC to BNS Statutory Concordance"
               >
                 <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -525,7 +525,7 @@ export default function Dashboard() {
               {/* DPDP Shield */}
               <button
                 onClick={() => setIsDPDPModalOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
                 title="DPDP Act 2023 & Section 132 BSA Compliance Certificate"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -576,7 +576,7 @@ export default function Dashboard() {
 
           {/* Initial Query input card — shown when no result is displayed */}
           {!result && !caseViewLoading && (
-            <div className="glass-card rounded-2xl p-4 mb-4 border border-indigo-500/20">
+            <div className="glass-card rounded-2xl p-3.5 sm:p-4 mb-4 border border-indigo-500/20 w-full min-w-0">
               {activeCaseId && (
                 <div className="flex items-center gap-1.5 mb-2 px-0.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
@@ -598,7 +598,7 @@ export default function Dashboard() {
                 onKeyDown={handleKeyDown}
                 placeholder={t('searchPlaceholder') || 'Describe your legal scenario in plain language…\n\nPress Ctrl + Enter to submit.'}
                 rows={4}
-                className="w-full bg-transparent text-white placeholder-slate-500 text-sm resize-none focus:outline-none leading-relaxed"
+                className="w-full bg-transparent text-white placeholder-slate-500 text-[15px] sm:text-sm resize-none focus:outline-none leading-relaxed"
               />
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5 gap-3">
                 <div className="hidden sm:flex items-center gap-1.5 min-w-0 overflow-x-auto scrollbar-none whitespace-nowrap">
@@ -643,7 +643,7 @@ export default function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}
                 transition={{ delay: 0.1, duration: 0.35 }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-8"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-8 w-full min-w-0"
               >
                 {suggestions.map((s, i) => (
                   <motion.button
@@ -652,7 +652,7 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.12 + i * 0.06 }}
                     onClick={() => handleSuggestionClick(s)}
-                    className="glass-card rounded-xl px-4 py-3 text-left text-xs text-slate-400 hover:text-white hover:border-indigo-500/28 transition-all group"
+                    className="glass-card rounded-xl p-3.5 sm:px-4 sm:py-3 text-left text-[13px] sm:text-xs text-slate-300 sm:text-slate-400 hover:text-white hover:border-indigo-500/28 transition-all group w-full min-w-0 leading-snug"
                   >
                     <Sparkles className="w-3 h-3 text-indigo-400 mb-1.5 group-hover:text-indigo-300 transition-colors" />
                     {s}

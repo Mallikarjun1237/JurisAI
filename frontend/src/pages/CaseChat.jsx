@@ -473,9 +473,9 @@ export default function CaseChat() {
       </AnimatePresence>
 
       {/* ── MAIN CHAT AREA ── */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-[#050611]">
+      <main className="flex-1 min-w-0 w-full max-w-full flex flex-col h-screen overflow-hidden relative bg-[#050611]">
         {/* Top Header — Responsive Two-Tier Architecture */}
-        <header className="border-b border-white/5 bg-[#080918]/90 backdrop-blur-md shrink-0">
+        <header className="border-b border-white/5 bg-[#080918]/90 backdrop-blur-md shrink-0 w-full min-w-0 max-w-full">
           {/* Row 1: Session Context, Return to Dashboard, Language & Bell */}
           <div className="px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between gap-2">
             {/* Left: Mobile Sidebar Toggle, Scales Logo, Title */}
@@ -524,12 +524,12 @@ export default function CaseChat() {
           </div>
 
           {/* Row 2: Smooth Horizontal Scrollable Action Ribbon (Zero overlap, zero single-character vertical stacking) */}
-          <div className="px-3 sm:px-5 py-1.5 border-t border-white/5 bg-[#0a0c20]/60 flex items-center gap-2 overflow-x-auto scrollbar-none whitespace-nowrap -webkit-overflow-scrolling-touch">
+          <div className="px-3 sm:px-5 py-1.5 border-t border-white/5 bg-[#0a0c20]/60 flex items-center gap-2 overflow-x-auto scrollbar-none whitespace-nowrap -webkit-overflow-scrolling-touch w-full min-w-0 max-w-full">
             {/* Tone Toggle Switcher */}
             <div className="flex items-center gap-0.5 bg-[#0e1026] p-0.5 rounded-xl border border-white/10 shrink-0">
               <button
                 onClick={() => setTone('citizen')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] sm:text-xs font-semibold transition-all shrink-0 ${
                   tone === 'citizen'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -541,7 +541,7 @@ export default function CaseChat() {
               </button>
               <button
                 onClick={() => setTone('counsel')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] sm:text-xs font-semibold transition-all shrink-0 ${
                   tone === 'counsel'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -558,7 +558,7 @@ export default function CaseChat() {
               <button
                 onClick={handleAuditContractClauses}
                 disabled={auditing}
-                className="flex items-center gap-1.5 text-xs text-white bg-gradient-to-r from-red-600 via-rose-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 px-3 py-1 rounded-xl transition-all font-semibold shadow-sm border border-white/10 shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-white bg-gradient-to-r from-red-600 via-rose-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 px-3 py-1 rounded-xl transition-all font-semibold shadow-sm border border-white/10 shrink-0 whitespace-nowrap"
                 title="Statutory audit of contract clauses against Indian Contract Act 1872 & Supreme Court ratios"
               >
                 {auditing ? (
@@ -573,7 +573,7 @@ export default function CaseChat() {
             {/* Advocate Digital Diary Button */}
             <button
               onClick={() => setDiaryModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded-xl transition-all font-semibold border border-emerald-500/30 hover:border-emerald-400 shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 text-[13px] sm:text-xs text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded-xl transition-all font-semibold border border-emerald-500/30 hover:border-emerald-400 shrink-0 whitespace-nowrap"
               title="Advocate Digital Diary & Hearing Daily Planner / Cause List"
             >
               <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -583,7 +583,7 @@ export default function CaseChat() {
             {/* DPDP Act 2023 Shield Button */}
             <button
               onClick={() => setDpdpModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 text-xs font-semibold transition-all shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 text-[13px] sm:text-[13px] sm:text-xs font-semibold transition-all shrink-0 whitespace-nowrap"
               title="DPDP Act 2023 Compliance & Section 132 BSA Privilege Suite"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -639,7 +639,7 @@ export default function CaseChat() {
               )}
 
               <div
-                className={`rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed max-w-[88%] sm:max-w-2xl shadow-sm break-words [overflow-wrap:anywhere] ${
+                className={`rounded-2xl p-3.5 sm:p-4 text-[13.5px] sm:text-sm leading-relaxed max-w-[88%] sm:max-w-2xl shadow-sm break-words [overflow-wrap:anywhere] ${
                   msg.role === 'user'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-[#0f1126] border border-white/8 text-slate-200'
@@ -762,7 +762,7 @@ export default function CaseChat() {
                   : 'Describe your case, ask a legal question, or upload a document...'
               }
               rows={1}
-              className="flex-1 bg-transparent text-white placeholder-slate-500 text-xs focus:outline-none resize-none max-h-32 leading-relaxed py-1"
+              className="flex-1 bg-transparent text-white placeholder-slate-500 text-[15px] sm:text-xs focus:outline-none resize-none max-h-32 leading-relaxed py-1"
             />
 
             {/* Voice Input Button — Vernacular dictation */}

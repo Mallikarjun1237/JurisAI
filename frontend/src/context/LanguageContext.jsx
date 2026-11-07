@@ -229,7 +229,7 @@ export function LanguageSelector({ compact = false, fullWidth = false, align = '
           <span className="text-[10px] font-black text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
             IN
           </span>
-          <span className="font-semibold text-white whitespace-nowrap text-xs shrink-0">{currentLangObj.nativeLabel}</span>
+          <span className="font-semibold text-white whitespace-nowrap text-[13px] sm:text-xs shrink-0">{currentLangObj.nativeLabel}</span>
           {!compact && (
             <span className="hidden sm:inline text-[10px] text-indigo-300 bg-indigo-950/60 px-1.5 py-0.2 rounded border border-indigo-500/30 shrink-0">
               {currentLangObj.stateBadge}
