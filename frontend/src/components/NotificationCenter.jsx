@@ -31,6 +31,7 @@ export default function NotificationCenter({
   const [filter, setFilter] = useState('all') // 'all' | 'hearing' | 'payment' | 'pro_ad'
   const [permission, setPermission] = useState(notificationService.getPermission())
   const dropdownRef = useRef(null)
+  const panelRef = useRef(null)
 
   useEffect(() => {
     // Initial load
@@ -46,12 +47,12 @@ export default function NotificationCenter({
     return () => unsubscribe()
   }, [])
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (respecting portalled panel)
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false)
-      }
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) return
+      if (panelRef.current && panelRef.current.contains(e.target)) return
+      setIsOpen(false)
     }
     if (isOpen) {
       document.addEventListener('mousedown', handleOutsideClick)
@@ -138,6 +139,7 @@ export default function NotificationCenter({
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              ref={panelRef}
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}

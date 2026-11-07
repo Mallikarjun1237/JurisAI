@@ -752,7 +752,7 @@ def send_chat_message(
 
     # Aggregate extracted document text from all session docs
     combined_docs = "\n\n".join(
-        f"--- DOCUMENT: {d.filename} ---\n{d.extracted_text}"
+        f"--- DOCUMENT: {d.filename} ---\n{document_parser.sanitize_extracted_text(d.extracted_text or '')}"
         for d in session.documents
     )
 
@@ -995,7 +995,7 @@ def audit_chat_session_document_clauses(
         raise HTTPException(400, "No document uploaded in this session to audit. Please upload a PDF or DOCX first.")
 
     combined_text = "\n\n".join(
-        f"--- DOCUMENT: {d.filename} ---\n{d.extracted_text}"
+        f"--- DOCUMENT: {d.filename} ---\n{document_parser.sanitize_extracted_text(d.extracted_text or '')}"
         for d in session.documents
     )
     primary_filename = session.documents[-1].filename
