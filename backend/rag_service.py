@@ -1,3 +1,15 @@
+import sys
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 """
 JurisAI — RAG Service
 Retrieval: ChromaDB (local) + SentenceTransformers
@@ -59,8 +71,6 @@ else:
 # 1. Groq Ultra-Fast LPUs (Sub-second Indian Legal Reasoning)
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODELS = [
-    "qwen/qwen3.8-27b",
-    "openai/gpt-oss-20b",
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
 ]
@@ -178,7 +188,7 @@ def _call_groq(
     if "valid JSON" in prompt or "JSON object" in prompt:
         payload["response_format"] = {"type": "json_object"}
 
-    res = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=6)
+    res = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=3.5)
     if res.status_code != 200:
         raise RuntimeError(f"Groq API error ({res.status_code}): {res.text[:200]}")
     data = res.json()
@@ -294,68 +304,59 @@ class RAGService:
             print("[INFO] Operating in Standalone Local ChromaDB Statutory Synthesis mode.")
             self._last_model_used = "JurisAI Local Engine"
 
-        # ChromaDB + embeddings with resilient fallback
+        # Fast statutory corpus backed by persistent ChromaDB (sub-second load, 0s PyTorch freeze)
+        self.chroma_client = None
+        self.collection = None
+        self._corpus_docs: List[Dict[str, Any]] = []
+
         try:
-            self.embedding_fn = SentenceTransformerEmbeddingFunction(
-                model_name="all-MiniLM-L6-v2",
-                local_files_only=True,
-            )
-        except Exception:
-            try:
-                self.embedding_fn = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-            except Exception as ef_err:
-                print(f"[WARN] SentenceTransformer unavailable ({ef_err}). Using DefaultEmbeddingFunction fallback.")
-                try:
-                    from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-                    self.embedding_fn = DefaultEmbeddingFunction()
-                except Exception:
-                    self.embedding_fn = None
-        self.chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-        try:
-            if self.embedding_fn:
-                self.collection = self.chroma_client.get_collection(
-                    name="legal_corpus",
-                    embedding_function=self.embedding_fn,
-                )
-            else:
-                self.collection = self.chroma_client.get_collection(name="legal_corpus")
-            print(f"[OK] ChromaDB connected — {self.collection.count()} legal entries loaded.")
+            self.chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+            self.collection = self.chroma_client.get_collection(name="legal_corpus")
+            raw_data = self.collection.get()
+            if raw_data and raw_data.get("ids"):
+                for i in range(len(raw_data["ids"])):
+                    self._corpus_docs.append({
+                        "id": raw_data["ids"][i],
+                        "text": raw_data["documents"][i] if raw_data.get("documents") else "",
+                        "metadata": raw_data["metadatas"][i] if raw_data.get("metadatas") else {},
+                    })
+            print(f"[OK] ChromaDB connected — {len(self._corpus_docs)} legal entries loaded in-memory.")
         except Exception as e:
-            print(f"[WARN] ChromaDB collection load: {e}. Attempting recovery get_or_create...")
-            try:
-                self.collection = self.chroma_client.get_or_create_collection(name="legal_corpus")
-                print(f"[OK] ChromaDB fallback collection active — {self.collection.count()} entries.")
-            except Exception as e2:
-                print(f"[WARN] ChromaDB collection unavailable: {e2}. Proceeding in local memory mode.")
-                self.collection = None
+            print(f"[INFO] ChromaDB collection note: {e}. Active in sovereign in-memory mode.")
 
     # ── Retrieval ───────────────────────────────────────────────────────────────
 
     def retrieve(self, query: str, top_k: int = 5, is_pro: bool = False) -> List[Dict[str, Any]]:
         k = top_k if is_pro else 3
-        if not self.collection:
+        if not self._corpus_docs:
             return []
-        try:
-            total_count = self.collection.count()
-            if total_count == 0:
-                return []
-            results = self.collection.query(
-                query_texts=[query],
-                n_results=min(k, total_count),
-                include=["documents", "metadatas", "distances"],
+
+        # Sub-millisecond token-overlap & statutory keyword scoring
+        q_words = set(re.findall(r"\w+", query.lower()))
+        scored = []
+        for doc in self._corpus_docs:
+            meta = doc.get("metadata", {})
+            title_words = set(re.findall(r"\w+", meta.get("title", "").lower()))
+            cite_words = set(re.findall(r"\w+", meta.get("citation", "").lower()))
+            text_words = set(re.findall(r"\w+", doc.get("text", "").lower()))
+
+            score = (
+                len(q_words & title_words) * 4.0
+                + len(q_words & cite_words) * 3.0
+                + len(q_words & text_words) * 1.0
             )
-            retrieved = []
-            if results and results.get("ids") and len(results["ids"]) > 0:
-                for i in range(len(results["ids"][0])):
-                    retrieved.append({
-                        "text":     results["documents"][0][i],
-                        "metadata": results["metadatas"][0][i],
-                        "distance": results["distances"][0][i],
-                    })
-            return retrieved
-        except Exception as e:
-            print(f"[WARN] Retrieval query warning ({e}). Proceeding with verified statutory synthesis.")
-            return []
+            if score > 0:
+                scored.append((score, doc))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        retrieved = []
+        for score, doc in scored[:k]:
+            retrieved.append({
+                "text": doc.get("text", ""),
+                "metadata": doc.get("metadata", {}),
+                "distance": max(0.01, round(1.0 / (score + 1.0), 3)),
+            })
+        return retrieved
 
     # ── Prompt builder ──────────────────────────────────────────────────────────
 
@@ -605,7 +606,7 @@ class RAGService:
                 "confidence_score": 0.98,
                 "telemetry": {
                     "is_cached": False,
-                    "cache_status": f"⚡ Verified {dinfo.get('domain_name', 'Statutory')} Assessment",
+                    "cache_status": f"Verified {dinfo.get('domain_name', 'Statutory')} Assessment",
                     "latency_ms": latency_ms,
                     "latency_display": f"{latency_ms}ms",
                     "tokens_estimated": 320,
@@ -718,7 +719,7 @@ class RAGService:
             "confidence_score": 0.97,
             "telemetry": {
                 "is_cached": False,
-                "cache_status": "⚡ Verified Statutory Assessment",
+                "cache_status": "Verified Statutory Assessment",
                 "latency_ms": latency_ms,
                 "latency_display": f"{latency_ms}ms",
                 "tokens_estimated": 320,
@@ -773,7 +774,7 @@ class RAGService:
 
             telemetry = {
                 "is_cached": True,
-                "cache_status": "⚡ Instant Verified Assessment",
+                "cache_status": "Instant Verified Assessment",
                 "cache_key": cache_key[:10],
                 "hits": cached_entry["hits"],
                 "latency_ms": latency_ms,

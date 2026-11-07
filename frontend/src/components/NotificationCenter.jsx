@@ -9,6 +9,7 @@
  * - System permission status banner with one-click enable
  */
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell, Check, Trash2, Calendar, CreditCard, Sparkles,
@@ -119,7 +120,7 @@ export default function NotificationCenter({
       {/* ── Bell Icon Button with Live Badge ── */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-white hover:bg-indigo-500/10 transition-all border border-slate-200 hover:border-sky-300 shadow-sm flex items-center justify-center"
+        className="relative p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-indigo-500/40 shadow-sm flex items-center justify-center"
         title="Notifications & Hearing Reminders"
         aria-label="Notifications"
       >
@@ -132,16 +133,17 @@ export default function NotificationCenter({
         )}
       </button>
 
-      {/* ── Floating Notification Dropdown Tray ── */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="fixed top-16 right-3 sm:right-6 w-96 max-w-[calc(100vw-1.5rem)] bg-[#0c0d26] border border-indigo-500/25 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[999999] overflow-hidden flex flex-col max-h-[82vh] text-slate-100 backdrop-blur-2xl"
-          >
+      {/* ── Floating Notification Dropdown Tray (Portalled to document.body to prevent stacking context clipping) ── */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="fixed top-16 right-3 sm:right-6 w-96 max-w-[calc(100vw-1.5rem)] bg-[#0c0d26] border border-indigo-500/25 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[999999] overflow-hidden flex flex-col max-h-[82vh] text-slate-100 backdrop-blur-2xl"
+            >
             {/* Header */}
             <div className="p-3.5 border-b border-indigo-500/15 bg-slate-900/90 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 min-w-0">
@@ -372,7 +374,9 @@ export default function NotificationCenter({
             )}
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </div>
   )
 }

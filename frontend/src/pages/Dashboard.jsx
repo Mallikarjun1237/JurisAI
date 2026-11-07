@@ -264,7 +264,7 @@ export default function Dashboard() {
         logout()
         navigate('/login')
       } else {
-        const msg = detail || 'Failed to process follow-up question. Please try again.'
+        const msg = detail || t('errorGeneric') || 'Failed to process follow-up question. Please try again.'
         setError(msg)
         showToast(msg, 'error')
       }

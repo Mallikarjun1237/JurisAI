@@ -1,3 +1,17 @@
+from contextlib import asynccontextmanager
+import sys
+
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 """
 JurisAI — FastAPI Application
 Endpoints: Auth, Query, History, Cases, Password Reset
@@ -54,12 +68,23 @@ def _auto_migrate():
 
 _auto_migrate()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-warm RAG service in background on server boot
+    try:
+        rag = get_rag_service()
+        print("[LIFESPAN] Sovereign Legal RAG Service pre-warmed & ready.")
+    except Exception as e:
+        print(f"[LIFESPAN] Pre-warming note: {e}")
+    yield
+
 app = FastAPI(
     title="JurisAI API",
     description="Legal Intelligence SaaS — RAG-powered statutory & precedent retrieval for Indian law",
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
