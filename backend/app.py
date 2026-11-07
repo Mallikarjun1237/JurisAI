@@ -444,6 +444,7 @@ def run_query(
             retrieved_docs=[],
             is_pro=current_user.is_pro,
             language=payload.language or "en",
+            conversation_history=conversation_history,
         )
 
     # Persist log

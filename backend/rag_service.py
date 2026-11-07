@@ -570,6 +570,139 @@ class RAGService:
 
     # ── High-Availability Local Statutory Synthesis Engine (Zero-Crash Fallback) ──
 
+    def _generate_follow_up_domain_analysis(
+        self,
+        domain_key: str,
+        query: str,
+        language: str,
+        dinfo: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Generate in-depth, non-repetitive follow-up statutory and procedural analysis."""
+        ql = query.lower()
+
+        # ── 1. CONSUMER DISPUTE & E-COMMERCE ──
+        if domain_key == "consumer_dispute":
+            if language == "kn":
+                return {
+                    "summary": (
+                        "ಇ-ಕಾಮರ್ಸ್ ದೋಷಪೂರಿತ ಉತ್ಪನ್ನದ ಕುರಿತು ವಿವರವಾದ ಮುಂದಿನ ಶಾಸನಬದ್ಧ ಕ್ರಮಗಳು ಮತ್ತು ಪರಿಹಾರ ಮಾರ್ಗಸೂಚಿ:\n\n"
+                        "೧. ಕಡ್ಡಾಯ ದೂರು ಸ್ವೀಕೃತಿ ಮತ್ತು ಪರಿಹಾರ (ಗ್ರಾಹಕ ರಕ್ಷಣಾ ಇ-ಕಾಮರ್ಸ್ ನಿಯಮಗಳು ೨೦೨೦ ರ ನಿಯಮ ೫):\n"
+                        "ಇ-ಕಾಮರ್ಸ್ ಕಂಪನಿಯು ನಿಮ್ಮ ದೂರನ್ನು ೪೮ ಗಂಟೆಗಳಲ್ಲಿ ಸ್ವೀಕರಿಸಿ, ೧ ತಿಂಗಳೊಳಗೆ ಬಗೆಹರಿಸುವುದು ಕಾನೂನುಬದ್ಧವಾಗಿ ಕಡ್ಡಾಯವಾಗಿದೆ.\n\n"
+                        "೨. ರಾಷ್ಟ್ರೀಯ ಗ್ರಾಹಕ ಸಹಾಯವಾಣಿ (NCH - 1915) ಗೆ ದೂರು:\n"
+                        "ಕಂಪನಿಯು ಮರುಪಾವತಿಸಲು ನಿರಾಕರಿಸಿದರೆ, ಗ್ರಾಹಕ ವ್ಯವಹಾರಗಳ ಸಚಿವಾಲಯದ ಅಧಿಕೃತ ಪೋರ್ಟಲ್ (consumerhelpline.gov.in) ಅಥವಾ ೧೯೧೫ ಗೆ ಕರೆ ಮಾಡಿ ಅಧಿಕೃತ ದೂರು ದಾಖಲಿಸಿ. ಇ-ಕಾಮರ್ಸ್ ಪೋರ್ಟಲ್‌ಗಳು ಇಲಾಖೆಯ ದಂಡನೆಯಿಂದ ತಪ್ಪಿಸಿಕೊಳ್ಳಲು ೧೫ ದಿನಗಳಲ್ಲಿ ಹಣ ಮರುಪಾವತಿಸುತ್ತವೆ.\n\n"
+                        "೩. ಶಾಸನಬದ್ಧ ಲೀಗಲ್ ಡಿಮಾಂಡ್ ನೋಟೀಸ್ (Section 35 CPA 2019):\n"
+                        "ಮಾರಾಟಗಾರ ಹಾಗೂ ಇ-ಕಾಮರ್ಸ್ ಸಂಸ್ಥೆಯ ನೋಡಲ್ ಅಧಿಕಾರಿಗೆ ೧೫ ದಿನಗಳ ನೋಟೀಸ್ ಜಾರಿ ಮಾಡಿ. ಉತ್ಪನ್ನದ ಪೂರ್ಣ ಹಣ, ವಾರ್ಷಿಕ ೧೨% ಬಡ್ಡಿ ಮತ್ತು ಮಾನಸಿಕ ಕಿರುಕುಳಕ್ಕೆ ಪರಿಹಾರ ಕೋರಿ.\n\n"
+                        "೪. ಇ-ದಾಖಿಲ್ (e-Daakhil) ಆನ್‌ಲೈನ್ ದಾವೆ ಹೂಡುವ ವಿಧಾನ:\n"
+                        "೧೫ ದಿನಗಳ ನಂತರವೂ ಹಣ ಬಾರದಿದ್ದರೆ, edaakhil.nic.in ಮೂಲಕ ವಕೀಲರ ನೆರವಿಲ್ಲದೆಯೇ ನೇರವಾಗಿ ಜಿಲ್ಲಾ ಗ್ರಾಹಕರ ವ್ಯಾಜ್ಯಗಳ ಪರಿಹಾರ ಆಯೋಗಕ್ಕೆ ದೂರು ಸಲ್ಲಿಸಿ. ರೂ. ೫ ಲಕ್ಷದವರೆಗಿನ ಕ್ಲೈಮ್‌ಗಳಿಗೆ ಶೂನ್ಯ ನ್ಯಾಯಾಲಯ ಶುಲ್ಕ (Zero Court Fee) ಅನ್ವಯವಾಗುತ್ತದೆ.\n\n"
+                        "೫. ಜಂಟಿ ಉತ್ಪನ್ನ ಹೊಣೆಗಾರಿಕೆ (Sections 84-86 CPA 2019):\n"
+                        "ದೋಷಪೂರಿತ ವಸ್ತುಗಳಿಗೆ ಮಾರಾಟಗಾರ ಮತ್ತು ಇ-ಕಾಮರ್ಸ್ ವೇದಿಕೆ ಎರಡೂ ಜಂಟಿಯಾಗಿ ಗ್ರಾಹಕರಿಗೆ ಪರಿಹಾರ ನೀಡಲು ಬದ್ಧವಾಗಿರುತ್ತವೆ."
+                    ),
+                    "steps": [
+                        "ದೋಷಪೂರಿತ ಉತ್ಪನ್ನದ ಫೋಟೋ, ಅನ್‌ಬಾಕ್ಸಿಂಗ್ ವಿಡಿಯೋ, ಬಿಲ್ ಮತ್ತು ಡೆಲಿವರಿ ಸ್ಲಿಪ್ ಅನ್ನು ಭದ್ರವಾಗಿರಿಸಿ.",
+                        "ರಾಷ್ಟ್ರೀಯ ಗ್ರಾಹಕ ಸಹಾಯವಾಣಿ 1915 ಗೆ ಕರೆ ಮಾಡಿ ಅಥವಾ consumerhelpline.gov.in ನಲ್ಲಿ ದೂರು ದಾಖಲಿಸಿ.",
+                        "ಮಾರಾಟಗಾರ ಮತ್ತು ಇ-ಕಾಮರ್ಸ್ ಸಂಸ್ಥೆಗೆ 15 ದಿನಗಳ ಶಾಸನಬದ್ಧ ಡಿಮಾಂಡ್ ನೋಟೀಸ್ ಕಳುಹಿಸಿ.",
+                        "edaakhil.nic.in ಮೂಲಕ ಜಿಲ್ಲಾ ಗ್ರಾಹಕ ಆಯೋಗದಲ್ಲಿ ದೂರು ದಾಖಲಿಸಿ (ರೂ. 5 ಲಕ್ಷದವರೆಗೆ ಯಾವುದೇ ಶುಲ್ಕವಿಲ್ಲ).",
+                    ],
+                }
+            return {
+                "summary": (
+                    "In-Depth Actionable Procedure & Compensation Rights for E-Commerce Defect:\n\n"
+                    "1. Pre-Litigation Grievance Redressal (Mandatory 48-Hour Protocol):\n"
+                    "Under Rule 5 of the Consumer Protection (E-Commerce) Rules, 2020, both the marketplace and the seller are statutory entities required to acknowledge grievances within 48 hours and provide a redressed resolution within 1 month. You should preserve all order IDs, delivery dates, and unboxing images/videos.\n\n"
+                    "2. National Consumer Helpline (NCH - 1915) Escalation:\n"
+                    "If the seller or platform customer support refuses a refund or replacement, register a formal grievance on the Department of Consumer Affairs INGRAM portal (consumerhelpline.gov.in) or call 1915. Major e-commerce platforms have dedicated grievance desks integrated with NCH and frequently resolve claims within 15 days to avoid departmental penalties.\n\n"
+                    "3. Formal Statutory Legal Demand Notice:\n"
+                    "Issue a 15-day statutory demand notice by registered email and speed post to the registered nodal officer of the e-commerce company and the seller, demanding a 100% refund with 12% interest, plus compensation for mental harassment under Section 35 CPA 2019.\n\n"
+                    "4. e-Daakhil Online Filing before the District Consumer Commission:\n"
+                    "If unpaid after 15 days, institute a formal consumer dispute via 'edaakhil.nic.in' without requiring an advocate. Under the Consumer Protection (Fee) Rules, claims up to Rs 5,00,000 are completely exempt from court fees.\n\n"
+                    "5. Joint Product Liability (Sections 84-86 CPA 2019):\n"
+                    "Both the product seller/manufacturer and the e-commerce platform are jointly liable under Section 86 for financial loss, defect, and deficiency in service caused to the consumer."
+                ),
+                "steps": [
+                    "Preserve timestamped unboxing videos, order receipts, and courier delivery manifests as primary evidence.",
+                    "Lodge a formal grievance on the National Consumer Helpline (1915 or consumerhelpline.gov.in).",
+                    "Send a 15-day statutory demand notice to both the seller and e-commerce marketplace nodal officer.",
+                    "Institute a formal online consumer complaint via edaakhil.nic.in before the District Commission (0 court fee up to Rs 5 Lakhs).",
+                ],
+            }
+
+        # ── 2. CYBER DEFAMATION ──
+        if domain_key == "cyber_defamation":
+            return {
+                "summary": (
+                    "In-Depth Strategic Evidence & Takedown Roadmap for Online Defamation:\n\n"
+                    "1. Section 63 BSA 2023 Electronic Evidence Certificate:\n"
+                    "Under Section 63 Bharatiya Sakshya Adhiniyam 2023 (replacing Sec 65B IEA), digital evidence (screenshots, web URLs, metadata, IP logs) must be backed by a formal affidavit from the device custodian. Without this certificate, electronic records are inadmissible in court.\n\n"
+                    "2. Mandatory 36-Hour Intermediary Takedown Notice:\n"
+                    "Issue an immediate takedown notice under Section 79 of the Information Technology Act, 2000 to the platform's Resident Grievance Officer. Under Rule 3(2)(b) of the IT Rules 2021, platforms must remove defamatory, unlawful, or sexually explicit content within 24 to 36 hours of receipt.\n\n"
+                    "3. Concurrent Civil & Criminal Proceedings:\n"
+                    "You are entitled to file a private criminal complaint under Section 356 BNS 2023 (punishable by up to 2 years imprisonment) alongside a civil suit for damages for loss of reputation under Order VII CPC."
+                ),
+                "steps": [
+                    "Generate hash-authenticated screenshots and web archive links of the defamatory material.",
+                    "Serve immediate Section 79 IT Act takedown notice to the platform Resident Grievance Officer.",
+                    "Register a cyber crime complaint on cybercrime.gov.in (National Cyber Crime Reporting Portal).",
+                    "Execute Section 63 BSA electronic evidence certificate and institute Section 356 BNS complaint.",
+                ],
+            }
+
+        # ── 3. TENANCY DEPOSIT ──
+        if domain_key == "tenancy_deposit":
+            return {
+                "summary": (
+                    "In-Depth Actionable Recovery Strategy for Withheld Rental Security Deposit:\n\n"
+                    "1. Section 13 Model Tenancy Act, 2021 Mandate:\n"
+                    "The landlord is statutorily mandated to refund the security deposit within 30 days of the tenant handing over vacant possession. Arbitrary deductions without bills/receipts violate tenancy law.\n\n"
+                    "2. Order XXXVII CPC Fast-Track Summary Suit:\n"
+                    "File a Summary Suit under Order XXXVII of the Code of Civil Procedure, 1908 in the civil court. In summary suits, the landlord has no automatic right to defend unless they establish a genuine triable issue.\n\n"
+                    "3. Claim for 18% Statutory Interest & Damages:\n"
+                    "Under Indian jurisprudence, wrongful withholding of tenant funds entitles the tenant to interest at 12% to 18% per annum from the date of handover until realization.\n\n"
+                    "4. Criminal Breach of Trust (Section 316 BNS 2023):\n"
+                    "If the landlord dishonest refuses to account for the deposit money held in trust, criminal proceedings under Section 316 BNS (Section 405/406 IPC) may be initiated."
+                ),
+                "steps": [
+                    "Compile key handover messages, video proof of vacant flat, and zero-dues electricity/water slips.",
+                    "Issue a formal 15-day demand notice claiming full deposit plus 18% interest per annum.",
+                    "Approach the Rent Authority / Rent Court under the state Tenancy Act or file a Summary Suit under Order XXXVII CPC.",
+                    "File a police complaint under Section 316 BNS 2023 if dishonest misappropriation is evident.",
+                ],
+            }
+
+        # ── 4. CHEQUE BOUNCE ──
+        if domain_key == "cheque_bounce":
+            return {
+                "summary": (
+                    "In-Depth Trial Strategy & Section 142 Limitation Schedule (NI Act):\n\n"
+                    "1. Statutory 15-Day Demand Period (Section 138(c)):\n"
+                    "The drawer of the cheque must be given 15 full days from receipt of legal notice to make payment. A complaint filed before Day 16 is premature and will be rejected.\n\n"
+                    "2. Strict 30-Day Limitation Window (Section 142(1)(b)):\n"
+                    "The cause of action arises on Day 16. The formal criminal complaint must be filed within exactly 30 days thereafter before the Judicial Magistrate of First Class (JMFC).\n\n"
+                    "3. Section 143A Interim Compensation (Up to 20%):\n"
+                    "Upon framing of notice or summons, the court can order the drawer to deposit up to 20% of the cheque amount as interim compensation to the complainant.\n\n"
+                    "4. Presumption of Enforceable Debt (Section 139 NI Act):\n"
+                    "The law presumes the cheque was issued for a valid debt; the burden of proving otherwise rests squarely on the accused."
+                ),
+                "steps": [
+                    "Obtain original cheque, bank return memo (dishonour slip), and postal delivery proof.",
+                    "Calculate 15 days from date of delivery of legal demand notice.",
+                    "Institute criminal complaint under Section 142 NI Act before Judicial Magistrate within 30 days.",
+                    "File an application under Section 143A NI Act requesting 20% interim compensation.",
+                ],
+            }
+
+        # ── 5. DEFAULT DOMAIN EXPANSION ──
+        summary_base = dinfo["plain_english_summary"].get(language, dinfo["plain_english_summary"].get("en", ""))
+        steps_base = dinfo["suggested_next_steps"].get(language, dinfo["suggested_next_steps"].get("en", []))
+        return {
+            "summary": (
+                f"Detailed Statutory Guidance on '{query}':\n\n"
+                f"{summary_base}\n\n"
+                f"Key Procedural Mandate: Ensure all communications, statutory notices, and financial proofs are chronologically organized. "
+                f"You have the right to approach the jurisdictional court or forum for expedited relief under applicable Indian statutory codes."
+            ),
+            "steps": steps_base + ["Consult an empaneled advocate to draft formal pleadings tailored to your state court rules."],
+        }
+
     def _synthesize_offline_response(
         self,
         query: str,
@@ -578,6 +711,7 @@ class RAGService:
         language: str = "en",
         t_start: float = 0.0,
         domain_key: str = "general_statutory",
+        conversation_history: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         """
         High-availability local synthesis engine.
@@ -597,8 +731,16 @@ class RAGService:
                 for s in dinfo.get("statutes", [])
             ]
             relevant_precedents = dinfo.get("precedents", []) if is_pro else []
-            summary = dinfo["plain_english_summary"].get(language, dinfo["plain_english_summary"].get("en", ""))
-            steps = dinfo["suggested_next_steps"].get(language, dinfo["suggested_next_steps"].get("en", []))
+
+            # Check if this query is an in-depth follow-up in an ongoing case
+            is_follow_up = bool(conversation_history and len(conversation_history) > 0)
+            if is_follow_up:
+                follow_up_data = self._generate_follow_up_domain_analysis(domain_key, query, language, dinfo)
+                summary = follow_up_data["summary"]
+                steps = follow_up_data["steps"]
+            else:
+                summary = dinfo["plain_english_summary"].get(language, dinfo["plain_english_summary"].get("en", ""))
+                steps = dinfo["suggested_next_steps"].get(language, dinfo["suggested_next_steps"].get("en", []))
             latency_ms = round((time.perf_counter() - t_start) * 1000, 2) if t_start else 35.0
             return {
                 "plain_english_summary": summary,
@@ -839,7 +981,7 @@ class RAGService:
             retrieved_docs = raw_retrieved
 
         if not retrieved_docs:
-            offline_result = self._synthesize_offline_response(query, [], is_pro, language=language, t_start=t_start, domain_key=domain_key)
+            offline_result = self._synthesize_offline_response(query, [], is_pro, language=language, t_start=t_start, domain_key=domain_key, conversation_history=conversation_history)
             return offline_result
 
         prompt = self._build_prompt(
@@ -853,7 +995,7 @@ class RAGService:
             raw_text = self._generate_with_fallback(prompt)
         except Exception as e:
             print(f"[FALLBACK] Primary model failed or throttled ({e}). Generating via ChromaDB Statutory Synthesis Engine...")
-            offline_result = self._synthesize_offline_response(query, retrieved_docs, is_pro, language=language, t_start=t_start, domain_key=domain_key)
+            offline_result = self._synthesize_offline_response(query, retrieved_docs, is_pro, language=language, t_start=t_start, domain_key=domain_key, conversation_history=conversation_history)
             # Cache offline result so subsequent calls are instant
             self._query_cache[cache_key] = {
                 "response": copy.deepcopy(offline_result),

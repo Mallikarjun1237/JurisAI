@@ -92,6 +92,7 @@ export default function Dashboard() {
   const [caseView, setCaseView] = useState(null)            // loaded case detail
   const [caseViewLoading, setCaseViewLoading] = useState(false)
   const [selectedQueryId, setSelectedQueryId] = useState(null)
+  const [turnViews, setTurnViews] = useState({})
 
   // Modal dialog states
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -131,6 +132,36 @@ export default function Dashboard() {
     }
   }
 
+  // Derive sequential conversation turns for this case (ChatGPT / Gemini stream)
+  const caseTurns = useMemo(() => {
+    if (caseView?.queries && caseView.queries.length > 0) {
+      const parsed = caseView.queries.map(parseQueryResponse).filter(Boolean)
+      if (
+        result &&
+        !parsed.some(
+          (q) =>
+            (q.query_id && q.query_id === result.query_id) ||
+            (q.query_text === result.query_text && q.created_at === result.created_at)
+        )
+      ) {
+        parsed.push(result)
+      }
+      return parsed
+    }
+    return result ? [result] : []
+  }, [caseView, result])
+
+  const latestTurn = caseTurns.length > 0 ? caseTurns[caseTurns.length - 1] : result
+
+  const getTurnView = (turnId, idx) => {
+    const key = turnId || `turn-${idx}`
+    return turnViews[key] || activeTab
+  }
+  const setTurnView = (turnId, idx, view) => {
+    const key = turnId || `turn-${idx}`
+    setTurnViews((prev) => ({ ...prev, [key]: view }))
+  }
+
   // Load a case's queries when user clicks it in sidebar
   const handleCaseSelect = useCallback(async (caseId) => {
     if (!caseId) {
@@ -139,6 +170,7 @@ export default function Dashboard() {
       setResult(null)
       setSelectedQueryId(null)
       setQuery('')
+      window.scrollTo({ top: 0, behavior: 'instant' })
       return
     }
     setActiveCaseId(caseId)
@@ -159,6 +191,7 @@ export default function Dashboard() {
         setResult(null)
         setSelectedQueryId(null)
       }
+      window.scrollTo({ top: 0, behavior: 'instant' })
     } catch (err) {
       console.error('Failed to load case:', err)
       showToast('Could not load case details.', 'error')
@@ -176,6 +209,7 @@ export default function Dashboard() {
       setResult(fullResult)
       setSelectedQueryId(historyItem.id)
       setActiveTab('citizen')
+      window.scrollTo({ top: 0, behavior: 'instant' })
     }
   }
 
@@ -252,7 +286,9 @@ export default function Dashboard() {
       }
 
       refreshSidebar()
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setTimeout(() => {
+        followUpRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 150)
     } catch (err) {
       const status = err.response?.status
       const detail = err.response?.data?.detail || ''
@@ -714,23 +750,30 @@ export default function Dashboard() {
           </AnimatePresence>
 
           {/* ══════════════════════════════════════════════════════════════════════
-              FULL SEARCH RESULT INTERFACE
+              FULL CONVERSATION STREAM INTERFACE (ChatGPT / Gemini style)
              ══════════════════════════════════════════════════════════════════════ */}
           <AnimatePresence>
-            {result && !caseViewLoading && (
+            {caseTurns.length > 0 && !caseViewLoading && (
               <motion.div
-                key={`result-${result.query_id || 'active'}`}
+                key={`case-stream-${activeCaseId || 'active'}`}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-5"
+                className="space-y-6"
               >
                 {/* Action Toolbar */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => { setResult(null); setQuery(''); setActiveCaseId(null); setCaseView(null); setSelectedQueryId(null) }}
+                      onClick={() => {
+                        setResult(null)
+                        setQuery('')
+                        setActiveCaseId(null)
+                        setCaseView(null)
+                        setSelectedQueryId(null)
+                        window.scrollTo({ top: 0, behavior: 'instant' })
+                      }}
                       className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all"
                     >
                       <Plus className="w-3 h-3 text-indigo-400" /> Start New Case
@@ -758,7 +801,7 @@ export default function Dashboard() {
                       onClick={() => {
                         setGeneratingPdf(true)
                         try {
-                          generateCourtLegalReport({ result, user, caseName: caseView?.name })
+                          generateCourtLegalReport({ result: latestTurn, user, caseName: caseView?.name })
                           showToast('Court-Standard Legal Report downloaded successfully!', 'warning')
                         } catch (e) {
                           console.error(e)
@@ -792,108 +835,82 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Case Queries Switcher */}
-                {caseView?.queries && caseView.queries.length > 1 && (
-                  <div className="glass-card rounded-xl p-3 border border-indigo-500/15">
-                    <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                      <span className="font-semibold uppercase tracking-wider text-[11px] text-slate-400 flex items-center gap-1.5">
-                        <FolderOpen className="w-3.5 h-3.5 text-indigo-400" /> Questions in this Case ({caseView.queries.length})
-                      </span>
-                      <span className="text-[10px] text-slate-500">Click any question to view its full advice</span>
-                    </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                      {caseView.queries.map((q, idx) => {
-                        const isSelected = selectedQueryId === q.id || result.query_id === q.id
-                        return (
-                          <button
-                            key={q.id}
-                            onClick={() => {
-                              const parsed = parseQueryResponse(q)
-                              if (parsed) {
-                                setResult(parsed)
-                                setSelectedQueryId(q.id)
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30'
-                                : 'bg-white/4 text-slate-400 hover:text-slate-200 border-white/6 hover:bg-white/8'
-                            }`}
-                          >
-                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-                            }`}>
-                              {idx + 1}
+                {/* Sequential Stream of Case Turns (One Below Another) */}
+                <div className="space-y-8">
+                  {caseTurns.map((turn, idx) => {
+                    const isInitial = idx === 0
+                    const turnView = getTurnView(turn.query_id, idx)
+                    return (
+                      <div
+                        key={turn.query_id || `turn-${idx}`}
+                        className="space-y-5 pt-6 border-t border-indigo-500/20 first:border-t-0 first:pt-0"
+                      >
+                        {/* Scenario / Question Banner */}
+                        <div className="glass-card rounded-2xl p-5 border border-indigo-500/20 relative overflow-hidden shadow-lg">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                          <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                            <span className="flex items-center gap-1.5 font-semibold text-indigo-400">
+                              <Scale className="w-3.5 h-3.5" />
+                              {isInitial ? 'Legal Scenario Analyzed' : `Follow-up Question #${idx + 1}`}
                             </span>
-                            <span className="truncate max-w-[220px]">{q.query_text}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+                            {turn.created_at && (
+                              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(turn.created_at).toLocaleDateString('en-IN', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm sm:text-base font-medium text-white leading-relaxed">
+                            {turn.query_text}
+                          </p>
+                        </div>
 
-                {/* Scenario Banner */}
-                <div className="glass-card rounded-2xl p-5 border border-indigo-500/20 relative overflow-hidden shadow-lg">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-                  <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                    <span className="flex items-center gap-1.5 font-semibold text-indigo-400">
-                      <Scale className="w-3.5 h-3.5" /> Legal Scenario Analyzed
-                    </span>
-                    {result.created_at && (
-                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(result.created_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm sm:text-base font-medium text-white leading-relaxed">
-                    {result.query_text || query}
-                  </p>
+                        {/* Statutory Verification & Authority Telemetry */}
+                        <TelemetryCard
+                          telemetry={turn.telemetry}
+                          confidenceScore={turn.confidence_score}
+                          statutesCount={turn.applicable_statutes?.length || 0}
+                          precedentsCount={turn.relevant_precedents?.length || 0}
+                        />
+
+                        {/* Dual-View Switcher for this Turn */}
+                        <div className="flex gap-1 glass rounded-xl p-1 w-fit border border-white/6">
+                          <TabButton
+                            active={turnView === 'citizen'}
+                            onClick={() => setTurnView(turn.query_id, idx, 'citizen')}
+                            icon={<Users className="w-3.5 h-3.5" />}
+                            label={t('citizenView') || 'Citizen Guide'}
+                          />
+                          <TabButton
+                            active={turnView === 'advocate'}
+                            onClick={() => setTurnView(turn.query_id, idx, 'advocate')}
+                            icon={<Briefcase className="w-3.5 h-3.5" />}
+                            label={t('advocateView') || 'Advocate Brief'}
+                          />
+                        </div>
+
+                        {/* Turn Content (Citizen vs Advocate) */}
+                        <div>
+                          {turnView === 'citizen' ? (
+                            <CitizenView data={turn} />
+                          ) : (
+                            <AdvocateView data={turn} isPro={user?.is_pro} />
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
 
-                {/* Statutory Verification & Authority Telemetry */}
-                <TelemetryCard
-                  telemetry={result.telemetry}
-                  confidenceScore={result.confidence_score}
-                  statutesCount={result.applicable_statutes?.length || 0}
-                  precedentsCount={result.relevant_precedents?.length || 0}
-                />
-
-                {/* Dual-View Tab Switcher */}
-                <div className="flex gap-1 glass rounded-xl p-1 w-fit border border-white/6">
-                  <TabButton
-                    active={activeTab === 'citizen'}
-                    onClick={() => setActiveTab('citizen')}
-                    icon={<Users className="w-3.5 h-3.5" />}
-                    label={t('citizenView') || 'Citizen View'}
-                  />
-                  <TabButton
-                    active={activeTab === 'advocate'}
-                    onClick={() => setActiveTab('advocate')}
-                    icon={<Briefcase className="w-3.5 h-3.5" />}
-                    label={t('advocateView') || 'Advocate View'}
-                  />
-                </div>
-
-                {/* Tab Content */}
-                <AnimatePresence mode="wait">
-                  {activeTab === 'citizen' ? (
-                    <CitizenView key="citizen" data={result} />
-                  ) : (
-                    <AdvocateView key="advocate" data={result} isPro={user?.is_pro} />
-                  )}
-                </AnimatePresence>
-
-                {/* Follow-up Query Card */}
-                <div ref={followUpRef} className="pt-4 border-t border-indigo-500/15">
-                  <div className="glass-card rounded-2xl p-4 border border-indigo-500/20">
+                {/* Follow-up Query Card right beneath the sequential stream */}
+                <div ref={followUpRef} className="pt-6 border-t border-indigo-500/25">
+                  <div className="glass-card rounded-2xl p-5 border border-indigo-500/25 shadow-2xl">
                     <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-slate-300">
                       <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Ask a Follow-up Question in this Case</span>
@@ -949,7 +966,7 @@ export default function Dashboard() {
       <LegalDraftModal
         isOpen={isDraftModalOpen}
         onClose={() => setIsDraftModalOpen(false)}
-        result={result}
+        result={latestTurn || result}
         user={user}
       />
 
