@@ -451,8 +451,8 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop: fixed */}
-      <aside className="hidden lg:flex w-64 flex-col glass border-r border-indigo-500/10 h-screen sticky top-0">
+      {/* Desktop: fixed static on viewport */}
+      <aside className="hidden lg:flex w-64 flex-col glass border-r border-indigo-500/10 h-screen fixed left-0 top-0 bottom-0 z-30">
         <SidebarContent />
       </aside>
 
