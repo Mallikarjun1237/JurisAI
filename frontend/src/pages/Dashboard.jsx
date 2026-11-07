@@ -424,81 +424,94 @@ export default function Dashboard() {
       <main className="flex-1 lg:pl-64 flex flex-col min-h-screen relative">
         <div className="max-w-5xl w-full mx-auto px-4 lg:px-6 py-5 flex flex-col flex-1">
 
-          {/* Top Header Bar — Dark Indigo Glass Theme */}
-          <header className="flex flex-wrap items-center justify-between gap-2.5 mb-6 pb-3 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl px-4 py-2 relative z-40">
-            {/* Left: Mobile Menu & Active Case Context */}
-            <div className="flex items-center gap-2 min-w-0">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden w-9 h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors shrink-0"
-                aria-label="Open Navigation"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
-
-              {activeCaseId && caseView ? (
+          {/* Top Header Bar — Responsive Two-Tier Architecture */}
+          <header className="flex flex-col gap-2 mb-6 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 relative z-40">
+            {/* Row 1: Identity & Primary Controls */}
+            <div className="flex items-center justify-between gap-2 w-full">
+              {/* Left: Mobile Menu & Active Case Context */}
+              <div className="flex items-center gap-2 min-w-0">
                 <button
-                  onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null); setSelectedQueryId(null) }}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition-colors bg-white/4 px-3 py-1.5 rounded-xl border border-white/6 truncate"
-                  title="Click to exit case view"
+                  onClick={() => setSidebarOpen(true)}
+                  className="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors shrink-0"
+                  aria-label="Open Navigation"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
-                  <span className="text-slate-500">Case:</span>
-                  <span className="font-semibold text-white truncate max-w-[160px] sm:max-w-[220px]">
-                    {caseView.name}
-                  </span>
+                  <Menu className="w-4 h-4" />
                 </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 indigo-glow">
-                    <Scale className="w-4 h-4" />
+
+                {activeCaseId && caseView ? (
+                  <button
+                    onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null); setSelectedQueryId(null) }}
+                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition-colors bg-white/4 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/6 truncate max-w-[170px] xs:max-w-[220px] sm:max-w-xs"
+                    title="Click to exit case view"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-slate-500">Case:</span>
+                    <span className="font-semibold text-white truncate">
+                      {caseView.name}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 indigo-glow">
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-bold text-gradient tracking-wide">
+                      JurisAI
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-gradient tracking-wide">
-                    JurisAI
-                  </span>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Right: Language Selector & Notifications */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <LanguageSelector compact={true} align="right" />
+                <NotificationCenter
+                  onOpenDiary={handleOpenDiary}
+                  onOpenCourtFee={handleOpenCourtFee}
+                  onOpenPro={() => handleUpgrade()}
+                  onOpenBNS={handleOpenBNS}
+                  onRequestPermissionModal={() => setIsNotifModalOpen(true)}
+                  align="right"
+                />
+              </div>
             </div>
 
-            {/* Right: Quick Tools */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 ml-auto justify-end">
+            {/* Row 2: Smooth Horizontal Scrollable Legal Suite Tools (Zero text clipping, zero single-character vertical stacking) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1 px-0.5 whitespace-nowrap -webkit-overflow-scrolling-touch w-full border-t border-white/5">
               {/* Primary: Case Document Chat */}
               <button
                 onClick={() => navigate('/case-chat')}
-                className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition-all font-semibold indigo-glow shrink-0"
+                className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition-all font-semibold indigo-glow shrink-0 whitespace-nowrap shadow-sm"
                 title="AI Co-Pilot for Case Documents & Contracts"
               >
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">{t('chatNav') || 'Case Document Chat'}</span>
-                <span className="sm:hidden">{t('chatNav')?.slice(0, 4) || 'Chat'}</span>
+                <span>{t('chatNav') || 'Case Document Chat'}</span>
               </button>
 
               {/* Advocate Diary */}
               <button
                 onClick={handleOpenDiary}
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
                 title="Advocate Digital Diary & Daily Cause List"
               >
                 <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="hidden sm:inline">{t('advocateDiary') || 'Advocate Diary'}</span>
-                <span className="sm:hidden">{t('advocateDiary')?.slice(0, 5) || 'Diary'}</span>
+                <span>{t('advocateDiary') || 'Advocate Diary'}</span>
               </button>
 
               {/* Court Fees Calculator */}
               <button
                 onClick={handleOpenCourtFee}
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
                 title="Section 10 Official Court Fee & Valuation Slip"
               >
                 <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="hidden sm:inline">{t('courtFees') || 'Court Fees'}</span>
-                <span className="sm:hidden">{t('courtFees')?.slice(0, 4) || 'Fees'}</span>
+                <span>{t('courtFees') || 'Court Fees'}</span>
               </button>
 
               {/* IPC ⇄ BNS Tool */}
               <button
                 onClick={() => setIsBNSModalOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-medium shrink-0"
+                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-medium shrink-0 whitespace-nowrap"
                 title="IPC to BNS Statutory Concordance"
               >
                 <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -512,29 +525,12 @@ export default function Dashboard() {
               {/* DPDP Shield */}
               <button
                 onClick={() => setIsDPDPModalOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap"
                 title="DPDP Act 2023 & Section 132 BSA Compliance Certificate"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="hidden md:inline">{t('dpdpShield') || 'DPDP Shield'}</span>
-                <span className="md:hidden">DPDP</span>
+                <span>{t('dpdpShield') || 'DPDP Shield'}</span>
               </button>
-
-              {/* Divider */}
-              <div className="h-4 w-px bg-white/10 hidden sm:block mx-0.5" />
-
-              {/* Vernacular Language Selector */}
-              <LanguageSelector compact={false} align="right" />
-
-              {/* Notification Center */}
-              <NotificationCenter
-                onOpenDiary={handleOpenDiary}
-                onOpenCourtFee={handleOpenCourtFee}
-                onOpenPro={() => handleUpgrade()}
-                onOpenBNS={handleOpenBNS}
-                onRequestPermissionModal={() => setIsNotifModalOpen(true)}
-                align="right"
-              />
             </div>
           </header>
 
@@ -605,18 +601,18 @@ export default function Dashboard() {
                 className="w-full bg-transparent text-white placeholder-slate-500 text-sm resize-none focus:outline-none leading-relaxed"
               />
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5 gap-3">
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                <div className="hidden sm:flex items-center gap-1.5 min-w-0 overflow-x-auto scrollbar-none whitespace-nowrap">
                   {showHero && suggestions.slice(0, 2).map((s) => (
                     <button
                       key={s}
                       onClick={() => handleSuggestionClick(s)}
-                      className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-all truncate max-w-[160px]"
+                      className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-all truncate max-w-[200px] shrink-0"
                     >
-                      {s.slice(0, 22)}…
+                      {s.slice(0, 28)}…
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
                   <VoiceInputButton
                     language={language}
                     onTranscript={handleVoiceTranscript}
@@ -762,9 +758,9 @@ export default function Dashboard() {
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                 className="space-y-6"
               >
-                {/* Action Toolbar */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
+                {/* Action Toolbar — Responsive Touch-Scrollable Ribbon (Zero Text Splitting) */}
+                <div className="w-full flex items-center justify-between gap-2 overflow-x-auto scrollbar-none pb-1 whitespace-nowrap -webkit-overflow-scrolling-touch">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => {
                         setResult(null)
@@ -774,23 +770,23 @@ export default function Dashboard() {
                         setSelectedQueryId(null)
                         window.scrollTo({ top: 0, behavior: 'instant' })
                       }}
-                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all shrink-0 whitespace-nowrap shadow-sm"
                     >
                       <Plus className="w-3 h-3 text-indigo-400" /> Start New Case
                     </button>
                     <button
                       onClick={() => { followUpRef.current?.scrollIntoView({ behavior: 'smooth' }) }}
-                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-indigo-500/30 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all shrink-0 whitespace-nowrap shadow-sm"
                     >
                       <MessageSquare className="w-3 h-3 text-indigo-400" /> Ask Follow-up
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 shrink-0">
                     {/* Official Legal Drafts Button */}
                     <button
                       onClick={() => setIsDraftModalOpen(true)}
-                      className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 px-3 py-1.5 rounded-lg transition-all font-semibold indigo-glow"
+                      className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 px-3 py-1.5 rounded-lg transition-all font-semibold indigo-glow shrink-0 whitespace-nowrap shadow-sm"
                     >
                       <FileText className="w-3.5 h-3.5 text-white" />
                       <span>{t('officialDrafts') || 'Legal Notice & Drafts'}</span>
@@ -811,26 +807,24 @@ export default function Dashboard() {
                         }
                       }}
                       disabled={generatingPdf}
-                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm"
                     >
                       {generatingPdf ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <Download className="w-3.5 h-3.5 text-indigo-400" />
                       )}
-                      <span className="hidden xs:inline">{t('exportPdf') || 'Court-Standard PDF'}</span>
-                      <span className="xs:hidden">PDF</span>
+                      <span>{t('exportPdf') || 'Court-Standard PDF'}</span>
                     </button>
 
                     {/* Print Legal Advisory Report */}
                     <button
                       onClick={() => window.print()}
-                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0"
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm"
                       title="Print pristine court legal intelligence report"
                     >
                       <Printer className="w-3.5 h-3.5 text-indigo-400" />
-                      <span className="hidden xs:inline">{t('printReport') || 'Print Report'}</span>
-                      <span className="xs:hidden">Print</span>
+                      <span>{t('printReport') || 'Print'}</span>
                     </button>
                   </div>
                 </div>

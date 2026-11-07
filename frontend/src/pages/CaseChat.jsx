@@ -474,77 +474,62 @@ export default function CaseChat() {
 
       {/* ── MAIN CHAT AREA ── */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-[#050611]">
-        {/* Top Header — Clean, Non-wrapping, Fully Responsive */}
-        <header className="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-white/5 bg-[#080918]/80 backdrop-blur-md flex items-center justify-between shrink-0 gap-2 sm:gap-3">
-          {/* Left: Mobile Sidebar Toggle, Scales Logo, Title */}
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0"
-              aria-label="Open Sessions Menu"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
+        {/* Top Header — Responsive Two-Tier Architecture */}
+        <header className="border-b border-white/5 bg-[#080918]/90 backdrop-blur-md shrink-0">
+          {/* Row 1: Session Context, Return to Dashboard, Language & Bell */}
+          <div className="px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between gap-2">
+            {/* Left: Mobile Sidebar Toggle, Scales Logo, Title */}
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0"
+                aria-label="Open Sessions Menu"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
 
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
-              <Scale className="w-4 h-4" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+                <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="text-xs sm:text-sm font-bold text-white truncate max-w-[130px] xs:max-w-[190px] sm:max-w-xs md:max-w-md">
+                  {currentSession?.title || 'Case Document Assistant'}
+                </h1>
+              </div>
             </div>
 
-            <div className="min-w-0">
-              <h1 className="text-xs sm:text-sm font-bold text-white truncate max-w-[120px] sm:max-w-xs md:max-w-sm">
-                {currentSession?.title || 'Case Document Assistant'}
-              </h1>
+            {/* Right: Dashboard Return, Language, Notifications */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Return to Dashboard */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-1 text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Return to Research Dashboard"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </button>
+
+              {/* Vernacular Language Selector */}
+              <LanguageSelector compact={true} align="right" />
+
+              {/* Notification Center */}
+              <NotificationCenter
+                onOpenDiary={() => setDiaryModalOpen(true)}
+                onRequestPermissionModal={() => setNotifModalOpen(true)}
+                align="right"
+              />
             </div>
           </div>
 
-          {/* Right: Actions, Dropdowns, and Dashboard Return */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Return to Dashboard */}
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-1.5 text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
-              title="Return to Research Dashboard"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </button>
-
-            {/* Audit Clauses Action Button (When document is attached) */}
-            {documents.length > 0 && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onClick={handleAuditContractClauses}
-                disabled={auditing}
-                className="flex items-center gap-1.5 text-xs text-white bg-gradient-to-r from-red-600 via-rose-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shadow-md shadow-red-600/25 border border-white/10 shrink-0"
-                title="Statutory audit of contract clauses against Indian Contract Act 1872 & Supreme Court ratios"
-              >
-                {auditing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                ) : (
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
-                )}
-                <span className="hidden md:inline">{auditing ? 'Auditing…' : 'Audit Clauses'}</span>
-                <span className="md:hidden">Audit</span>
-              </motion.button>
-            )}
-
-            {/* Advocate Digital Diary Button */}
-            <button
-              onClick={() => setDiaryModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1.5 rounded-xl transition-all font-semibold border border-emerald-500/30 hover:border-emerald-400 shrink-0"
-              title="Advocate Digital Diary & Hearing Daily Planner / Cause List"
-            >
-              <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden md:inline">Advocate Diary</span>
-              <span className="md:hidden">Diary</span>
-            </button>
-
+          {/* Row 2: Smooth Horizontal Scrollable Action Ribbon (Zero overlap, zero single-character vertical stacking) */}
+          <div className="px-3 sm:px-5 py-1.5 border-t border-white/5 bg-[#0a0c20]/60 flex items-center gap-2 overflow-x-auto scrollbar-none whitespace-nowrap -webkit-overflow-scrolling-touch">
             {/* Tone Toggle Switcher */}
-            <div className="flex items-center gap-0.5 bg-[#0e1026] p-0.5 rounded-xl border border-white/8 shrink-0">
+            <div className="flex items-center gap-0.5 bg-[#0e1026] p-0.5 rounded-xl border border-white/10 shrink-0">
               <button
                 onClick={() => setTone('citizen')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                   tone === 'citizen'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -552,11 +537,11 @@ export default function CaseChat() {
                 title="Citizen Friendly Analysis Mode"
               >
                 <Users className="w-3 h-3 shrink-0" />
-                <span className="hidden lg:inline">Citizen</span>
+                <span>Citizen</span>
               </button>
               <button
                 onClick={() => setTone('counsel')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                   tone === 'counsel'
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -564,30 +549,46 @@ export default function CaseChat() {
                 title="Litigation Counsel Analysis Mode"
               >
                 <Briefcase className="w-3 h-3 shrink-0" />
-                <span className="hidden lg:inline">Counsel</span>
+                <span>Counsel</span>
               </button>
             </div>
+
+            {/* Audit Clauses Action Button (When document is attached) */}
+            {documents.length > 0 && (
+              <button
+                onClick={handleAuditContractClauses}
+                disabled={auditing}
+                className="flex items-center gap-1.5 text-xs text-white bg-gradient-to-r from-red-600 via-rose-600 to-indigo-600 hover:from-red-500 hover:to-indigo-500 px-3 py-1 rounded-xl transition-all font-semibold shadow-sm border border-white/10 shrink-0 whitespace-nowrap"
+                title="Statutory audit of contract clauses against Indian Contract Act 1872 & Supreme Court ratios"
+              >
+                {auditing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                ) : (
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                )}
+                <span>{auditing ? 'Auditing…' : 'Audit Clauses'}</span>
+              </button>
+            )}
+
+            {/* Advocate Digital Diary Button */}
+            <button
+              onClick={() => setDiaryModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded-xl transition-all font-semibold border border-emerald-500/30 hover:border-emerald-400 shrink-0 whitespace-nowrap"
+              title="Advocate Digital Diary & Hearing Daily Planner / Cause List"
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Advocate Diary</span>
+            </button>
 
             {/* DPDP Act 2023 Shield Button */}
             <button
               onClick={() => setDpdpModalOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 text-xs font-semibold transition-all shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 text-xs font-semibold transition-all shrink-0 whitespace-nowrap"
               title="DPDP Act 2023 Compliance & Section 132 BSA Privilege Suite"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden xl:inline">DPDP 2023 Shield</span>
-              <span className="xl:hidden">DPDP</span>
+              <span>DPDP 2023 Shield</span>
             </button>
-
-            {/* Vernacular Language Selector */}
-            <LanguageSelector compact={true} align="right" />
-
-            {/* Notification Center */}
-            <NotificationCenter
-              onOpenDiary={() => setDiaryModalOpen(true)}
-              onRequestPermissionModal={() => setNotifModalOpen(true)}
-              align="right"
-            />
           </div>
         </header>
 
@@ -638,7 +639,7 @@ export default function CaseChat() {
               )}
 
               <div
-                className={`rounded-2xl p-4 text-xs leading-relaxed max-w-2xl shadow-sm ${
+                className={`rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed max-w-[88%] sm:max-w-2xl shadow-sm break-words [overflow-wrap:anywhere] ${
                   msg.role === 'user'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-[#0f1126] border border-white/8 text-slate-200'
@@ -704,7 +705,7 @@ export default function CaseChat() {
 
         {/* Suggestion prompt chips (shown when conversation is young) */}
         {messages.length <= 2 && (
-          <div className="px-6 py-2 flex gap-2 overflow-x-auto shrink-0 scrollbar-thin">
+          <div className="px-3 sm:px-6 py-2 flex gap-2 overflow-x-auto shrink-0 scrollbar-none whitespace-nowrap -webkit-overflow-scrolling-touch">
             {quickPrompts.map((p) => (
               <button
                 key={p}
@@ -784,7 +785,8 @@ export default function CaseChat() {
           <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1.5 px-1 flex-wrap gap-2">
             <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
               <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span>DPDP Act 2023 Shield: Automatic Aadhaar, PAN & Client PII Masking Active</span>
+              <span className="hidden xs:inline">DPDP Act 2023 Shield: Automatic Aadhaar, PAN & Client PII Masking Active</span>
+              <span className="xs:hidden">DPDP 2023 PII Masking Active</span>
             </span>
             <div className="flex items-center gap-2.5 text-slate-500">
               <span className="hidden sm:inline">Press Enter to send · Shift + Enter for new line</span>
