@@ -12,6 +12,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=True)
     profile_image = Column(Text, nullable=True)
+    whatsapp_number = Column(String, nullable=True)
     is_pro = Column(Boolean, default=False)
     query_count = Column(Integer, default=0)
     daily_query_count = Column(Integer, default=0)
@@ -60,6 +61,8 @@ class DocChat(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String, default="New Case Analysis")
+    parent_session_id = Column(Integer, ForeignKey("doc_chats.id"), nullable=True)
+    context_summary = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

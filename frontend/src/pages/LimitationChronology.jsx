@@ -198,11 +198,11 @@ export default function LimitationChronology() {
   return (
     <div className="min-h-screen bg-[#060813] text-slate-100 flex flex-col">
       {/* Top Header */}
-      <header className="border-b border-indigo-500/10 bg-[#060813]/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-slate-800 bg-[#060813]/90 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
             title="Back to Dashboard"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -226,13 +226,13 @@ export default function LimitationChronology() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10">
+        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
           <button
             onClick={() => setActiveTab('limitation')}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'limitation'
                 ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export default function LimitationChronology() {
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'chronology'
                 ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -259,7 +259,7 @@ export default function LimitationChronology() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Controls */}
             <div className="lg:col-span-5 space-y-4">
-              <div className="bg-[#0b0e20] border border-indigo-500/20 rounded-2xl p-5 shadow-xl space-y-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 text-slate-100">
                 <div className="flex items-center gap-2 pb-3 border-b border-white/5">
                   <Scale className="w-4 h-4 text-indigo-400" />
                   <h2 className="text-sm font-semibold text-white">Statutory Category Selection</h2>
@@ -273,7 +273,7 @@ export default function LimitationChronology() {
                   <select
                     value={selectedPresetId}
                     onChange={(e) => setSelectedPresetId(e.target.value)}
-                    className="w-full bg-[#12162d] border border-indigo-500/30 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400 cursor-pointer"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     {presets.map((preset) => (
                       <option key={preset.id} value={preset.id}>
@@ -285,14 +285,14 @@ export default function LimitationChronology() {
 
                 {/* Selected Preset Details Box */}
                 {selectedPreset && (
-                  <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3 text-xs space-y-1.5">
+                  <div className="bg-purple-50/70 dark:bg-indigo-950/30 border border-purple-200 dark:border-indigo-500/20 rounded-xl p-3 text-xs space-y-1.5 text-slate-200">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Statute:</span>
                       <span className="text-indigo-300 font-medium">{selectedPreset.act}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Governing Provision:</span>
-                      <span className="text-white font-mono text-[11px]">{selectedPreset.section}</span>
+                      <span className="text-white font-mono text-[11px] font-bold">{selectedPreset.section}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Statutory Window:</span>
@@ -318,7 +318,7 @@ export default function LimitationChronology() {
                       type="date"
                       value={causeDate}
                       onChange={(e) => setCauseDate(e.target.value)}
-                      className="w-full bg-[#12162d] border border-indigo-500/30 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1">
@@ -359,7 +359,7 @@ export default function LimitationChronology() {
               )}
 
               {!limitationLoading && limitationResult && (
-                <div className="bg-[#0b0e20] border border-indigo-500/20 rounded-2xl p-6 shadow-2xl space-y-5">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md space-y-5 text-slate-100">
                   {/* Status Banner */}
                   <div
                     className={`rounded-xl p-4 flex items-center justify-between border ${
@@ -397,17 +397,17 @@ export default function LimitationChronology() {
 
                   {/* Statutory Milestone Timeline */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div className="bg-[#12162d] border border-white/5 rounded-xl p-3">
+                    <div className="bg-[#12162d] border border-white/10 rounded-xl p-3 text-white">
                       <p className="text-[11px] text-slate-400 mb-1">Cause of Action</p>
                       <p className="text-xs font-bold text-white">{limitationResult.cause_of_action_display}</p>
                     </div>
                     {limitationResult.cure_period_days > 0 && (
-                      <div className="bg-[#12162d] border border-white/5 rounded-xl p-3">
+                      <div className="bg-[#12162d] border border-white/10 rounded-xl p-3 text-white">
                         <p className="text-[11px] text-slate-400 mb-1">Notice Grace Period</p>
                         <p className="text-xs font-bold text-amber-300">+{limitationResult.cure_period_days} Days</p>
                       </div>
                     )}
-                    <div className="bg-[#12162d] border border-white/5 rounded-xl p-3">
+                    <div className="bg-[#12162d] border border-white/10 rounded-xl p-3 text-white">
                       <p className="text-[11px] text-slate-400 mb-1">Final Expiry Deadline</p>
                       <p className="text-xs font-bold text-indigo-300">{limitationResult.expiry_date_display}</p>
                     </div>
@@ -422,11 +422,12 @@ export default function LimitationChronology() {
                   )}
 
                   {/* Strategic Action Guidance */}
-                  <div className="bg-white/3 border border-white/10 rounded-xl p-4 space-y-2">
-                    <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">
+                  <div className="bg-slate-950/90 border border-indigo-500/30 rounded-xl p-4 space-y-2 text-slate-200 shadow-inner">
+                    <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                       Strategic Legal Advisory & Course of Action
                     </h4>
-                    <p className="text-xs text-slate-300 leading-relaxed">{limitationResult.action_advice}</p>
+                    <p className="text-xs text-slate-200 leading-relaxed font-medium">{limitationResult.action_advice}</p>
                   </div>
 
                   {/* Section 5 Condonation & Landmark Precedent */}
@@ -450,7 +451,7 @@ export default function LimitationChronology() {
         {activeTab === 'chronology' && (
           <div className="space-y-6">
             {/* Top Extraction Bar */}
-            <div className="bg-[#0b0e20] border border-indigo-500/20 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 text-slate-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
                 <div>
                   <h2 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -486,7 +487,7 @@ export default function LimitationChronology() {
                 onChange={(e) => setChronologyText(e.target.value)}
                 placeholder="Paste case statements, dispute facts, FIR narrative, or agreement history here..."
                 rows={3}
-                className="w-full bg-[#12162d] border border-indigo-500/30 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 resize-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
               />
 
               <div className="flex justify-end gap-2">
@@ -511,8 +512,8 @@ export default function LimitationChronology() {
             </div>
 
             {/* Chronological Table */}
-            <div className="bg-[#0b0e20] border border-indigo-500/20 rounded-2xl overflow-hidden shadow-2xl">
-              <div className="p-4 bg-[#0e122b] border-b border-indigo-500/20 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-md text-slate-100">
+              <div className="p-4 bg-[#0e122b] border-b border-indigo-500/20 flex flex-wrap items-center justify-between gap-3 text-white">
                 <div>
                   <h3 className="text-sm font-bold text-white">List of Dates and Events (Synoptical Notes)</h3>
                   <p className="text-xs text-slate-400">
@@ -540,7 +541,7 @@ export default function LimitationChronology() {
               {/* Table Body */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#12162d] text-slate-400 uppercase tracking-wider border-b border-white/5 text-[11px]">
+                  <thead className="bg-slate-100 dark:bg-[#12162d] text-slate-700 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-white/5 text-[11px]">
                     <tr>
                       <th className="py-3 px-4 w-32">Date / Period</th>
                       <th className="py-3 px-4 w-36">Annexure Tag</th>

@@ -86,6 +86,8 @@
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* Hidden on screen by default */
+#case-chat-official-print,
+#dashboard-official-print,
 #court-fee-official-print,
 #advocate-diary-print,
 #dpdp-certificate-print,
@@ -96,7 +98,91 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 4mm 6mm;
+    margin: 6mm 8mm;
+  }
+
+  /* 🏛️ Mode A: Dedicated Sovereign Case Document Chat Consultation Print 🏛️ */
+  body.print-case-chat-active {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.print-case-chat-active #root {
+    display: none !important;
+  }
+  body.print-case-chat-active #case-chat-official-print {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 200mm !important;
+    margin: 0 auto !important;
+    padding: 8mm 10mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: "Times New Roman", Times, Georgia, "Liberation Serif", serif !important;
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
+  }
+
+  /* 🏛️ Mode B: Dedicated Dashboard First Interaction Statutory Advisory Print 🏛️ */
+  body.print-dashboard-active {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.print-dashboard-active #root {
+    display: none !important;
+  }
+  body.print-dashboard-active #dashboard-official-print {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 200mm !important;
+    margin: 0 auto !important;
+    padding: 8mm 10mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: "Times New Roman", Times, Georgia, "Liberation Serif", serif !important;
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Shared Print Styles for Court Documents */
+  body.print-case-chat-active #case-chat-official-print *,
+  body.print-dashboard-active #dashboard-official-print * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.print-case-chat-active .print-query-box,
+  body.print-dashboard-active .print-query-box {
+    background-color: #f1f5f9 !important;
+    border: 1.5px solid #94a3b8 !important;
+    border-radius: 6px !important;
+    padding: 8pt 10pt !important;
+    margin-bottom: 8pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.print-case-chat-active .print-response-box,
+  body.print-dashboard-active .print-response-box {
+    background-color: #ffffff !important;
+    border: 1.5px solid #1e293b !important;
+    border-radius: 6px !important;
+    padding: 10pt 12pt !important;
+    margin-bottom: 12pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.print-case-chat-active .print-turn-container,
+  body.print-dashboard-active .print-turn-container {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 14pt !important;
   }
 
   /* ── Mode 4: Dedicated Legal Pleading & Notice Print ── */
@@ -246,7 +332,7 @@
   }
 
   /* ── Mode 5: General Dashboard Legal Advisory & Case Analysis Report ── */
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) {
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active):not(.print-case-chat-active):not(.print-dashboard-active) {
     background: #ffffff !important;
     color: #0f172a !important;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
@@ -255,25 +341,25 @@
   }
 
   /* Hide interactive web chrome, glows, modals, textareas & non-printable floating elements */
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) header,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) nav,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) aside,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .no-print,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .bg-radial-glow,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .language-selector-root,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .fixed.inset-0,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) textarea,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) button {
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) header,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) nav,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) aside,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .no-print,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .bg-radial-glow,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .language-selector-root,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .fixed.inset-0,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) textarea,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) button {
     display: none !important;
   }
 
   /* Expand full layout so multi-page documents print without clipping */
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) #root,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) main,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .h-screen,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .min-h-screen,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .overflow-hidden,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .overflow-y-auto {
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) #root,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) main,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .h-screen,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .min-h-screen,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .overflow-hidden,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .overflow-y-auto {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
@@ -282,9 +368,9 @@
   }
 
   /* Convert dark cards to crisp high-contrast white paper styling */
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) .glass-card,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) article,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) section {
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) .glass-card,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) article,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) section {
     background: #ffffff !important;
     background-color: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
@@ -295,16 +381,16 @@
     margin-bottom: 10pt !important;
   }
 
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) h1,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) h2,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) h3,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) h4,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) p,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) span,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) div,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) li,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) strong,
-  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active) b {
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) h1,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) h2,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) h3,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) h4,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) p,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) span,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) div,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) li,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) strong,
+  body:not(.print-court-fee-active):not(.print-cert-active):not(.print-diary-active):not(.print-draft-active):not(.print-case-chat-active):not(.print-dashboard-active) b {
     color: #0f172a !important;
     text-shadow: none !important;
   }

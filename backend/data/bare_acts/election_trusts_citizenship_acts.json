@@ -1,0 +1,62 @@
+[
+  {
+    "id": "rp_act_sec8_123",
+    "act_title": "Representation of the People Act, 1951 (RPA)",
+    "act_id": "ACT_1951_43",
+    "section_number": "8 & 123",
+    "marginal_heading": "Disqualification on Conviction for Offences (Lily Thomas) & Corrupt Electoral Practices",
+    "enacted_year": 1951,
+    "effective_date": "1951-07-17",
+    "doc_type": "statute",
+    "citation": "Representation of the People Act, 1951, Sec. 8 & 123",
+    "text": "Section 8(3) mandates that a person convicted of any offence and sentenced to imprisonment for not less than two years shall be disqualified from the date of such conviction and shall continue to be disqualified for a further period of six years since his release (Lily Thomas v. Union of India striking down Sec 8(4)). Section 123 defines 'corrupt practices' including bribery, undue influence, appeal on grounds of religion, race, caste, community or language (Abhiram Singh v. C.D. Commachen), and character assassination of candidates."
+  },
+  {
+    "id": "trusts_act_sec6_23",
+    "act_title": "Indian Trusts Act, 1882",
+    "act_id": "ACT_1882_2",
+    "section_number": "6 & 23",
+    "marginal_heading": "Creation of Trust, Purpose, and Personal Liability of Trustee for Breach of Trust",
+    "enacted_year": 1882,
+    "effective_date": "1882-03-01",
+    "doc_type": "statute",
+    "citation": "Indian Trusts Act, 1882, Sec. 6 & 23",
+    "text": "Section 6 provides that a trust is created when the author of the trust indicates with reasonable certainty by any words or acts: (a) an intention on his part to create a trust; (b) the purpose of the trust; (c) the beneficiary; (d) the trust property; and (unless the trust is declared by will) transfers the property to the trustee. Section 23 establishes that where the trustee commits a breach of trust, he is liable to make good the loss which the trust estate or the beneficiary has thereby sustained, unless the beneficiary has concurred or acquiesced."
+  },
+  {
+    "id": "citizenship_sec3_9",
+    "act_title": "Citizenship Act, 1955",
+    "act_id": "ACT_1955_57",
+    "section_number": "3 & 9",
+    "marginal_heading": "Citizenship by Birth & Mandatory Termination of Indian Citizenship upon Acquiring Foreign Nationality",
+    "enacted_year": 1955,
+    "effective_date": "1955-12-30",
+    "doc_type": "statute",
+    "citation": "Citizenship Act, 1955, Sec. 3 & 9",
+    "text": "Section 3 defines citizenship by birth, requiring that neither parent be an illegal migrant at the time of birth. Section 9 provides that any citizen of India who by naturalization, registration or otherwise voluntarily acquires the citizenship of another country shall, upon such acquisition, cease to be a citizen of India (no dual citizenship permitted under the Constitution of India Article 9)."
+  },
+  {
+    "id": "passports_act_sec6_10",
+    "act_title": "Passports Act, 1967",
+    "act_id": "ACT_1967_15",
+    "section_number": "6 & 10",
+    "marginal_heading": "Refusal of Passports & Impounding/Revocation on Pending Criminal Proceedings (Maneka Gandhi)",
+    "enacted_year": 1967,
+    "effective_date": "1967-06-24",
+    "doc_type": "statute",
+    "citation": "Passports Act, 1967, Sec. 6 & 10",
+    "text": "Section 6(2)(f) provides that the passport authority shall refuse to issue a passport or travel document if proceedings in respect of an offence alleged to have been committed by the applicant are pending before a criminal court in India, unless the applicant obtains a 'No Objection Certificate' (NOC) / permission to travel from the trial court under GSR 570(E). Section 10(3) empowers impounding on specified grounds subject to natural justice and procedural fairness (Maneka Gandhi v. Union of India)."
+  },
+  {
+    "id": "fcra_sec3_11_35",
+    "act_title": "Foreign Contribution (Regulation) Act, 2010 (FCRA)",
+    "act_id": "ACT_2010_42",
+    "section_number": "3, 11 & 35",
+    "marginal_heading": "Prohibition to Accept Foreign Contribution, Mandatory Registration, and Punishment for Violations",
+    "enacted_year": 2010,
+    "effective_date": "2011-05-01",
+    "doc_type": "statute",
+    "citation": "FCRA, 2010, Sec. 3, 11 & 35",
+    "text": "Section 3 prohibits election candidates, journalists, judges, public servants, and members of legislature from accepting foreign contribution. Section 11 mandates that no person having a definite cultural, economic, educational, religious or social programme shall accept foreign contribution unless such person obtains a certificate of registration or prior permission from the Central Government, deposited exclusively in an FCRA account at SBI New Delhi Main Branch (2020 Amendment). Section 35 penalizes contraventions with imprisonment up to five years or fine or both."
+  }
+]

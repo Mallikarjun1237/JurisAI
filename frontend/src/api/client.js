@@ -85,12 +85,25 @@ export const apiUploadChatDocument = (sessionId, file) => {
     timeout: 60000,
   })
 }
-export const apiSendChatMessage = (sessionId, message, targetLanguage = 'en', mode = 'advocate') =>
+export const apiSendChatMessage = (sessionId, message, tone = 'citizen', language = 'en', thinkMode = false) =>
   client.post(`/chat/sessions/${sessionId}/message`, {
     message,
-    target_language: targetLanguage,
-    mode,
+    tone,
+    language,
+    target_language: language,
+    mode: tone,
+    think_mode: thinkMode,
   })
+
+// ── Context Continuity & Chat Handoff ──────────────────────────────────────────
+export const apiGetHandoffPrompt = (sessionId) =>
+  client.post(`/chat/sessions/${sessionId}/handoff`)
+
+export const apiContinueInNewSession = (sessionId) =>
+  client.post(`/chat/sessions/${sessionId}/continue-in-new`)
+
+export const apiTransferCaseToChat = (caseId, title = null) =>
+  client.post(`/chat/sessions/from-case/${caseId}`, null, { params: title ? { title } : {} })
 
 // ── Contract Redlining & Clause Risk Audit ─────────────────────────────────────
 export const apiAuditContract = (file) => {
@@ -147,3 +160,8 @@ export const apiUploadAndExtractChronology = (file, language = 'en') => {
 // ── Precedents & Citations Search ─────────────────────────────────────────────
 export const apiSearchPrecedents = (q) => client.get('/precedents/search', { params: { q } })
 export const apiAnalyzePrecedent = (data) => client.post('/precedents/analyze', data)
+
+
+// ── Bare Acts Catalog & India Code Repository ─────────────────────────────────
+export const apiGetBareActsCatalog = () => client.get('/legal/acts/catalog')
+export const apiGetBareActDetail = (actId) => client.get(`/legal/acts/${encodeURIComponent(actId)}`)

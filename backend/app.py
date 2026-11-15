@@ -38,6 +38,14 @@ from rag_service import get_rag_service
 
 # Create / migrate all DB tables on startup
 models.Base.metadata.create_all(bind=engine)
+# Auto-migrate whatsapp_number column if missing
+try:
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        conn.execute(text("ALTER TABLE users ADD COLUMN whatsapp_number VARCHAR"))
+        conn.commit()
+except Exception:
+    pass
 
 # Auto-migrate: add any missing columns to existing tables (safe / idempotent)
 def _auto_migrate():
@@ -55,7 +63,10 @@ def _auto_migrate():
             ("users",      "reset_token",        "ALTER TABLE users ADD COLUMN reset_token TEXT"),
             ("users",      "reset_token_expiry",  "ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME"),
             ("users",      "profile_image",       "ALTER TABLE users ADD COLUMN profile_image TEXT"),
+            ("users",      "whatsapp_number",     "ALTER TABLE users ADD COLUMN whatsapp_number VARCHAR"),
             ("query_logs", "case_id",             "ALTER TABLE query_logs ADD COLUMN case_id INTEGER REFERENCES cases(id)"),
+            ("doc_chats",  "parent_session_id",   "ALTER TABLE doc_chats ADD COLUMN parent_session_id INTEGER"),
+            ("doc_chats",  "context_summary",     "ALTER TABLE doc_chats ADD COLUMN context_summary TEXT"),
         ]
         for table, col, sql in pending:
             if not _has(table, col):
@@ -195,6 +206,9 @@ def update_profile(
 
     if payload.profile_image is not None:
         current_user.profile_image = payload.profile_image
+
+    if payload.whatsapp_number is not None:
+        current_user.whatsapp_number = payload.whatsapp_number.strip()[:30]
 
     if payload.new_password:
         if not payload.current_password:
@@ -623,6 +637,182 @@ def delete_chat_session(
     return schemas.MessageResponse(message="Chat session deleted.")
 
 
+@app.post("/api/chat/sessions/{session_id}/handoff", response_model=schemas.HandoffResponse, tags=["Document Chat"])
+def generate_chat_handoff(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Generates an executive legal context briefing & continuity prompt for continuing in a new session."""
+    session = (
+        db.query(models.DocChat)
+        .filter(models.DocChat.id == session_id, models.DocChat.user_id == current_user.id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(404, "Chat session not found.")
+
+    if not session.messages:
+        raise HTTPException(400, "Cannot generate continuity briefing for an empty chat session.")
+
+    user_queries = [m.content for m in session.messages if m.role == "user"]
+    asst_responses = [m.content for m in session.messages if m.role == "assistant"]
+    doc_names = [d.filename for d in session.documents]
+
+    initial_fact = user_queries[0] if user_queries else "Initial case assessment."
+    follow_ups = "\n".join([f"  - Inquired: {q[:140]}" for q in user_queries[1:8]])
+    docs_summary = ", ".join(doc_names) if doc_names else "None (Pure statutory scenario)"
+
+    handoff_prompt = (
+        f"=== JURISAI LEGAL CONTINUITY & FACTUAL MATRIX BRIEFING ===\n"
+        f"Case Reference: {session.title} (Session ID #{session.id})\n"
+        f"Advocate / Client: {current_user.full_name or 'Counsel'}\n"
+        f"Date Established: {session.created_at.strftime('%d-%b-%Y') if session.created_at else 'Recent'}\n"
+        f"Attached Evidence Files: {docs_summary}\n\n"
+        f"--- CORE FACTUAL MATRIX ESTABLISHED ---\n"
+        f"{initial_fact}\n\n"
+        f"--- SUBSEQUENT INQUIRIES & ARGUMENTS ANALYZED ---\n"
+        f"{follow_ups if follow_ups else '  - Comprehensive primary assessment completed.'}\n\n"
+        f"--- INSTRUCTIONS FOR SENIOR COUNSEL IN THIS NEW SESSION ---\n"
+        f"1. You possess complete factual and statutory continuity with the entire matter described above.\n"
+        f"2. Maintain strict alignment with Bharatiya Nyaya Sanhita, BNSS, BSA, CPC, and applicable Indian Central Acts.\n"
+        f"3. Do not ask the user to re-explain facts or dates already stated.\n"
+        f"4. Acknowledge this case brief with a 2-line confirmation of established facts, and prompt for the next strategic phase or question."
+    )
+
+    summary = f"Case continuity profile for '{session.title}': {len(user_queries)} client inquiries, {len(asst_responses)} judicial analyses, and {len(session.documents)} attached evidence document(s)."
+    key_issues = [q[:120] for q in user_queries[:5]]
+
+    return schemas.HandoffResponse(
+        session_id=session.id,
+        session_title=session.title,
+        handoff_prompt=handoff_prompt,
+        summary=summary,
+        key_issues=key_issues,
+    )
+
+
+@app.post("/api/chat/sessions/{session_id}/continue-in-new", response_model=schemas.DocChatDetailResponse, tags=["Document Chat"])
+def continue_in_new_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Clones case memory & evidence into a brand new chat session with zero clutter."""
+    orig = (
+        db.query(models.DocChat)
+        .filter(models.DocChat.id == session_id, models.DocChat.user_id == current_user.id)
+        .first()
+    )
+    if not orig:
+        raise HTTPException(404, "Original chat session not found.")
+
+    new_title = (orig.title + " (Continuation)")[:100]
+
+    prior_queries = [m.content for m in orig.messages if m.role == "user"]
+    summary_parts = [
+        f"PARENT SESSION ID: #{orig.id} ('{orig.title}')",
+        "QUESTIONS ASKED BY USER IN PRIOR SESSION:"
+    ]
+    for idx, pq in enumerate(prior_queries, 1):
+        summary_parts.append(f"{idx}. {pq}")
+    context_summary_str = "\n".join(summary_parts)
+
+    new_session = models.DocChat(
+        user_id=current_user.id,
+        title=new_title,
+        parent_session_id=orig.id,
+        context_summary=context_summary_str,
+    )
+    db.add(new_session)
+    db.flush()
+
+    for doc in orig.documents:
+        cloned_doc = models.UploadedDoc(
+            chat_id=new_session.id,
+            user_id=current_user.id,
+            filename=doc.filename,
+            file_size=doc.file_size,
+            extracted_text=doc.extracted_text,
+        )
+        db.add(cloned_doc)
+
+    inquiries_list = "\n".join([f"• {q}" for q in prior_queries]) if prior_queries else "• Prior consultation inquiries inherited."
+
+    intro_content = (
+        f"### 🏛️ Case Continuity Context Transferred\n\n"
+        f"**Continued from Session:** *{orig.title}* (Session #{orig.id})\n"
+        f"**Inherited Evidence Files:** {len(orig.documents)} file(s) attached and ready for statutory evaluation.\n\n"
+        f"**Prior Inquiries & Questions Asked in Previous Session:**\n"
+        f"{inquiries_list}\n\n"
+        f"---\n"
+        f"⚖️ *JurisAI Senior Co-Pilot has full memory of your previous questions, facts, and evidence. You do not need to repeat past facts. How would you like to proceed with the next phase?*"
+    )
+
+    init_msg = models.DocChatMessage(
+        chat_id=new_session.id,
+        role="assistant",
+        content=intro_content,
+        risk_level="none",
+    )
+    db.add(init_msg)
+    new_session.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(new_session)
+
+    return new_session
+
+
+@app.post("/api/chat/sessions/from-case/{case_id}", response_model=schemas.DocChatDetailResponse, tags=["Document Chat"])
+def transfer_case_to_chat(
+    case_id: int,
+    title: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Converts a Dashboard Case with its sequential turns into a dedicated Document Case Chat."""
+    case = (
+        db.query(models.Case)
+        .filter(models.Case.id == case_id, models.Case.user_id == current_user.id)
+        .first()
+    )
+    if not case:
+        raise HTTPException(404, "Case not found.")
+
+    new_session = models.DocChat(
+        user_id=current_user.id,
+        title=(title or f"Case Study: {case.name}")[:100],
+    )
+    db.add(new_session)
+    db.flush()
+
+    queries = sorted(case.queries, key=lambda q: q.created_at) if case.queries else []
+    if queries:
+        for q in queries:
+            db.add(models.DocChatMessage(
+                chat_id=new_session.id,
+                role="user",
+                content=q.query_text,
+                created_at=q.created_at,
+            ))
+            db.add(models.DocChatMessage(
+                chat_id=new_session.id,
+                role="assistant",
+                content=q.plain_english_summary,
+                created_at=q.created_at,
+            ))
+    else:
+        db.add(models.DocChatMessage(
+            chat_id=new_session.id,
+            role="assistant",
+            content=f"🏛️ Transferred from Dashboard Case: **{case.name}**. Ready for deep multi-turn legal analysis.",
+        ))
+
+    db.commit()
+    db.refresh(new_session)
+    return new_session
+
+
 @app.post("/api/chat/sessions/{session_id}/upload", response_model=schemas.UploadedDocResponse, tags=["Document Chat"])
 async def upload_chat_document(
     session_id: int,
@@ -757,20 +947,52 @@ def send_chat_message(
         for d in session.documents
     )
 
-    # Prepare chat history
+    # Prepare chat history from current session
+    curr_messages = (
+        db.query(models.DocChatMessage)
+        .filter(models.DocChatMessage.chat_id == session.id)
+        .order_by(models.DocChatMessage.id.asc())
+        .all()
+    )
     history = [
         {"role": m.role, "content": m.content}
-        for m in session.messages[-8:]
+        for m in curr_messages[-8:]
     ]
 
-    # Generate response via RAG service
+    # Prepare parent session history if continued from earlier chat (or fallback to latest prior chat)
+    parent_history = []
+    parent_sid = session.parent_session_id
+    if not parent_sid:
+        last_prior = (
+            db.query(models.DocChat)
+            .filter(models.DocChat.user_id == current_user.id, models.DocChat.id != session.id)
+            .order_by(models.DocChat.id.desc())
+            .first()
+        )
+        if last_prior:
+            parent_sid = last_prior.id
+
+    if parent_sid:
+        p_msgs = (
+            db.query(models.DocChatMessage)
+            .filter(models.DocChatMessage.chat_id == parent_sid)
+            .order_by(models.DocChatMessage.id.asc())
+            .all()
+        )
+        for pm in p_msgs:
+            parent_history.append({"role": pm.role, "content": pm.content})
+
+    # Generate response via RAG service with continuous cross-session memory
     rag = get_rag_service()
     ai_result = rag.chat_with_document(
         query=q,
         document_context=combined_docs,
         chat_history=history,
-        tone=payload.tone or "citizen",
-        language=payload.language or "en",
+        parent_chat_history=parent_history,
+        context_summary=session.context_summary or "",
+        tone=payload.tone or payload.mode or ("counsel" if getattr(payload, "think_mode", False) else "citizen"),
+        language=payload.language or payload.target_language or "en",
+        think_mode=getattr(payload, "think_mode", False),
     )
 
     # Save assistant message
@@ -1256,3 +1478,95 @@ def delete_diary_entry(
     return {"status": "success", "message": "Hearing entry deleted successfully."}
 
 
+
+
+# ─── BARE ACTS CATALOG & REPOSITORY ──────────────────────────────────────────
+
+@app.get("/api/legal/acts/catalog", response_model=schemas.BareActsCatalogResponse, tags=["Bare Acts"])
+def get_bare_acts_catalog():
+    from scripts.ingest_indiacode import CENTRAL_ACTS_REGISTRY, get_stats
+    import os, glob, json
+    stats = get_stats()
+    
+    bare_acts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "bare_acts")
+    act_provision_counts = {}
+    if os.path.exists(bare_acts_dir):
+        for fp in glob.glob(os.path.join(bare_acts_dir, "*.json")):
+            try:
+                with open(fp, "r", encoding="utf-8") as jf:
+                    for item in json.load(jf):
+                        aid = item.get("act_id") or item.get("act_title")
+                        act_provision_counts[aid] = act_provision_counts.get(aid, 0) + 1
+            except Exception:
+                pass
+                
+    acts_list = []
+    domains = set()
+    for act in CENTRAL_ACTS_REGISTRY:
+        domains.add(act["domain"])
+        prov_count = act_provision_counts.get(act["act_id"], 0)
+        if prov_count == 0:
+            for k, count in act_provision_counts.items():
+                if k in act["title"] or act["title"] in str(k):
+                    prov_count += count
+        acts_list.append(schemas.BareActsCatalogItem(
+            act_id=act["act_id"],
+            title=act["title"],
+            year=act["year"],
+            domain=act["domain"],
+            effective=act.get("effective"),
+            repeals=act.get("repeals"),
+            provision_count=prov_count
+        ))
+        
+    return schemas.BareActsCatalogResponse(
+        total_acts=len(acts_list),
+        total_provisions=stats["total_verified_provisions"],
+        total_domain_catalogs=stats["total_domain_files"],
+        domains=sorted(list(domains)),
+        acts=acts_list
+    )
+
+
+@app.get("/api/legal/acts/{act_id}", response_model=schemas.BareActDetailResponse, tags=["Bare Acts"])
+def get_bare_act_detail(act_id: str):
+    """Retrieve detailed statutory profile, what it states, when enacted, case applications, and section texts."""
+    from scripts.ingest_indiacode import CENTRAL_ACTS_REGISTRY
+    import bare_acts_knowledge
+
+    found_act = None
+    for act in CENTRAL_ACTS_REGISTRY:
+        if act["act_id"].lower() == act_id.lower() or act["title"].lower() == act_id.lower():
+            found_act = act
+            break
+
+    if not found_act:
+        for act in CENTRAL_ACTS_REGISTRY:
+            if act_id.lower() in act["title"].lower() or act["act_id"].lower() in act_id.lower():
+                found_act = act
+                break
+
+    if not found_act:
+        found_act = {
+            "act_id": act_id,
+            "title": act_id.replace("_", " ").title(),
+            "year": 2024,
+            "domain": "Central Legislation",
+            "effective": "2024-07-01",
+            "repeals": None,
+        }
+
+    kb = bare_acts_knowledge.get_act_knowledge(found_act["act_id"], found_act["title"], found_act["domain"])
+    provisions = bare_acts_knowledge.get_act_provisions(found_act["act_id"], found_act["title"])
+
+    return schemas.BareActDetailResponse(
+        act_id=found_act["act_id"],
+        title=found_act["title"],
+        year=found_act["year"],
+        domain=found_act["domain"],
+        effective=found_act.get("effective"),
+        repeals=found_act.get("repeals"),
+        overview=kb["overview"],
+        key_applications=kb["key_applications"],
+        provisions=[schemas.BareActProvisionDetail(**p) for p in provisions],
+    )

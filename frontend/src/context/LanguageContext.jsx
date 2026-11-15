@@ -42,7 +42,7 @@ const UI_TRANSLATIONS = {
     appSubtitle: 'Sovereign Legal Intelligence for Indian Courts · Verified statutes, landmark precedents & authentic valuation slips.',
     searchPlaceholder: 'Describe your legal dispute, FIR issue, contract breach, or statutory question...',
     searchBtn: 'Analyze Case',
-    chatNav: 'Case Document Chat',
+    chatNav: 'Personal Legal Assistant',
     limitationNav: 'Limitation & Chronology',
     precedentsNav: 'Supreme Court Precedents',
     bnsNav: 'IPC ⇄ BNS Converter',
@@ -220,16 +220,16 @@ export function LanguageSelector({ compact = false, fullWidth = false, align = '
     <div className={`relative language-selector-root ${fullWidth ? 'w-full' : 'inline-block text-left shrink-0'}`}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 transition-all hover:border-indigo-500/40 shadow-sm shrink-0 ${
+        className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-all hover:border-indigo-400 dark:hover:border-indigo-500/40 shadow-sm shrink-0 ${
           fullWidth ? 'w-full justify-between' : ''
         }`}
         title="Select Court & Regional Language (English, हिन्दी, ಕನ್ನಡ, తెలుగు)"
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[10px] font-black text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
+          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
             IN
           </span>
-          <span className="font-semibold text-white whitespace-nowrap text-[13px] sm:text-xs shrink-0">{currentLangObj.nativeLabel}</span>
+          <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap text-[13px] sm:text-xs shrink-0">{currentLangObj.nativeLabel}</span>
           {!compact && (
             <span className="hidden sm:inline text-[10px] text-indigo-300 bg-indigo-950/60 px-1.5 py-0.2 rounded border border-indigo-500/30 shrink-0">
               {currentLangObj.stateBadge}
@@ -240,9 +240,9 @@ export function LanguageSelector({ compact = false, fullWidth = false, align = '
       </button>
 
       {isOpen && (
-        <div className={`absolute ${dropdownAlignClass} mt-1.5 rounded-xl bg-[#0c1026] border border-indigo-500/30 shadow-2xl z-[999] overflow-hidden py-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}>
+        <div className={`absolute ${dropdownAlignClass} mt-1.5 rounded-xl bg-white dark:bg-[#0c1026] border border-slate-200 dark:border-indigo-500/30 shadow-2xl z-[999] overflow-hidden py-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100 text-slate-900 dark:text-slate-100`}>
           <div className="px-3 py-1.5 border-b border-white/5 flex items-center justify-between">
-            <p className="text-[9px] uppercase font-bold tracking-wider text-slate-400">
+            <p className="text-[9px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
               Judiciary Jurisdiction
             </p>
             <span className="text-[9px] text-indigo-400 font-medium">4 Languages</span>
@@ -260,17 +260,17 @@ export function LanguageSelector({ compact = false, fullWidth = false, align = '
                   }}
                   className={`w-full text-left px-3 py-2 flex items-center justify-between transition-colors ${
                     isSelected
-                      ? 'bg-indigo-950/60 text-indigo-300'
-                      : 'hover:bg-white/5 text-slate-200'
+                      ? 'bg-purple-50 dark:bg-indigo-950/60 text-purple-700 dark:text-indigo-300 font-bold'
+                      : 'hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-                    <span className="text-[10px] font-black text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
+                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 px-1 py-0.5 rounded leading-none shrink-0 tracking-wide">
                       IN
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold text-white truncate">{lang.nativeLabel}</span>
+                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{lang.nativeLabel}</span>
                         <span className="text-[10px] text-slate-400 truncate">({lang.label})</span>
                       </div>
                       <p className="text-[9px] text-slate-400 truncate">{lang.region}</p>

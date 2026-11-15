@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     profile_image: Optional[str] = None
+    whatsapp_number: Optional[str] = None
     is_pro: bool
     query_count: int
     daily_query_count: int
@@ -40,6 +41,7 @@ class UserResponse(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     profile_image: Optional[str] = None
+    whatsapp_number: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
 
@@ -157,6 +159,8 @@ class UploadedDocResponse(BaseModel):
 class DocChatDetailResponse(BaseModel):
     id: int
     title: str
+    parent_session_id: Optional[int] = None
+    context_summary: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     messages: List[DocChatMessageResponse] = []
@@ -169,6 +173,7 @@ class DocChatDetailResponse(BaseModel):
 class DocChatListItem(BaseModel):
     id: int
     title: str
+    parent_session_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     message_count: int = 0
@@ -182,6 +187,17 @@ class DocChatMessageRequest(BaseModel):
     message: str
     tone: Optional[str] = "citizen"  # "citizen" or "counsel"
     language: Optional[str] = "en"  # "en", "hi", "kn", "te"
+    target_language: Optional[str] = None
+    mode: Optional[str] = None
+    think_mode: Optional[bool] = False  # "en", "hi", "kn", "te"
+
+
+class HandoffResponse(BaseModel):
+    session_id: int
+    session_title: str
+    handoff_prompt: str
+    summary: str
+    key_issues: List[str] = []
 
 
 # ── Limitation & Chronology Schemas ──────────────────────────────────────────
@@ -326,3 +342,43 @@ class DiaryStatsResponse(BaseModel):
 
 
 
+
+
+class BareActsCatalogItem(BaseModel):
+    act_id: str
+    title: str
+    year: int
+    domain: str
+    effective: Optional[str] = None
+    repeals: Optional[str] = None
+    provision_count: int = 0
+
+
+class BareActsCatalogResponse(BaseModel):
+    total_acts: int
+    total_provisions: int
+    total_domain_catalogs: int
+    domains: List[str]
+    acts: List[BareActsCatalogItem]
+
+
+class BareActProvisionDetail(BaseModel):
+    id: str
+    section_number: str
+    marginal_heading: str
+    citation: str
+    text: str
+    enacted_year: Optional[int] = None
+    effective_date: Optional[str] = None
+
+
+class BareActDetailResponse(BaseModel):
+    act_id: str
+    title: str
+    year: int
+    domain: str
+    effective: Optional[str] = None
+    repeals: Optional[str] = None
+    overview: str
+    key_applications: List[str] = []
+    provisions: List[BareActProvisionDetail] = []

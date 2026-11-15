@@ -49,20 +49,20 @@ export default function AdvocateView({ data, isPro }) {
         </p>
       </div>
 
-      {/* Applicable Statutes */}
+      {/* Applicable Statutes — Top 3 Max */}
       {data.applicable_statutes?.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-sm font-semibold text-slate-300">
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-300">
               Applicable Statutes
-              <span className="ml-2 text-xs text-slate-500 font-normal">
-                ({data.applicable_statutes.length})
+              <span className="ml-2 text-[11px] text-slate-500 font-normal">
+                (Top {Math.min(3, data.applicable_statutes.length)})
               </span>
             </h3>
           </div>
-          <div className="grid gap-3">
-            {data.applicable_statutes.map((s, i) => (
+          <div className="grid gap-2">
+            {data.applicable_statutes.slice(0, 3).map((s, i) => (
               <CitationCard key={`statute-adv-${i}`} item={s} type="statute" index={i} />
             ))}
           </div>
@@ -89,7 +89,7 @@ export default function AdvocateView({ data, isPro }) {
 
         {isPro && data.relevant_precedents?.length > 0 ? (
           <div className="grid gap-3">
-            {data.relevant_precedents.map((p, i) => (
+            {data.relevant_precedents.slice(0, 2).map((p, i) => (
               <CitationCard key={`prec-${i}`} item={p} type="judgment" index={i} />
             ))}
           </div>

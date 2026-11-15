@@ -148,17 +148,17 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
         initial={{ opacity: 0, scale: 0.94, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 14 }}
-        className="relative w-full max-w-4xl bg-[#0c0d26] border border-indigo-500/25 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[92vh] text-slate-100 backdrop-blur-2xl"
+        className="relative w-full max-w-4xl bg-white dark:bg-[#0c0d26] border border-slate-200 dark:border-indigo-500/25 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-slate-100 backdrop-blur-2xl"
       >
         {/* ── Modal Header ── */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-indigo-500/20 bg-[#0f1133] shrink-0 gap-3">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-slate-200 dark:border-indigo-500/20 bg-slate-50 dark:bg-[#0f1133] shrink-0 gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/20 shrink-0">
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-wide truncate">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white tracking-wide truncate">
                   DPDP 2023 Shield & Legal Privilege Suite
                 </h2>
                 <span className="text-[10px] bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded-full font-semibold shrink-0">
@@ -178,8 +178,8 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 onClick={() => setActiveTab('sanitizer')}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                   activeTab === 'sanitizer'
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/30'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-transparent'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -189,8 +189,8 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 onClick={() => setActiveTab('privilege')}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                   activeTab === 'privilege'
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/30'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-transparent'
                 }`}
               >
                 <Lock className="w-3.5 h-3.5" />
@@ -200,8 +200,8 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                 onClick={() => setActiveTab('certificate')}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                   activeTab === 'certificate'
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/30'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/30'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-transparent'
                 }`}
               >
                 <Award className="w-3.5 h-3.5" />
@@ -256,16 +256,16 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
           {activeTab === 'sanitizer' && (
             <div className="space-y-5">
               {/* Trust Metric Banner */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-[#0a0d24] to-teal-950/40 border border-emerald-500/25 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-gradient-to-r dark:from-emerald-950/40 dark:via-[#0a0d24] dark:to-teal-950/40 border border-emerald-200 dark:border-emerald-500/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-900 dark:text-white">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-white">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                       Automatic In-Memory Indian PII Redactor
                     </h4>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
                       All Aadhaar, PAN, phone numbers, bank details, and IFSC codes are masked before submission.
                     </p>
                   </div>
@@ -288,9 +288,9 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
               </div>
 
               {/* Textarea Input Card */}
-              <div className="bg-[#0e1030] rounded-2xl p-4 border border-indigo-500/25 space-y-3 shadow-lg">
+              <div className="bg-slate-50 dark:bg-[#0e1030] rounded-2xl p-4 border border-slate-200 dark:border-indigo-500/25 space-y-3 shadow-lg text-slate-900 dark:text-white">
                 <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-800 dark:text-slate-300 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-emerald-400" /> Paste Raw Court Brief, FIR, Notice, or Contract
                   </span>
                   <span className="text-[11px] text-slate-500 font-mono">
@@ -390,7 +390,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                       <Scale className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-white">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                         Section 132, Bharatiya Sakshya Adhiniyam, 2023
                       </h4>
                       <p className="text-[10px] text-slate-400">
@@ -410,7 +410,7 @@ export default function DPDPSecurityModal({ isOpen, onClose }) {
                       <Landmark className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-white">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                         Digital Personal Data Protection Act, 2023
                       </h4>
                       <p className="text-[10px] text-slate-400">

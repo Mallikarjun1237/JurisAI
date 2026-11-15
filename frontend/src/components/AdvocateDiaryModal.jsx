@@ -20,7 +20,7 @@ import {
   X, Calendar, Clock, CheckSquare, Square, Plus, Trash2,
   AlertCircle, Scale, Building2, User, Phone, FileText, Check,
   Copy, Printer, ChevronRight, Filter, Sparkles, AlertTriangle,
-  Flame, CheckCircle2, RefreshCw, ArrowRight, Bookmark,
+  Flame, CheckCircle2, RefreshCw, ArrowRight, Bookmark, MessageSquare, Send,
 } from 'lucide-react'
 import {
   apiGetDiaryEntries,
@@ -64,6 +64,15 @@ export default function AdvocateDiaryModal({
   })
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+
+  // WhatsApp & SMS Client Reminder State
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false)
+  const [selectedEntryForWA, setSelectedEntryForWA] = useState(null)
+  const [reminderSlot, setReminderSlot] = useState('morning') // 'morning' | 'afternoon' | 'evening'
+  const [reminderLang, setReminderLang] = useState('kn') // 'kn' | 'hi' | 'en'
+  const [waPhone, setWaPhone] = useState('')
+  const [waCustomMsg, setWaCustomMsg] = useState('')
+  const [copiedWA, setCopiedWA] = useState(false)
 
   // New Entry Form State
   const [showAddForm, setShowAddForm] = useState(false)
@@ -208,6 +217,83 @@ export default function AdvocateDiaryModal({
     }
   }
 
+
+  // Generate vernacular WhatsApp / SMS template
+  const getClientUpdateMessage = (entry, slot, lang) => {
+    if (!entry) return ''
+    const caseNum = entry.case_number || 'ನಿಮ್ಮ ಪ್ರಕರಣ'
+    const court = entry.court_name || 'ಸಕ್ಷಮ ನ್ಯಾಯಾಲಯ'
+    const time = entry.hearing_time || '10:30 AM'
+    const stage = entry.stage || 'ವಿಚಾರಣೆ'
+    const ndoh = entry.next_hearing_date || 'ಶೀಘ್ರದಲ್ಲೇ ನಿಗದಿಯಾಗಲಿದೆ'
+    const notes = entry.task_notes || ''
+
+    if (lang === 'kn') {
+      if (slot === 'morning') {
+        return `ನಮಸ್ಕಾರ. ನಿಮ್ಮ ಪ್ರಕರಣ ${caseNum} (${entry.parties}) ಇಂದು ${court} ನ್ಯಾಯಾಲಯದಲ್ಲಿ ${time} ಕ್ಕೆ ವಿಚಾರಣೆಗೆ ನಿಗದಿಯಾಗಿದೆ (ಹಂತ: ${stage}). ನಮ್ಮ ವಕೀಲರ ತಂಡ ನ್ಯಾಯಾಲಯದಲ್ಲಿ ಹಾಜರಾಗುತ್ತಿದೆ. ಶುಭ ದಿನ.`
+      } else if (slot === 'afternoon') {
+        return `ನ್ಯಾಯಾಲಯದ ವಿಚಾರಣೆ ವರದಿ: ನಿಮ್ಮ ಪ್ರಕರಣ ${caseNum} ಇಂದು ${court} ನ್ಯಾಯಾಲಯದ ಮುಂದೆ ವಿಚಾರಣೆಗೆ ಬಂದಿತ್ತು. ಇಂದಿನ ಕಲಾಪ: ${notes || stage}. ಮುಂದಿನ ಅಗತ್ಯ ಕ್ರಮಗಳನ್ನು ನಾವು ಕೈಗೊಳ್ಳುತ್ತಿದ್ದೇವೆ.`
+      } else {
+        return `ಇಂದಿನ ನ್ಯಾಯಾಲಯ ಕಲಾಪದ ಅಂತಿಮ ವಿವರ: ನಿಮ್ಮ ಪ್ರಕರಣ ${caseNum} ದ ಇಂದಿನ ಕಲಾಪ ಮುಕ್ತಾಯಗೊಂಡಿದೆ. ಮುಂದಿನ ವಿಚಾರಣೆ ದಿನಾಂಕ (NDOH): ${ndoh}. ಹೆಚ್ಚಿನ ಮಾಹಿತಿಗಾಗಿ ನಮ್ಮ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.`
+      }
+    } else if (lang === 'hi') {
+      if (slot === 'morning') {
+        return `सादर प्रणाम। आपका वाद ${caseNum} (${entry.parties}) आज ${court} में ${time} पर सुनवाई हेतु सूचीबद्ध है (चरण: ${stage})। हमारी विधिक टीम उपस्थित हो रही है।`
+      } else if (slot === 'afternoon') {
+        return `न्यायालयीन अपडेट: आपका वाद ${caseNum} आज ${court} के समक्ष सुनवाई हेतु लिया गया। आज की कार्यवाही: ${notes || stage}। अग्रिम विधिक कार्यवाही जारी है।`
+      } else {
+        return `दैनिक न्यायालयीन सारांश: आपके वाद ${caseNum} की आज की कार्यवाही पूर्ण हुई। आगामी सुनवाई तिथि (NDOH): ${ndoh}। विवरण हेतु कार्यालय से संपर्क करें।`
+      }
+    } else {
+      if (slot === 'morning') {
+        return `Good morning. Your case ${caseNum} (${entry.parties}) is listed for hearing today before ${court} at ${time} (Stage: ${stage}). Our legal team is attending.`
+      } else if (slot === 'afternoon') {
+        return `Court Hearing Update: Your matter ${caseNum} was taken up before ${court} today. Proceedings: ${notes || stage}. Next procedural steps are being executed.`
+      } else {
+        return `Daily Court Summary: Proceedings in your matter ${caseNum} have concluded for today. Next Date of Hearing (NDOH): ${ndoh}. Please contact our office for details.`
+      }
+    }
+  }
+
+  const handleOpenWhatsAppModal = (entry) => {
+    setSelectedEntryForWA(entry)
+    setWaPhone(entry.client_phone || '')
+    const msg = getClientUpdateMessage(entry, 'morning', reminderLang)
+    setWaCustomMsg(msg)
+    setReminderSlot('morning')
+    setWhatsappModalOpen(true)
+  }
+
+  const handleSlotChange = (slot) => {
+    setReminderSlot(slot)
+    if (selectedEntryForWA) {
+      setWaCustomMsg(getClientUpdateMessage(selectedEntryForWA, slot, reminderLang))
+    }
+  }
+
+  const handleLangChange = (lang) => {
+    setReminderLang(lang)
+    if (selectedEntryForWA) {
+      setWaCustomMsg(getClientUpdateMessage(selectedEntryForWA, reminderSlot, lang))
+    }
+  }
+
+  const handleSendWhatsApp = () => {
+    if (!waCustomMsg.trim()) return
+    const cleanNumber = waPhone.replace(/[^0-9]/g, '')
+    const url = cleanNumber
+      ? `https://wa.me/${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}?text=${encodeURIComponent(waCustomMsg)}`
+      : `https://wa.me/?text=${encodeURIComponent(waCustomMsg)}`
+    window.open(url, '_blank')
+  }
+
+  const handleCopyWAMessage = () => {
+    if (!waCustomMsg.trim()) return
+    navigator.clipboard.writeText(waCustomMsg)
+    setCopiedWA(true)
+    setTimeout(() => setCopiedWA(false), 2000)
+  }
+
   const handleCopyCauseList = () => {
     if (entries.length === 0) return
     const formatted = entries
@@ -252,10 +338,10 @@ export default function AdvocateDiaryModal({
         initial={{ opacity: 0, scale: 0.94, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 14 }}
-        className="relative w-full max-w-4xl bg-[#0c0d26] border border-indigo-500/25 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[92vh] text-slate-100 backdrop-blur-2xl"
+        className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-slate-100 backdrop-blur-2xl"
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-indigo-500/20 bg-[#0f1133] shrink-0 gap-2">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/80 shrink-0 gap-2">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/10 shrink-0">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
@@ -299,7 +385,7 @@ export default function AdvocateDiaryModal({
         </div>
 
         {/* ── Subheader Stats & Date Filters ── */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b border-indigo-500/20 bg-indigo-950/20 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           {/* Quick Metrics Bar */}
           <div className="flex items-center gap-3 sm:gap-4 text-xs font-medium overflow-x-auto scrollbar-none py-0.5">
             <div className="flex items-center gap-1.5 text-slate-300 shrink-0">
@@ -324,53 +410,53 @@ export default function AdvocateDiaryModal({
           </div>
 
           {/* Date Filter Tabs */}
-          <div className="flex items-center gap-1 bg-[#070817] border border-indigo-500/20 rounded-xl p-1 text-xs">
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
             <button
               onClick={() => setFilter('today')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
                 filter === 'today'
-                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-orange-600 dark:bg-emerald-500 text-white dark:text-slate-950 shadow-md shadow-orange-600/20 dark:shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-white bg-transparent hover:bg-slate-800'
               }`}
             >
               Today
             </button>
             <button
               onClick={() => setFilter('this_week')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
                 filter === 'this_week'
-                  ? 'bg-indigo-600 text-white indigo-glow shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-purple-600 dark:bg-indigo-600 text-white shadow-md shadow-purple-600/20 dark:indigo-glow'
+                  : 'text-slate-400 hover:text-white bg-transparent hover:bg-slate-800'
               }`}
             >
               This Week
             </button>
             <button
               onClick={() => setFilter('this_month')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
                 filter === 'this_month'
-                  ? 'bg-indigo-600 text-white indigo-glow shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-purple-600 dark:bg-indigo-600 text-white shadow-md shadow-purple-600/20 dark:indigo-glow'
+                  : 'text-slate-400 hover:text-white bg-transparent hover:bg-slate-800'
               }`}
             >
               This Month
             </button>
             <button
               onClick={() => setFilter('must_do')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
                 filter === 'must_do'
-                  ? 'bg-red-500/20 text-red-300 border border-red-500/40'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-red-600 dark:bg-red-500/25 text-white dark:text-red-200 border border-red-500 shadow-md shadow-red-500/20'
+                  : 'text-slate-400 hover:text-white bg-transparent hover:bg-slate-800'
               }`}
             >
               Must Do (High)
             </button>
             <button
               onClick={() => setFilter('all')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
                 filter === 'all'
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-900 dark:bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white bg-transparent hover:bg-slate-800'
               }`}
             >
               All
@@ -386,7 +472,7 @@ export default function AdvocateDiaryModal({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               onSubmit={handleCreateEntry}
-              className="bg-[#0e1030] border border-indigo-500/30 rounded-2xl p-5 sm:p-6 max-w-2xl mx-auto space-y-4 shadow-xl text-slate-100"
+              className="bg-slate-950/90 border border-slate-800 rounded-2xl p-5 sm:p-6 max-w-2xl mx-auto space-y-4 shadow-xl text-slate-100"
             >
               <div className="border-b border-indigo-500/20 pb-3 flex items-center justify-between">
                 <div>
@@ -466,7 +552,7 @@ export default function AdvocateDiaryModal({
                     value={caseNumber}
                     onChange={(e) => setCaseNumber(e.target.value)}
                     placeholder="e.g. O.S. 412/2026 or WP 14022/2026"
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -480,7 +566,7 @@ export default function AdvocateDiaryModal({
                     value={courtName}
                     onChange={(e) => setCourtName(e.target.value)}
                     placeholder="e.g. City Civil Court Hall 14 / HC Court 3"
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -495,7 +581,7 @@ export default function AdvocateDiaryModal({
                   value={parties}
                   onChange={(e) => setParties(e.target.value)}
                   placeholder="e.g. Apex Technologies Ltd vs Union of India"
-                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -510,7 +596,7 @@ export default function AdvocateDiaryModal({
                     required
                     value={hearingDate}
                     onChange={(e) => setHearingDate(e.target.value)}
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -523,7 +609,7 @@ export default function AdvocateDiaryModal({
                     value={hearingTime}
                     onChange={(e) => setHearingTime(e.target.value)}
                     placeholder="10:30 AM"
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -536,7 +622,7 @@ export default function AdvocateDiaryModal({
                     value={itemNumber}
                     onChange={(e) => setItemNumber(e.target.value)}
                     placeholder="e.g. Item 14 (Motion)"
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -549,7 +635,7 @@ export default function AdvocateDiaryModal({
                 <select
                   value={stage}
                   onChange={(e) => setStage(e.target.value)}
-                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-400"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-500"
                 >
                   {COURT_STAGES.map((st) => (
                     <option key={st} value={st} className="bg-[#070817] text-white">
@@ -584,7 +670,7 @@ export default function AdvocateDiaryModal({
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Client Contact"
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -596,7 +682,7 @@ export default function AdvocateDiaryModal({
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none"
+                    className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -628,6 +714,25 @@ export default function AdvocateDiaryModal({
                   <span className="text-emerald-400 font-bold uppercase">{filter.replace('_', ' ')}</span>
                 </span>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (entries.length > 0) {
+                        handleOpenWhatsAppModal(entries[0])
+                      } else {
+                        setSelectedEntryForWA(null)
+                        setWaPhone('')
+                        setWaCustomMsg('Namaskara, here is the daily hearing schedule update for ' + new Date().toLocaleDateString('en-IN') + ': No hearings scheduled for today.')
+                        setReminderSlot('morning')
+                        setWhatsappModalOpen(true)
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all shadow-sm"
+                    title="Send daily schedule reminders to client/junior WhatsApp"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="hidden sm:inline">WhatsApp Schedule</span>
+                    <span className="sm:hidden">WhatsApp</span>
+                  </button>
                   <button
                     onClick={handlePrintCauseList}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/20 hover:border-emerald-400/40 bg-white/5 hover:bg-white/10 text-slate-200 text-xs transition-all"
@@ -662,11 +767,11 @@ export default function AdvocateDiaryModal({
                   Loading hearing cause list...
                 </div>
               ) : entries.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-indigo-500/25 rounded-2xl bg-indigo-950/20 space-y-3">
+                <div className="text-center py-16 border border-dashed border-slate-300 dark:border-indigo-500/25 rounded-2xl bg-[#0a0d24] border border-indigo-500/20 space-y-3">
                   <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-200">No hearings found for this period</p>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">No hearings found for this period</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto mt-1">
                       No court appearances recorded under {filter.replace('_', ' ')}. Add hearings to keep your daily timetable organized.
                     </p>
                   </div>
@@ -693,8 +798,8 @@ export default function AdvocateDiaryModal({
                       key={entry.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`bg-[#0e1030]/90 border border-indigo-500/20 ${priorityBorder} rounded-2xl p-4 transition-all shadow-lg ${
-                        entry.is_completed ? 'opacity-50 bg-[#08091a]' : 'hover:border-indigo-400/40'
+                      className={`bg-slate-950/80 border border-slate-800 ${priorityBorder} rounded-2xl p-4 transition-all shadow-sm hover:border-slate-700 ${
+                        entry.is_completed ? 'opacity-50 bg-slate-100 dark:bg-[#08091a]' : 'hover:border-teal-400 dark:hover:border-indigo-400/40'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -808,6 +913,16 @@ export default function AdvocateDiaryModal({
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-1.5 shrink-0">
+                          {/* WhatsApp / SMS Vernacular Client Update */}
+                          <button
+                            onClick={() => handleOpenWhatsAppModal(entry)}
+                            className="text-[11px] px-2.5 py-1 rounded-lg border border-emerald-500/40 hover:border-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 transition-all font-semibold flex items-center gap-1"
+                            title="Send scheduled WhatsApp / SMS client update in Kannada, Hindi, or English"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>WhatsApp Update</span>
+                          </button>
+
                           {/* Adjourn / NDOH Button */}
                           <button
                             onClick={() => {
@@ -873,7 +988,7 @@ export default function AdvocateDiaryModal({
                   required
                   value={nextDate}
                   onChange={(e) => setNextDate(e.target.value)}
-                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs outline-none focus:border-indigo-400"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -884,7 +999,7 @@ export default function AdvocateDiaryModal({
                 <select
                   value={nextStage}
                   onChange={(e) => setNextStage(e.target.value)}
-                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-400"
+                  className="w-full bg-[#070817] border border-indigo-500/30 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-500"
                 >
                   {COURT_STAGES.map((st) => (
                     <option key={st} value={st} className="bg-[#070817] text-white">
@@ -921,6 +1036,170 @@ export default function AdvocateDiaryModal({
                   className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md"
                 >
                   Confirm NDOH Rollover
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+
+        {/* ═══ WHATSAPP & SMS VERNACULAR CLIENT REMINDER MODAL ═══ */}
+        {whatsappModalOpen && selectedEntryForWA && (
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-[#0b0c24] border-2 border-emerald-400/40 rounded-2xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 text-slate-100"
+            >
+              <div className="flex justify-between items-center border-b border-indigo-500/20 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Client WhatsApp & SMS Update</h4>
+                    <p className="text-[11px] text-slate-400">{selectedEntryForWA.case_number} — {selectedEntryForWA.parties}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setWhatsappModalOpen(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 1. Select Scheduled Time Slot */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Select Scheduled Daily Reminder Slot:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSlotChange('morning')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center ${
+                      reminderSlot === 'morning'
+                        ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-md shadow-amber-500/20'
+                        : 'bg-white/4 border-white/10 text-slate-400 hover:bg-white/8'
+                    }`}
+                  >
+                    🌅 Morning (09:00 AM)
+                    <span className="block text-[9px] font-normal opacity-80 mt-0.5">Court Listing Alert</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSlotChange('afternoon')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center ${
+                      reminderSlot === 'afternoon'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-200 shadow-md shadow-indigo-500/20'
+                        : 'bg-white/4 border-white/10 text-slate-400 hover:bg-white/8'
+                    }`}
+                  >
+                    ☀️ Afternoon (02:00 PM)
+                    <span className="block text-[9px] font-normal opacity-80 mt-0.5">Hearing Outcome</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSlotChange('evening')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold transition-all text-center ${
+                      reminderSlot === 'evening'
+                        ? 'bg-purple-500/25 border-purple-400 text-purple-200 shadow-md shadow-purple-500/20'
+                        : 'bg-white/4 border-white/10 text-slate-400 hover:bg-white/8'
+                    }`}
+                  >
+                    🌙 Evening (07:00 PM)
+                    <span className="block text-[9px] font-normal opacity-80 mt-0.5">Daily Wrap-up / NDOH</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Select Vernacular Language */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Client Communication Language:
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
+                    { id: 'hi', label: 'हिन्दी (Hindi)' },
+                    { id: 'en', label: 'English' },
+                  ].map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => handleLangChange(l.id)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                        reminderLang === l.id
+                          ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+                          : 'bg-white/4 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Phone Number */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Client Mobile Number:
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    value={waPhone}
+                    onChange={(e) => setWaPhone(e.target.value)}
+                    placeholder="e.g. 9876543210 (10-digit mobile number)"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-white/15 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Message Preview */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Message Content (Editable):
+                </label>
+                <textarea
+                  value={waCustomMsg}
+                  onChange={(e) => setWaCustomMsg(e.target.value)}
+                  rows={4}
+                  className="w-full p-3 bg-slate-900 border border-white/15 rounded-xl text-xs text-slate-200 font-sans leading-relaxed focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              {/* 5. Action Buttons */}
+              <div className="flex items-center justify-between pt-2 border-t border-indigo-500/20">
+                <button
+                  type="button"
+                  onClick={handleCopyWAMessage}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-200 font-semibold flex items-center gap-1.5 transition-all"
+                >
+                  {copiedWA ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Copy SMS Text</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendWhatsApp}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-slate-950 font-bold text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send on WhatsApp</span>
                 </button>
               </div>
             </motion.div>

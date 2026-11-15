@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Paperclip, FileText, Trash2, Plus, ArrowLeft,
   Scale, MessageSquare, AlertTriangle, ShieldAlert,
   ShieldCheck, AlertCircle, Loader2, Sparkles, Check,
-  ChevronRight, UploadCloud, Users, Briefcase, Menu, X, Calendar,
+  ChevronRight, UploadCloud, Users, Briefcase, Menu, X, Calendar, Clock,
+  Share2, FileDown, Brain, Copy, Printer,
+  ArrowUpRight, BookOpen,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LanguageSelector } from '../context/LanguageContext'
@@ -14,6 +17,7 @@ import VoiceInputButton from '../components/VoiceInputButton'
 import ContractAuditModal from '../components/ContractAuditModal'
 import AdvocateDiaryModal from '../components/AdvocateDiaryModal'
 import DPDPSecurityModal from '../components/DPDPSecurityModal'
+import BareActsModal from '../components/BareActsModal'
 import NotificationCenter from '../components/NotificationCenter'
 import NotificationPermissionModal from '../components/NotificationPermissionModal'
 import {
@@ -24,103 +28,222 @@ import {
   apiUploadChatDocument,
   apiSendChatMessage,
   apiAuditChatClauses,
+  apiGetHandoffPrompt,
+  apiContinueInNewSession,
 } from '../api/client'
 
 function FormattedMessage({ content, isUser = false }) {
-  if (isUser || !content) {
-    return <div className="whitespace-pre-wrap font-sans space-y-1">{content}</div>
+  const safeContent = typeof content === 'string' ? content : String(content || '')
+  if (isUser || !safeContent) {
+    return <div className="whitespace-pre-wrap font-sans space-y-1">{safeContent}</div>
   }
 
   const renderInline = (str) => {
     if (!str) return null
+    const safeStr = typeof str === 'string' ? str : String(str)
     const parts = []
     let lastIdx = 0
     const regex = /(\*\*.*?\*\*|`.*?`)/g
     let match
-    while ((match = regex.exec(str)) !== null) {
-      if (match.index > lastIdx) {
-        parts.push(str.substring(lastIdx, match.index))
+    try {
+      while ((match = regex.exec(safeStr)) !== null) {
+        if (match.index > lastIdx) {
+          parts.push(safeStr.substring(lastIdx, match.index))
+        }
+        const token = match[0]
+        if (token.startsWith('**') && token.endsWith('**')) {
+          parts.push(
+            <strong key={`${match.index}-b`} className="font-bold text-white">
+              {token.slice(2, -2)}
+            </strong>
+          )
+        } else if (token.startsWith('`') && token.endsWith('`')) {
+          parts.push(
+            <code
+              key={`${match.index}-c`}
+              className="px-1.5 py-0.5 rounded bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 font-mono text-[11px]"
+            >
+              {token.slice(1, -1)}
+            </code>
+          )
+        }
+        lastIdx = regex.lastIndex
+        if (regex.lastIndex === match.index) {
+          regex.lastIndex++
+        }
       }
-      const token = match[0]
-      if (token.startsWith('**') && token.endsWith('**')) {
-        parts.push(
-          <strong key={match.index} className="font-bold text-white">
-            {token.slice(2, -2)}
-          </strong>
-        )
-      } else if (token.startsWith('`') && token.endsWith('`')) {
-        parts.push(
-          <code
-            key={match.index}
-            className="px-1.5 py-0.5 rounded bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 font-mono text-[11px]"
-          >
-            {token.slice(1, -1)}
-          </code>
-        )
+      if (lastIdx < safeStr.length) {
+        parts.push(safeStr.substring(lastIdx))
       }
-      lastIdx = regex.lastIndex
-    }
-    if (lastIdx < str.length) {
-      parts.push(str.substring(lastIdx))
+    } catch {
+      return safeStr
     }
     return parts
   }
 
-  const lines = content.split('\n')
+  const rawLines = safeContent.split('\n')
+  const blocks = []
+  let i = 0
+
+  while (i < rawLines.length) {
+    const rawLine = rawLines[i]
+    const trimmed = rawLine.trim()
+
+    if (!trimmed) {
+      blocks.push({ type: 'spacer', key: i })
+      i++
+      continue
+    }
+
+    // Horizontal Rule (--- or ***)
+    if (/^(\-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      blocks.push({ type: 'divider', key: i })
+      i++
+      continue
+    }
+
+    // Blockquote (> ...)
+    if (trimmed.startsWith('>')) {
+      const quoteText = trimmed.replace(/^>\s*/, '')
+      blocks.push({ type: 'quote', text: quoteText, key: i })
+      i++
+      continue
+    }
+
+    // Markdown Table Detection (| Col 1 | Col 2 |)
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.includes('|')) {
+      const tableLines = []
+      while (i < rawLines.length && rawLines[i].trim().startsWith('|') && rawLines[i].trim().endsWith('|')) {
+        tableLines.push(rawLines[i].trim())
+        i++
+      }
+      if (tableLines.length >= 2) {
+        const parseRow = (line) => line.split('|').slice(1, -1).map((c) => c.trim())
+        const headerRow = parseRow(tableLines[0])
+        const dataRows = []
+        for (let t = 1; t < tableLines.length; t++) {
+          if (/^\|[\s\-:\|]+\|$/.test(tableLines[t])) continue
+          dataRows.push(parseRow(tableLines[t]))
+        }
+        blocks.push({ type: 'table', headers: headerRow, rows: dataRows, key: `table-${i}` })
+        continue
+      } else {
+        blocks.push({ type: 'text', text: tableLines[0], key: i })
+        continue
+      }
+    }
+
+    // Heading (#, ##, ###)
+    const headingMatch = trimmed.match(/^#{1,6}\s*(.*)$/)
+    if (headingMatch) {
+      blocks.push({ type: 'heading', text: headingMatch[1].replace(/^\*\*|\*\*$/g, ''), key: i })
+      i++
+      continue
+    }
+
+    // Numbered item (1. or 1))
+    const numMatch = trimmed.match(/^(\d+)[.)]\s+(.*)$/)
+    if (numMatch) {
+      blocks.push({ type: 'number', num: numMatch[1], text: numMatch[2], key: i })
+      i++
+      continue
+    }
+
+    // Bullet item (* or -)
+    const bulletMatch = trimmed.match(/^[-*•]\s+(.*)$/)
+    if (bulletMatch) {
+      blocks.push({ type: 'bullet', text: bulletMatch[1], key: i })
+      i++
+      continue
+    }
+
+    // Regular paragraph line
+    blocks.push({ type: 'text', text: trimmed, key: i })
+    i++
+  }
+
   return (
     <div className="font-sans space-y-2 text-xs sm:text-sm leading-relaxed">
-      {lines.map((rawLine, idx) => {
-        const line = rawLine.trimEnd()
-        if (!line.trim()) {
-          return <div key={idx} className="h-1" />
+      {blocks.map((block) => {
+        if (block.type === 'spacer') {
+          return <div key={block.key} className="h-1" />
         }
-
-        // 1. Heading (#, ##, ###, etc.) -> remove hashes and render styled header
-        const headingMatch = line.match(/^#{1,6}\s*(.*)$/)
-        if (headingMatch) {
-          const headingText = headingMatch[1].replace(/^\*\*|\*\*$/g, '')
+        if (block.type === 'divider') {
+          return <hr key={block.key} className="my-2.5 border-t border-indigo-500/20" />
+        }
+        if (block.type === 'quote') {
           return (
             <div
-              key={idx}
+              key={block.key}
+              className="my-2 pl-3 py-1.5 border-l-2 border-indigo-400 bg-indigo-950/40 text-indigo-200 text-xs sm:text-[13px] rounded-r-lg font-medium"
+            >
+              {renderInline(block.text)}
+            </div>
+          )
+        }
+        if (block.type === 'table') {
+          return (
+            <div
+              key={block.key}
+              className="overflow-x-auto my-3 rounded-xl border border-indigo-500/25 bg-[#090b1e]/90 shadow-sm"
+            >
+              <table className="min-w-full text-xs text-left divide-y divide-indigo-500/20">
+                <thead className="bg-indigo-950/70 text-indigo-200 font-semibold text-[11px] uppercase tracking-wider">
+                  <tr>
+                    {block.headers.map((h, hi) => (
+                      <th key={hi} className="px-3 py-2 border-r border-indigo-500/15 last:border-r-0 whitespace-nowrap">
+                        {renderInline(h)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-slate-300">
+                  {block.rows.map((row, ri) => (
+                    <tr key={ri} className="hover:bg-indigo-500/5 transition-colors">
+                      {row.map((cell, ci) => (
+                        <td key={ci} className="px-3 py-2 border-r border-indigo-500/10 last:border-r-0">
+                          {renderInline(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+        if (block.type === 'heading') {
+          return (
+            <div
+              key={block.key}
               className="text-xs sm:text-sm font-bold text-indigo-300 mt-3 mb-1 pt-1 border-b border-indigo-500/20 flex items-center gap-1.5"
             >
               <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>{renderInline(headingText)}</span>
+              <span>{renderInline(block.text)}</span>
             </div>
           )
         }
-
-        // 2. Numbered list point
-        const numMatch = line.match(/^(\d+)[.)]\s+(.*)$/)
-        if (numMatch) {
-          const num = numMatch[1]
-          const rest = numMatch[2]
+        if (block.type === 'number') {
           return (
-            <div key={idx} className="flex items-start gap-2 ml-1 my-1">
+            <div key={block.key} className="flex items-start gap-2 ml-1 my-1">
               <span className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
-                {num}
+                {block.num}
               </span>
-              <div className="flex-1 min-w-0">{renderInline(rest)}</div>
+              <div className="flex-1 min-w-0">{renderInline(block.text)}</div>
             </div>
           )
         }
-
-        // 3. Bullet point
-        const bulletMatch = line.match(/^[-*•]\s+(.*)$/)
-        if (bulletMatch) {
-          const rest = bulletMatch[1]
+        if (block.type === 'bullet') {
           return (
-            <div key={idx} className="flex items-start gap-2 ml-2 my-1">
+            <div key={block.key} className="flex items-start gap-2 ml-2 my-1">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
-              <div className="flex-1 min-w-0">{renderInline(rest)}</div>
+              <div className="flex-1 min-w-0">{renderInline(block.text)}</div>
             </div>
           )
         }
-
-        // 4. Standard text line
         return (
-          <p key={idx} className="my-1">
-            {renderInline(line)}
+          <p key={block.key} className="my-1">
+            {renderInline(block.text)}
           </p>
         )
       })}
@@ -134,6 +257,7 @@ export default function CaseChat() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
 
   const [sessions, setSessions] = useState([])
@@ -144,6 +268,13 @@ export default function CaseChat() {
 
   const [inputMessage, setInputMessage] = useState('')
   const [tone, setTone] = useState('citizen') // 'citizen' | 'counsel'
+  const [thinkMode, setThinkMode] = useState(false) // Deep Think / Multi-Step Precedent Mode
+  const [handoffModalOpen, setHandoffModalOpen] = useState(false)
+  const [handoffData, setHandoffData] = useState(null)
+  const [loadingHandoff, setLoadingHandoff] = useState(false)
+  const [copiedHandoff, setCopiedHandoff] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [copiedShare, setCopiedShare] = useState(false)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -158,14 +289,35 @@ export default function CaseChat() {
   const [diaryModalOpen, setDiaryModalOpen] = useState(false)
   const [notifModalOpen, setNotifModalOpen] = useState(false)
   const [dpdpModalOpen, setDpdpModalOpen] = useState(false)
+  const [bareActsModalOpen, setBareActsModalOpen] = useState(false)
 
-  // Scroll to bottom on new messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const latestMessageRef = useRef(null)
 
+  // Container-isolated conversational scroll (ChatGPT & Gemini style)
+  // ONLY scrolls the messages container — NEVER scrolls the window or page!
   useEffect(() => {
-    scrollToBottom()
+    if (!messages || messages.length === 0) return
+    const lastMsg = messages[messages.length - 1]
+    if (!messagesContainerRef.current) return
+
+    if (lastMsg.role === 'user') {
+      // User sent query -> smoothly scroll messages container to bottom
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+    } else {
+      // Assistant answered: smoothly position container at the top of the new assistant message
+      if (latestMessageRef.current) {
+        const container = messagesContainerRef.current
+        const target = latestMessageRef.current
+        const offset = target.offsetTop - container.offsetTop - 16
+        container.scrollTo({
+          top: Math.max(0, offset),
+          behavior: 'smooth',
+        })
+      }
+    }
   }, [messages])
 
   const handleNewSession = async () => {
@@ -216,14 +368,18 @@ export default function CaseChat() {
       const res = await apiListChatSessions()
       const list = res.data || []
       setSessions(list)
-      if (list.length > 0 && !activeSessionId) {
-        selectSession(list[0].id)
-      } else if (list.length === 0) {
-        // Create initial session if none exists
-        handleNewSession()
+      if (!activeSessionId) {
+        if (list.length > 0) {
+          selectSession(list[0].id)
+        } else {
+          handleNewSession()
+        }
       }
     } catch (err) {
       console.error('Failed to load chat sessions:', err)
+      if (!activeSessionId) {
+        handleNewSession()
+      }
     }
   }
 
@@ -303,6 +459,120 @@ export default function CaseChat() {
     }
   }
 
+
+  // ── Context Continuity & Handoff Prompt Handlers ──
+  const handleOpenHandoff = async () => {
+    if (!activeSessionId) {
+      alert('Please start or select a case session first.')
+      return
+    }
+    setHandoffModalOpen(true)
+    setLoadingHandoff(true)
+    try {
+      const res = await apiGetHandoffPrompt(activeSessionId)
+      setHandoffData(res.data)
+    } catch (err) {
+      console.error('Failed to generate handoff prompt:', err)
+      setError('Could not generate context continuity brief for this session.')
+    } finally {
+      setLoadingHandoff(false)
+    }
+  }
+
+  const handleContinueInNewChat = async () => {
+    if (!activeSessionId) return
+    setLoadingHandoff(true)
+    setError('')
+    try {
+      const res = await apiContinueInNewSession(activeSessionId)
+      const newSession = res.data
+      if (!newSession || !newSession.id) {
+        throw new Error('Invalid response from server')
+      }
+      const sessionListItem = {
+        id: newSession.id,
+        title: newSession.title || 'Continuation Session',
+        created_at: newSession.created_at || new Date().toISOString(),
+        updated_at: newSession.updated_at || new Date().toISOString(),
+        message_count: (newSession.messages || []).length || 1,
+        document_count: (newSession.documents || []).length || 0,
+      }
+      setSessions((prev) => [sessionListItem, ...(prev || []).filter((s) => s.id !== newSession.id)])
+      setActiveSessionId(newSession.id)
+      setCurrentSession(newSession)
+      setMessages(Array.isArray(newSession.messages) ? newSession.messages : [])
+      setDocuments(Array.isArray(newSession.documents) ? newSession.documents : [])
+      setHandoffModalOpen(false)
+    } catch (err) {
+      console.error('Failed to continue in new session:', err)
+      setError('Could not initialize continuation session. Please try again.')
+    } finally {
+      setLoadingHandoff(false)
+    }
+  }
+
+  const handleCopyHandoffPrompt = async () => {
+    if (!handoffData?.handoff_prompt) return
+    try {
+      await navigator.clipboard.writeText(handoffData.handoff_prompt)
+      setCopiedHandoff(true)
+      setTimeout(() => setCopiedHandoff(false), 2500)
+    } catch {
+      setError('Could not copy continuation prompt to clipboard.')
+    }
+  }
+
+  // Export Case Consultation to Court-Standard Print/PDF
+  const handleExportPDF = () => {
+    if (!messages || messages.length === 0) {
+      alert('No messages in this case session to export.')
+      return
+    }
+    document.body.classList.add('print-case-chat-active')
+    const cleanup = () => {
+      document.body.classList.remove('print-case-chat-active')
+      window.removeEventListener('afterprint', cleanup)
+    }
+    window.addEventListener('afterprint', cleanup)
+    window.print()
+  }
+
+  // Generate shareable case transcript text
+  const getShareableTranscript = () => {
+    const title = currentSession?.title || 'JurisAI Case Analysis'
+    const header = `========================================\n${title}\nJurisAI Sovereign Legal Intelligence Report\nDate: ${new Date().toLocaleDateString('en-GB')}\n========================================\n\n`
+    const body = messages
+      .map((m) => {
+        const sender = m.role === 'user' ? 'Client / Advocate' : 'JurisAI Sovereign Co-Pilot'
+        return `[${sender}]:\n${m.content}\n`
+      })
+      .join('\n----------------------------------------\n\n')
+    return `${header}${body}\n\nGenerated via JurisAI Legal Intelligence Suite`
+  }
+
+  const handleCopyTranscript = () => {
+    const text = getShareableTranscript()
+    navigator.clipboard.writeText(text)
+    setCopiedShare(true)
+    setTimeout(() => setCopiedShare(false), 2000)
+  }
+
+  const handleShareWhatsApp = () => {
+    const text = getShareableTranscript()
+    window.open(`https://wa.me/?text=${encodeURIComponent(text.slice(0, 1500) + '... (Full brief in JurisAI)')}`, '_blank')
+  }
+
+  const handleShareEmail = () => {
+    const subject = encodeURIComponent(currentSession?.title || 'JurisAI Legal Case Consultation')
+    const body = encodeURIComponent(getShareableTranscript())
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
+  }
+
+  const handleShareTelegram = () => {
+    const text = encodeURIComponent(getShareableTranscript().slice(0, 1500))
+    window.open(`https://t.me/share/url?url=https://jurisai.in&text=${text}`, '_blank')
+  }
+
   const handleSendMessage = async (customText = null) => {
     const textToSend = (customText || inputMessage).trim()
     if (!textToSend || !activeSessionId || loading) return
@@ -324,7 +594,7 @@ export default function CaseChat() {
     setLoading(true)
 
     try {
-      const res = await apiSendChatMessage(activeSessionId, sanitizedText, tone, language)
+      const res = await apiSendChatMessage(activeSessionId, sanitizedText, tone, language, thinkMode)
       const { user_message, assistant_message } = res.data
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== tempUserMsg.id),
@@ -360,12 +630,12 @@ export default function CaseChat() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#060714] text-slate-200 flex flex-col lg:flex-row overflow-hidden">
+    <div className="h-screen max-h-screen w-full max-w-full bg-[#060714] text-slate-200 flex flex-col lg:flex-row overflow-hidden">
       {/* ── LEFT SIDEBAR: CASE SESSIONS & ATTACHMENTS ── */}
       <AnimatePresence>
         {(sidebarOpen || window.innerWidth >= 1024) && (
           <aside
-            className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-[#090a1a] border-r border-indigo-500/15 flex flex-col shrink-0 transition-transform ${
+            className={`fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-72 h-full max-h-screen bg-[#090a1a] border-r border-indigo-500/15 flex flex-col shrink-0 overflow-hidden transition-transform ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             }`}
           >
@@ -392,14 +662,14 @@ export default function CaseChat() {
                 onClick={handleNewSession}
                 className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-indigo-600/20"
               >
-                <Plus className="w-4 h-4" /> Start New Case Chat
+                <Plus className="w-4 h-4" /> New Assistant Session
               </button>
             </div>
 
             {/* Conversation Sessions List */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-[220px]">
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1">
               <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2 block mb-2">
-                Case Conversations ({sessions.length})
+                Assistant Consultations ({sessions.length})
               </span>
               {sessions.length === 0 ? (
                 <div className="text-center py-8 text-xs text-slate-600">No active cases</div>
@@ -473,7 +743,7 @@ export default function CaseChat() {
       </AnimatePresence>
 
       {/* ── MAIN CHAT AREA ── */}
-      <main className="flex-1 min-w-0 w-full max-w-full flex flex-col h-screen overflow-hidden relative bg-[#050611]">
+      <main className="flex-1 min-w-0 w-full max-w-full flex flex-col h-full max-h-screen overflow-hidden relative bg-[#050611]">
         {/* Top Header — Responsive Two-Tier Architecture */}
         <header className="border-b border-white/5 bg-[#080918]/90 backdrop-blur-md shrink-0 w-full min-w-0 max-w-full">
           {/* Row 1: Session Context, Return to Dashboard, Language & Bell */}
@@ -494,7 +764,7 @@ export default function CaseChat() {
 
               <div className="min-w-0">
                 <h1 className="text-xs sm:text-sm font-bold text-white truncate max-w-[130px] xs:max-w-[190px] sm:max-w-xs md:max-w-md">
-                  {currentSession?.title || 'Case Document Assistant'}
+                  {currentSession?.title || 'Personal Legal Assistant'}
                 </h1>
               </div>
             </div>
@@ -509,6 +779,56 @@ export default function CaseChat() {
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="hidden sm:inline">Dashboard</span>
+              </button>
+
+              {/* Continue in New Chat (Handoff & Context Continuity) */}
+              <button
+                onClick={handleOpenHandoff}
+                className="flex items-center gap-1 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Continue consultation in fresh new chat without losing established context or evidence"
+              >
+                <ArrowUpRight className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Continue in New Chat</span>
+              </button>
+
+              {/* Central Bare Acts Library */}
+              <button
+                onClick={() => setBareActsModalOpen(true)}
+                className="flex items-center gap-1 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="India Code Central Bare Acts & Statutory Library (71+ Acts, 124+ Provisions)"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Bare Acts (71+)</span>
+              </button>
+
+              {/* Export to PDF Button */}
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-1 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Convert entire case conversation to court-ready PDF and download"
+              >
+                <FileDown className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Export PDF</span>
+              </button>
+
+              {/* Print Consultation Brief */}
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-1 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Print pristine court legal opinion memo"
+              >
+                <Printer className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Print</span>
+              </button>
+
+              {/* Share Case Chat Button */}
+              <button
+                onClick={() => setShareModalOpen(true)}
+                className="flex items-center gap-1 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 py-1.5 rounded-xl transition-all font-semibold shrink-0"
+                title="Share conversation via WhatsApp, Email, or Telegram"
+              >
+                <Share2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline">Share</span>
               </button>
 
               {/* Vernacular Language Selector */}
@@ -589,11 +909,21 @@ export default function CaseChat() {
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>DPDP 2023 Shield</span>
             </button>
+
+            {/* Smart Chronology & Fact Matrix Generator Button */}
+            <button
+              onClick={() => navigate('/limitation-chronology')}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 hover:border-indigo-400 text-indigo-300 text-[13px] sm:text-xs font-semibold transition-all shrink-0 whitespace-nowrap"
+              title="Automated Case Chronology & Fact Matrix Generator"
+            >
+              <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>Chronology & Fact Matrix</span>
+            </button>
           </div>
         </header>
 
         {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* Quick Document Attachment Bar (if 0 docs uploaded) */}
           {documents.length === 0 && (
             <motion.div
@@ -624,13 +954,16 @@ export default function CaseChat() {
           )}
 
           {/* Messages */}
-          {messages.map((msg, idx) => (
+          {messages.map((msg, idx) => {
+            const isLatest = idx === messages.length - 1
+            return (
             <motion.div
               key={msg.id || idx}
+              ref={isLatest ? latestMessageRef : null}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
-              className={`flex gap-3 max-w-3xl ${msg.role === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
+              className={`flex gap-3 max-w-3xl scroll-mt-6 ${msg.role === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
             >
               {msg.role !== 'user' && (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-md">
@@ -686,7 +1019,7 @@ export default function CaseChat() {
                 </div>
               )}
             </motion.div>
-          ))}
+          )})}
 
           {loading && (
             <div className="flex gap-3 mr-auto max-w-2xl">
@@ -765,6 +1098,22 @@ export default function CaseChat() {
               className="flex-1 bg-transparent text-white placeholder-slate-500 text-[15px] sm:text-xs focus:outline-none resize-none max-h-32 leading-relaxed py-1"
             />
 
+            {/* Deep Think Mode Toggle Switch */}
+            <button
+              type="button"
+              onClick={() => setThinkMode(!thinkMode)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                thinkMode
+                  ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 text-white border-violet-400 shadow-md shadow-violet-500/30 ring-1 ring-violet-400'
+                  : 'bg-white/4 text-slate-400 border-white/10 hover:text-white hover:bg-white/8'
+              }`}
+              title="Toggle Deep Think Mode: Takes additional time for deep multi-step statutory research, contradiction checks, and Supreme Court precedent verification"
+            >
+              <Brain className={`w-3.5 h-3.5 ${thinkMode ? 'text-amber-300 animate-pulse' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">{thinkMode ? 'Deep Think ON' : 'Deep Think'}</span>
+              <span className="sm:hidden">{thinkMode ? 'Think' : 'Fast'}</span>
+            </button>
+
             {/* Voice Input Button — Vernacular dictation */}
             <VoiceInputButton
               language={language}
@@ -807,6 +1156,202 @@ export default function CaseChat() {
         )}
       </AnimatePresence>
 
+
+      {/* ═══ SHARE CASE CONSULTATION MODAL ═══ */}
+      <AnimatePresence>
+        {shareModalOpen && (
+          <div className="fixed inset-0 z-[100002] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0b0c24] border-2 border-indigo-500/40 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100"
+            >
+              <div className="flex justify-between items-center border-b border-indigo-500/20 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Share Case Consultation</h4>
+                    <p className="text-[11px] text-slate-400">{currentSession?.title || 'New Case Analysis'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShareModalOpen(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Export or dispatch this verified legal consultation brief to clients, senior advocates, or junior researchers:
+              </p>
+
+              {/* Share Channels */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  <span>WhatsApp</span>
+                </button>
+
+                <button
+                  onClick={handleShareEmail}
+                  className="p-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
+                  <span>Email</span>
+                </button>
+
+                <button
+                  onClick={handleShareTelegram}
+                  className="p-3 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
+                  <span>Telegram</span>
+                </button>
+
+                <button
+                  onClick={handleExportPDF}
+                  className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
+                  <span>Save as PDF</span>
+                </button>
+              </div>
+
+              {/* Copy Transcript Button */}
+              <div className="pt-2 border-t border-indigo-500/20">
+                <button
+                  onClick={handleCopyTranscript}
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white font-semibold flex items-center justify-center gap-2 transition-all"
+                >
+                  {copiedShare ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-400">Copied Full Transcript to Clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-indigo-400" />
+                      <span>Copy Full Case Transcript</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── CONTEXT CONTINUITY & HANDOFF MODAL (ChatGPT / Gemini Style) ── */}
+      <AnimatePresence>
+        {handoffModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[#0b0d1e] border border-indigo-500/30 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md">
+                    <ArrowUpRight className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Continue in New Chat & Context Handoff</h4>
+                    <p className="text-[11px] text-indigo-300/80">Preserve all established facts, evidence & statutory positions</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setHandoffModalOpen(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+                {loadingHandoff ? (
+                  <div className="py-12 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-7 h-7 text-indigo-400 animate-spin" />
+                    <p className="text-slate-400">Synthesizing case context & continuity brief...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3.5 space-y-2">
+                      <p className="font-semibold text-indigo-200">
+                        {handoffData?.summary || 'Executive context brief generated for your consultation.'}
+                      </p>
+                      {handoffData?.key_issues && handoffData.key_issues.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Established Inquiries:</p>
+                          {handoffData.key_issues.map((issue, idx) => (
+                            <p key={idx} className="text-slate-300 text-[11px]">
+                              • {issue}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-slate-300 uppercase tracking-wide">
+                          Continuation Briefing Prompt (Ready for New Chat / External LLMs):
+                        </span>
+                        <span className="text-indigo-400 font-mono text-[10px]">Auto-Generated</span>
+                      </div>
+                      <div className="bg-black/60 border border-white/10 rounded-xl p-3.5 text-[11px] font-mono text-slate-300 max-h-48 overflow-y-auto leading-relaxed select-all whitespace-pre-wrap">
+                        {handoffData?.handoff_prompt}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row gap-2 shrink-0">
+                <button
+                  onClick={handleContinueInNewChat}
+                  disabled={loadingHandoff}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-violet-600/30"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  <span>1-Click Continue in Fresh Chat</span>
+                </button>
+
+                <button
+                  onClick={handleCopyHandoffPrompt}
+                  disabled={loadingHandoff}
+                  className="py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+                >
+                  {copiedHandoff ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-400">Copied to Clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-indigo-400" />
+                      <span>Copy Prompt</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* ── ADVOCATE DIGITAL DIARY & CAUSE LIST MODAL ── */}
       <AdvocateDiaryModal
         isOpen={diaryModalOpen}
@@ -826,6 +1371,127 @@ export default function CaseChat() {
         isOpen={notifModalOpen}
         onClose={() => setNotifModalOpen(false)}
       />
+
+      {/* ── CENTRAL BARE ACTS & STATUTORY REPOSITORY MODAL ── */}
+      <BareActsModal
+        isOpen={bareActsModalOpen}
+        onClose={() => setBareActsModalOpen(false)}
+        onSelectAct={(act) => {
+          setBareActsModalOpen(false)
+          setInputMessage((prev) =>
+            prev
+              ? `${prev}\n\nPlease analyze under ${act.title} (${act.year || ''}) and specify the statutory requirements and limitation:`
+              : `Please analyze under ${act.title} (${act.year || ''}) and specify the statutory requirements, limitation, and remedies:`
+          )
+        }}
+      />
+
+      {/* ── DEDICATED COURT-STANDARD WHITE-PAPER PRINT PORTAL ── */}
+      {createPortal(
+        <div id="case-chat-official-print" className="font-serif text-black max-w-[195mm] mx-auto text-[10pt] leading-normal bg-white">
+          {/* Top Court Header */}
+          <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '8px', marginBottom: '14px' }}>
+            <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 'bold', margin: '0 0 2px 0', color: '#334155', fontFamily: 'sans-serif' }}>
+              REPUBLIC OF INDIA • STATUTORY LEGAL OPINION & CASE BRIEF
+            </p>
+            <h1 style={{ fontSize: '13pt', fontWeight: 'bold', textTransform: 'uppercase', margin: '2px 0', color: '#0f172a', letterSpacing: '0.5px' }}>
+              {currentSession?.title || 'Case Document Consultation Memorandum'}
+            </h1>
+            <p style={{ fontSize: '9pt', margin: '2px 0 0 0', color: '#475569', fontStyle: 'italic', fontFamily: 'sans-serif' }}>
+              Matter Classification: Sovereign Document Case Study & Statutory Assessment
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', color: '#64748b', marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontFamily: 'sans-serif' }}>
+              <span><strong>Advocate / Client:</strong> {user?.full_name || 'Counsel'} ({user?.email || 'N/A'})</span>
+              <span><strong>Session ID:</strong> {currentSession?.id || 'JURIS-CC-2026'}</span>
+              <span><strong>Date of Record:</strong> {new Date().toLocaleDateString('en-GB')} at {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+
+          {/* Record of Ingested Case Documents */}
+          {documents && documents.length > 0 && (
+            <div style={{ marginBottom: '14px', padding: '6px 10px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '8.5pt', fontFamily: 'sans-serif' }}>
+              <strong>RECORD OF INGESTED CASE DOCUMENTS:</strong>
+              <div style={{ marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {documents.map((d, di) => (
+                  <span key={di} style={{ color: '#1e293b' }}>
+                    • {d.filename} ({Math.round(d.file_size / 1024)} KB)
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sequential Turn Excerpts */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {messages.map((m, idx) => {
+              const isUser = m.role === 'user'
+              return (
+                <div
+                  key={idx}
+                  className={`print-turn-container ${isUser ? 'print-query-box' : 'print-response-box'}`}
+                  style={{
+                    padding: isUser ? '8pt 10pt' : '10pt 12pt',
+                    backgroundColor: isUser ? '#f1f5f9' : '#ffffff',
+                    border: isUser ? '1.5px solid #94a3b8' : '1.5px solid #0f172a',
+                    borderRadius: '5px',
+                    pageBreakInside: 'avoid',
+                    breakInside: 'avoid',
+                  }}
+                >
+                  {/* Turn Header */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderBottom: isUser ? '1px solid #cbd5e1' : '1px solid #94a3b8',
+                      paddingBottom: '4px',
+                      marginBottom: '6px',
+                      fontFamily: 'sans-serif',
+                      fontSize: '8.5pt',
+                      fontWeight: 'bold',
+                      color: isUser ? '#1e3a8a' : '#0f172a',
+                    }}
+                  >
+                    <span>
+                      {isUser
+                        ? `[CLIENT / ADVOCATE LEGAL QUERY - Turn #${Math.floor(idx / 2) + 1}]`
+                        : `[JURISAI SOVEREIGN STATUTORY ADVISORY & REASONING]`}
+                    </span>
+                    <span style={{ fontSize: '7.5pt', color: '#64748b', fontWeight: 'normal', fontFamily: 'monospace' }}>
+                      {m.created_at ? new Date(m.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : `Turn #${idx + 1}`}
+                    </span>
+                  </div>
+
+                  {/* Turn Body */}
+                  <div
+                    style={{
+                      fontSize: '9.5pt',
+                      lineHeight: '1.5',
+                      color: '#000000',
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: isUser ? 'sans-serif' : 'serif',
+                    }}
+                  >
+                    {m.content}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Formal Court Footer */}
+          <div style={{ marginTop: '20px', paddingTop: '8px', borderTop: '1.5px solid #0f172a', textAlign: 'center', fontSize: '7.5pt', color: '#475569', fontFamily: 'sans-serif' }}>
+            <p style={{ margin: '0 0 2px 0', fontWeight: 'bold' }}>
+              CONFIDENTIAL & PRIVILEGED LEGAL RESEARCH MEMORANDUM • PREPARED WITH JURISAI COURT ENGINE
+            </p>
+            <p style={{ margin: 0 }}>
+              Governed under the Bharatiya Nyaya Sanhita (2023), Bharatiya Nagarik Suraksha Sanhita (2023), and Bharatiya Sakshya Adhiniyam (2023). Not a substitute for formal Vakalatnama representation in a Court of Law.
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

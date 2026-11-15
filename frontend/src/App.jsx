@@ -27,7 +27,17 @@ class ErrorBoundary extends React.Component {
     console.error('ErrorBoundary caught UI render exception:', error, errorInfo)
   }
 
-  handleReset = () => {
+  handleReturnDashboard = () => {
+    this.setState({ hasError: false, error: null })
+    window.location.href = '/dashboard'
+  }
+
+  handleReload = () => {
+    this.setState({ hasError: false, error: null })
+    window.location.reload()
+  }
+
+  handleLogout = () => {
     try {
       localStorage.removeItem('jurisai_token')
       localStorage.removeItem('jurisai_user')
@@ -40,31 +50,39 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#050a0e] flex items-center justify-center p-6 text-white">
-          <div className="max-w-md w-full bg-[#0c141d] border border-red-500/30 rounded-2xl p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400 text-xl font-bold">
-              ⚠
+          <div className="max-w-md w-full bg-[#0c141d] border border-indigo-500/30 rounded-2xl p-6 shadow-2xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-400 text-xl font-bold">
+              ⚖
             </div>
-            <h2 className="text-lg font-bold text-slate-100">Display Recovery</h2>
+            <h2 className="text-lg font-bold text-slate-100">Assistant Interface Recovery</h2>
             <p className="text-xs text-slate-400">
-              An unexpected display issue occurred. Your session state has been preserved safely.
+              An interface refresh is required. Your legal session and case files remain securely preserved.
             </p>
             {this.state.error && (
-              <pre className="text-[11px] text-red-300 bg-red-950/40 p-3 rounded-lg border border-red-500/20 text-left overflow-x-auto max-h-32">
+              <pre className="text-[11px] text-indigo-300 bg-indigo-950/40 p-3 rounded-lg border border-indigo-500/20 text-left overflow-x-auto max-h-32">
                 {this.state.error.message || String(this.state.error)}
               </pre>
             )}
             <div className="flex items-center gap-3 justify-center pt-2">
               <button
-                onClick={this.handleReset}
+                onClick={this.handleReturnDashboard}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-600/20"
               >
-                Reset Session & Return to Login
+                Return to Dashboard
               </button>
               <button
-                onClick={() => window.location.reload()}
+                onClick={this.handleReload}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-xs font-semibold border border-white/10 transition-all"
               >
                 Reload
+              </button>
+            </div>
+            <div className="pt-1">
+              <button
+                onClick={this.handleLogout}
+                className="text-[11px] text-slate-500 hover:text-slate-400 underline transition"
+              >
+                Log out & sign in again
               </button>
             </div>
           </div>
@@ -109,6 +127,10 @@ export default function App() {
                 />
                 <Route
                   path="/case-chat"
+                  element={<ProtectedRoute><CaseChat /></ProtectedRoute>}
+                />
+                <Route
+                  path="/cases"
                   element={<ProtectedRoute><CaseChat /></ProtectedRoute>}
                 />
                 <Route

@@ -13,7 +13,7 @@ import { apiListCases, apiRenameCase, apiDeleteCase, apiTogglePro, apiGetHistory
 
 export default function Sidebar({
   user, onLogout, onUpgrade, onCaseSelect, onHistorySelect, activeCaseId, open, onClose,
-  onOpenProfile, onOpenBNS, onOpenCourtFee, onOpenDiary, onOpenDPDP,
+  onOpenProfile, onOpenBNS, onOpenCourtFee, onOpenDiary, onOpenDPDP, onOpenBareActs,
 }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
@@ -180,48 +180,71 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* ── Quick Tools Grid ── */}
-      <div className="px-4 py-3 border-b border-indigo-500/10 shrink-0 space-y-1.5">
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">{t('legalSuite') || 'Legal Suite'}</p>
-        <button
-          onClick={() => { navigate('/case-chat'); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
-        >
-          <Bot className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span>{t('chatNav') || 'Case Document Chat'}</span>
-        </button>
-        <button
-          onClick={() => { if (onOpenDiary) onOpenDiary(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
-        >
-          <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span>{t('advocateDiary') || 'Advocate Diary'}</span>
-        </button>
-        <button
-          onClick={() => { if (onOpenCourtFee) onOpenCourtFee(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
-        >
-          <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span>{t('courtFees') || 'Court Fees Calculator'}</span>
-        </button>
-        <button
-          onClick={() => { if (onOpenBNS) onOpenBNS(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
-        >
-          <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span>{t('bnsNav') || 'IPC ⇄ BNS Converter'}</span>
-        </button>
-        <button
-          onClick={() => { navigate('/precedents'); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left"
-        >
-          <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span>{t('precedentsNav') || 'Supreme Court Precedents'}</span>
-        </button>
+      {/* ── Quick Tools Grid (Compact 2-Column Suite) ── */}
+      <div className="px-3.5 py-2 border-b border-indigo-500/10 shrink-0">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 px-0.5">{t('legalSuite') || 'Legal Suite'}</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => { navigate('/case-chat'); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Personal Legal Assistant & Document Co-Pilot"
+          >
+            <Bot className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Personal Assistant</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenDiary) onOpenDiary(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Advocate Diary & Daily Cause List"
+          >
+            <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Diary</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenCourtFee) onOpenCourtFee(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Court Fees Calculator & Valuation Slip"
+          >
+            <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Court Fees</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenBNS) onOpenBNS(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="IPC ⇄ BNS Provision Converter"
+          >
+            <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">IPC ⇄ BNS</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenBareActs) onOpenBareActs(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Central Bare Acts and Statutory Library"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Bare Acts</span>
+          </button>
+          <button
+            onClick={() => { navigate('/precedents'); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Supreme Court Precedents Explorer"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Precedents</span>
+          </button>
+          <button
+            onClick={() => { navigate('/limitation-chronology'); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Limitation & Chronology Builder"
+          >
+            <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Chronology</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Tabs: Cases vs Search History ── */}
-      <div className="px-4 pt-3 pb-2 shrink-0">
+      <div className="px-3.5 pt-2.5 pb-1.5 shrink-0">
         <div className="flex bg-white/4 rounded-lg p-0.5 border border-white/6">
           <button
             onClick={() => setSidebarTab('cases')}
@@ -408,7 +431,7 @@ export default function Sidebar({
       )}
 
       {/* ── Pro / Downgrade CTA ── */}
-      <div className="px-4 pb-3 shrink-0">
+      <div className="px-3.5 pb-2 shrink-0">
         {!user?.is_pro ? (
           <motion.button
             onClick={handleTogglePro}

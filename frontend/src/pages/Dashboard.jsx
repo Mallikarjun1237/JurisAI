@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -6,11 +7,13 @@ import {
   Loader2, AlertTriangle, Scale, FileText, Zap,
   Plus, FolderOpen, ChevronLeft, Clock, MessageSquare,
   CheckCircle, ArrowRight, Download, Pencil, BookOpen, Calendar,
-  Calculator, ShieldCheck, Printer,
+  Calculator, ShieldCheck, Printer, User,
+  Share2, FileDown, Brain, Copy, Check, X,
+  ArrowUpRight,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LanguageSelector } from '../context/LanguageContext'
-import { apiQuery, apiGetCase, apiTogglePro } from '../api/client'
+import { apiQuery, apiGetCase, apiTogglePro, apiTransferCaseToChat } from '../api/client'
 import Sidebar from '../components/Sidebar'
 import CitizenView from '../components/CitizenView'
 import AdvocateView from '../components/AdvocateView'
@@ -20,6 +23,7 @@ import LegalDraftModal from '../components/LegalDraftModal'
 import CourtFeeModal from '../components/CourtFeeModal'
 import AdvocateDiaryModal from '../components/AdvocateDiaryModal'
 import DPDPSecurityModal from '../components/DPDPSecurityModal'
+import BareActsModal from '../components/BareActsModal'
 import NotificationCenter from '../components/NotificationCenter'
 import NotificationPermissionModal from '../components/NotificationPermissionModal'
 import TelemetryCard from '../components/TelemetryCard'
@@ -79,6 +83,9 @@ export default function Dashboard() {
   const [followUpQuery, setFollowUpQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [copiedShare, setCopiedShare] = useState(false)
+  const [deepThink, setDeepThink] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [limitError, setLimitError] = useState(false)
@@ -101,6 +108,7 @@ export default function Dashboard() {
   const [isCourtFeeModalOpen, setIsCourtFeeModalOpen] = useState(false)
   const [isDiaryModalOpen, setIsDiaryModalOpen] = useState(false)
   const [isDPDPModalOpen, setIsDPDPModalOpen] = useState(false)
+  const [isBareActsModalOpen, setIsBareActsModalOpen] = useState(false)
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false)
 
   const refreshSidebar = () => {
@@ -342,15 +350,131 @@ export default function Dashboard() {
     showToast(errorMsg, 'error')
   }
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (updatedDataOrAction) => {
+    // If passed a user object with is_pro from Sidebar's onUpgrade(res.data)
+    if (updatedDataOrAction && typeof updatedDataOrAction === 'object' && 'is_pro' in updatedDataOrAction) {
+      updateUser(updatedDataOrAction)
+      setLimitError(false)
+      showToast(
+        updatedDataOrAction.is_pro
+          ? 'Account upgraded to Pro! Unlimited legal queries unlocked.'
+          : 'Plan switched to Free tier (5 queries/day).',
+        'warning'
+      )
+      refreshSidebar()
+      return
+    }
     try {
-      const res = await apiTogglePro('upgrade')
+      const action = typeof updatedDataOrAction === 'string' ? updatedDataOrAction : (user?.is_pro ? 'downgrade' : 'upgrade')
+      const res = await apiTogglePro(action)
       updateUser(res.data)
       setLimitError(false)
-      showToast('Account upgraded to Pro! Unlimited legal queries unlocked.', 'warning')
+      showToast(
+        res.data.is_pro
+          ? 'Account upgraded to Pro! Unlimited legal queries unlocked.'
+          : 'Plan switched to Free tier (5 queries/day).',
+        'warning'
+      )
       refreshSidebar()
     } catch {
       showToast('Failed to switch plan. Please try again.', 'error')
+    }
+  }
+
+  // 🏛️ Sovereign Court-Standard White-Paper Print & Vector PDF Export
+  const handleTransferToChat = async () => {
+    if (!activeCaseId) {
+      navigate('/case-chat')
+      return
+    }
+    try {
+      await apiTransferCaseToChat(activeCaseId)
+      showToast('Transferred case consultation to Personal Legal Assistant!', 'info')
+      navigate('/case-chat')
+    } catch (err) {
+      console.error('Transfer case to chat error:', err)
+      navigate('/case-chat')
+    }
+  }
+
+  const handlePrintDashboard = () => {
+    if (!caseTurns || caseTurns.length === 0) {
+      showToast('No legal query results to print or export.', 'warning')
+      return
+    }
+    document.body.classList.add('print-dashboard-active')
+    const cleanup = () => {
+      document.body.classList.remove('print-dashboard-active')
+      window.removeEventListener('afterprint', cleanup)
+    }
+    window.addEventListener('afterprint', cleanup)
+    window.print()
+  }
+
+  // ── Share Transcript Generator ──
+  const getShareableDashboardTranscript = () => {
+    const title = caseView?.name || 'JurisAI Statutory Legal Research'
+    const header = `========================================\n${title}\nJurisAI Sovereign Legal Intelligence Report\nDate: ${new Date().toLocaleDateString('en-GB')}\n========================================\n\n`
+    const body = (caseTurns || [])
+      .map((t, idx) => {
+        let block = `[CLIENT / ADVOCATE LEGAL QUERY #${idx + 1}]:\n${t.query_text}\n\n`
+        block += `[SOVEREIGN STATUTORY ADVISORY]:\n${t.plain_english_summary || ''}\n\n`
+        if (t.applicable_statutes && t.applicable_statutes.length > 0) {
+          block += `Applicable Statutory Provisions:\n`
+          t.applicable_statutes.forEach((s) => {
+            const sTitle = s.title || (s.section ? `Section ${s.section}${s.act_title ? ` — ${s.act_title}` : ''}` : (s.act_title || s.act_name || 'Statutory Provision'))
+            const sCite = s.citation ? ` [${s.citation}]` : ''
+            const sText = s.excerpt || s.description || s.punishment || ''
+            block += `• ${sTitle}${sCite}: ${sText}\n`
+          })
+          block += '\n'
+        }
+        if (t.relevant_precedents && t.relevant_precedents.length > 0) {
+          block += `Judicial Precedents:\n`
+          t.relevant_precedents.forEach((p) => {
+            const pTitle = p.title || p.case_title || 'Judicial Precedent'
+            const pYear = p.year ? `, ${p.year}` : ''
+            const pRatio = p.holding || p.relevance || ''
+            block += `• ${pTitle} (${p.court || 'Supreme Court of India'}${pYear}${p.citation ? ` | ${p.citation}` : ''}): ${pRatio}\n`
+          })
+          block += '\n'
+        }
+        if (t.suggested_next_steps && t.suggested_next_steps.length > 0) {
+          block += `Actionable Next Steps:\n`
+          t.suggested_next_steps.forEach((step, si) => {
+            block += `${si + 1}. ${step}\n`
+          })
+          block += '\n'
+        }
+        return block
+      })
+      .join('----------------------------------------\n\n')
+    return header + body
+  }
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(getShareableDashboardTranscript().slice(0, 1500) + '...\n\n[Shared via JurisAI Sovereign Legal Intelligence]')
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank')
+  }
+
+  const handleShareEmail = () => {
+    const subject = encodeURIComponent(`Legal Research Report: ${caseView?.name || 'JurisAI Statutory Legal Brief'}`)
+    const body = encodeURIComponent(getShareableDashboardTranscript())
+    window.location.href = `mailto:?subject=${subject}&body=${body}`
+  }
+
+  const handleShareTelegram = () => {
+    const text = encodeURIComponent(getShareableDashboardTranscript().slice(0, 1000) + '...')
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${text}`, '_blank')
+  }
+
+  const handleCopyTranscript = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareableDashboardTranscript())
+      setCopiedShare(true)
+      setTimeout(() => setCopiedShare(false), 2500)
+    } catch {
+      showToast('Could not copy to clipboard.', 'error')
     }
   }
 
@@ -416,6 +540,7 @@ export default function Dashboard() {
         onOpenCourtFee={handleOpenCourtFee}
         onOpenDiary={handleOpenDiary}
         onOpenDPDP={() => setIsDPDPModalOpen(true)}
+        onOpenBareActs={() => setIsBareActsModalOpen(true)}
         activeCaseId={activeCaseId}
         open={sidebarOpen}
         onClose={handleCloseSidebar}
@@ -485,7 +610,7 @@ export default function Dashboard() {
                 title="AI Co-Pilot for Case Documents & Contracts"
               >
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span>{t('chatNav') || 'Case Document Chat'}</span>
+                <span>{t('chatNav') || 'Personal Legal Assistant'}</span>
               </button>
 
               {/* Advocate Diary */}
@@ -520,6 +645,16 @@ export default function Dashboard() {
                   <span className="text-indigo-400 font-bold">⇄</span>
                   <span>BNS</span>
                 </span>
+              </button>
+
+              {/* Central Bare Acts Repository */}
+              <button
+                onClick={() => setIsBareActsModalOpen(true)}
+                className="flex items-center gap-1.5 text-[13px] sm:text-xs text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm shadow-indigo-500/10"
+                title="India Code Central Bare Acts & Statutory Library (71+ Acts, 124+ Provisions)"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span>Bare Acts (71+)</span>
               </button>
 
               {/* DPDP Shield */}
@@ -613,6 +748,32 @@ export default function Dashboard() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-auto">
+                  {/* Deep Think Mode Toggle Switch */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user?.is_pro) {
+                        showToast('Deep Think mode active in preview mode! Upgrade to Pro for unlimited multi-step analysis.', 'warning')
+                      }
+                      setDeepThink(!deepThink)
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                      deepThink
+                        ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 text-white border-violet-400 shadow-md shadow-violet-500/30 ring-1 ring-violet-400'
+                        : 'bg-white/4 text-slate-400 border-white/10 hover:text-white hover:bg-white/8'
+                    }`}
+                    title="Toggle Deep Think Mode: Multi-step statutory research, contradiction checks, and Supreme Court precedent verification"
+                  >
+                    <Brain className={`w-3.5 h-3.5 ${deepThink ? 'text-amber-300 animate-pulse' : 'text-slate-400'}`} />
+                    <span className="hidden sm:inline">{deepThink ? 'Deep Think ON' : 'Deep Think'}</span>
+                    <span className="sm:hidden">{deepThink ? 'Think' : 'Fast'}</span>
+                    {!user?.is_pro && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+
                   <VoiceInputButton
                     language={language}
                     onTranscript={handleVoiceTranscript}
@@ -792,39 +953,44 @@ export default function Dashboard() {
                       <span>{t('officialDrafts') || 'Legal Notice & Drafts'}</span>
                     </button>
 
-                    {/* Official Court-Standard PDF Export */}
+                    {/* Court-Standard White-Paper PDF Export */}
                     <button
-                      onClick={() => {
-                        setGeneratingPdf(true)
-                        try {
-                          generateCourtLegalReport({ result: latestTurn, user, caseName: caseView?.name })
-                          showToast('Court-Standard Legal Report downloaded successfully!', 'warning')
-                        } catch (e) {
-                          console.error(e)
-                          showToast('Failed to generate PDF. Please try again.', 'error')
-                        } finally {
-                          setGeneratingPdf(false)
-                        }
-                      }}
-                      disabled={generatingPdf}
+                      onClick={handlePrintDashboard}
                       className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm"
+                      title="Export clean court-formatted memorandum as vector PDF (White background, black font)"
                     >
-                      {generatingPdf ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Download className="w-3.5 h-3.5 text-indigo-400" />
-                      )}
-                      <span>{t('exportPdf') || 'Court-Standard PDF'}</span>
+                      <FileDown className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>{t('exportPdf') || 'Export PDF'}</span>
                     </button>
 
-                    {/* Print Legal Advisory Report */}
+                    {/* Pristine Court Print */}
                     <button
-                      onClick={() => window.print()}
+                      onClick={handlePrintDashboard}
                       className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:border-white/20 bg-white/4 hover:bg-white/8 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm"
                       title="Print pristine court legal intelligence report"
                     >
                       <Printer className="w-3.5 h-3.5 text-indigo-400" />
                       <span>{t('printReport') || 'Print'}</span>
+                    </button>
+
+                    {/* Share Legal Research */}
+                    <button
+                      onClick={() => setShareModalOpen(true)}
+                      className="flex items-center gap-1.5 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm"
+                      title="Share legal research via WhatsApp, Email, or Telegram"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Share</span>
+                    </button>
+
+                    {/* Continue in Case Document Chat */}
+                    <button
+                      onClick={handleTransferToChat}
+                      className="flex items-center gap-1.5 text-xs text-indigo-200 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 px-3 py-1.5 rounded-lg transition-all font-semibold shrink-0 whitespace-nowrap shadow-sm"
+                      title="Continue this consultation in Personal Legal Assistant with inherited memory"
+                    >
+                      <ArrowUpRight className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Continue in Personal Assistant</span>
                     </button>
                   </div>
                 </div>
@@ -839,63 +1005,80 @@ export default function Dashboard() {
                         key={turn.query_id || `turn-${idx}`}
                         className="space-y-5 pt-6 border-t border-indigo-500/20 first:border-t-0 first:pt-0"
                       >
-                        {/* Scenario / Question Banner */}
-                        <div className="glass-card rounded-2xl p-5 border border-indigo-500/20 relative overflow-hidden shadow-lg">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-                          <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                            <span className="flex items-center gap-1.5 font-semibold text-indigo-400">
-                              <Scale className="w-3.5 h-3.5" />
-                              {isInitial ? 'Legal Scenario Analyzed' : `Follow-up Question #${idx + 1}`}
-                            </span>
-                            {turn.created_at && (
-                              <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {new Date(turn.created_at).toLocaleDateString('en-IN', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
+                        {/* User Message Bubble (Right-aligned, ChatGPT / Gemini style) */}
+                        <div className="flex justify-end mb-4">
+                          <div className="max-w-[85%] sm:max-w-2xl bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-5 py-3.5 shadow-lg shadow-indigo-950/40 border border-indigo-400/25">
+                            <div className="flex items-center justify-between text-[11px] text-indigo-200/90 mb-1.5 gap-4">
+                              <span className="font-semibold tracking-wide flex items-center gap-1.5 uppercase">
+                                <User className="w-3.5 h-3.5" />
+                                {isInitial ? 'Your Legal Query' : `Follow-up #${idx + 1}`}
                               </span>
-                            )}
+                              {turn.created_at && (
+                                <span className="flex items-center gap-1 text-[11px] text-indigo-200/80">
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(turn.created_at).toLocaleTimeString('en-IN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm sm:text-base font-normal leading-relaxed whitespace-pre-wrap">
+                              {turn.query_text}
+                            </p>
                           </div>
-                          <p className="text-sm sm:text-base font-medium text-white leading-relaxed">
-                            {turn.query_text}
-                          </p>
                         </div>
 
-                        {/* Statutory Verification & Authority Telemetry */}
-                        <TelemetryCard
-                          telemetry={turn.telemetry}
-                          confidenceScore={turn.confidence_score}
-                          statutesCount={turn.applicable_statutes?.length || 0}
-                          precedentsCount={turn.relevant_precedents?.length || 0}
-                        />
+                        {/* Assistant Response (Left-aligned, ChatGPT / Gemini style) */}
+                        <div className="flex items-start gap-3 w-full">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-md mt-1">
+                            <Scale className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 space-y-4 min-w-0">
+                            {/* Statutory Verification Telemetry Card: ONLY on Initial Assessment (Turn 0) */}
+                            {isInitial ? (
+                              <TelemetryCard
+                                telemetry={turn.telemetry}
+                                confidenceScore={turn.confidence_score}
+                                statutesCount={turn.applicable_statutes?.length || 0}
+                                precedentsCount={turn.relevant_precedents?.length || 0}
+                              />
+                            ) : (
+                              /* Clean, minimal verification badge for follow-ups (NO 3 repeating boxes!) */
+                              <div className="flex items-center gap-2 text-xs text-indigo-300/80 bg-indigo-500/5 px-3 py-1.5 rounded-lg border border-indigo-500/15 w-fit">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>Court-Verifiable Statutory Analysis</span>
+                                {turn.telemetry?.groundedness_score && (
+                                  <span className="text-slate-500">• {turn.telemetry.groundedness_score}% groundedness</span>
+                                )}
+                              </div>
+                            )}
 
-                        {/* Dual-View Switcher for this Turn */}
-                        <div className="flex gap-1 glass rounded-xl p-1 w-fit border border-white/6">
-                          <TabButton
-                            active={turnView === 'citizen'}
-                            onClick={() => setTurnView(turn.query_id, idx, 'citizen')}
-                            icon={<Users className="w-3.5 h-3.5" />}
-                            label={t('citizenView') || 'Citizen Guide'}
-                          />
-                          <TabButton
-                            active={turnView === 'advocate'}
-                            onClick={() => setTurnView(turn.query_id, idx, 'advocate')}
-                            icon={<Briefcase className="w-3.5 h-3.5" />}
-                            label={t('advocateView') || 'Advocate Brief'}
-                          />
-                        </div>
+                            {/* Dual-View Switcher for this Turn */}
+                            <div className="flex gap-1 glass rounded-xl p-1 w-fit border border-white/6">
+                              <TabButton
+                                active={turnView === 'citizen'}
+                                onClick={() => setTurnView(turn.query_id, idx, 'citizen')}
+                                icon={<Users className="w-3.5 h-3.5" />}
+                                label={t('citizenView') || 'Citizen Guide'}
+                              />
+                              <TabButton
+                                active={turnView === 'advocate'}
+                                onClick={() => setTurnView(turn.query_id, idx, 'advocate')}
+                                icon={<Briefcase className="w-3.5 h-3.5" />}
+                                label={t('advocateView') || 'Advocate Brief'}
+                              />
+                            </div>
 
-                        {/* Turn Content (Citizen vs Advocate) */}
-                        <div>
-                          {turnView === 'citizen' ? (
-                            <CitizenView data={turn} />
-                          ) : (
-                            <AdvocateView data={turn} isPro={user?.is_pro} />
-                          )}
+                            {/* Turn Content (Citizen vs Advocate) */}
+                            <div>
+                              {turnView === 'citizen' ? (
+                                <CitizenView data={turn} />
+                              ) : (
+                                <AdvocateView data={turn} isPro={user?.is_pro} />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )
@@ -918,6 +1101,32 @@ export default function Dashboard() {
                       className="w-full bg-transparent text-white placeholder-slate-500 text-sm resize-none focus:outline-none leading-relaxed"
                     />
                     <div className="flex items-center justify-end mt-2 pt-2 border-t border-white/5 gap-2">
+                      {/* Deep Think Mode Toggle in Follow-up */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user?.is_pro) {
+                            showToast('Deep Think mode active in preview mode! Upgrade to Pro for unlimited multi-step analysis.', 'warning')
+                          }
+                          setDeepThink(!deepThink)
+                        }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                          deepThink
+                            ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 text-white border-violet-400 shadow-md shadow-violet-500/30 ring-1 ring-violet-400'
+                            : 'bg-white/4 text-slate-400 border-white/10 hover:text-white hover:bg-white/8'
+                        }`}
+                        title="Toggle Deep Think Mode: Multi-step statutory research, contradiction checks, and Supreme Court precedent verification"
+                      >
+                        <Brain className={`w-3.5 h-3.5 ${deepThink ? 'text-amber-300 animate-pulse' : 'text-slate-400'}`} />
+                        <span className="hidden sm:inline">{deepThink ? 'Deep Think ON' : 'Deep Think'}</span>
+                        <span className="sm:hidden">{deepThink ? 'Think' : 'Fast'}</span>
+                        {!user?.is_pro && (
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                            PRO
+                          </span>
+                        )}
+                      </button>
+
                       <VoiceInputButton
                         language={language}
                         onTranscript={handleFollowUpVoiceTranscript}
@@ -974,6 +1183,22 @@ export default function Dashboard() {
         onClose={() => setIsDiaryModalOpen(false)}
       />
 
+      <BareActsModal
+        isOpen={isBareActsModalOpen}
+        onClose={() => setIsBareActsModalOpen(false)}
+        onSelectAct={(act) => {
+          setIsBareActsModalOpen(false)
+          const prompt = `Explain the key statutory provisions, practical litigation applications, and court remedies under ${act.title} (${act.year || ''}) for legal proceedings.`
+          setQuery(prompt)
+          if (textareaRef.current) {
+            setTimeout(() => {
+              textareaRef.current.focus()
+              textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }, 100)
+          }
+        }}
+      />
+
       <DPDPSecurityModal
         isOpen={isDPDPModalOpen}
         onClose={() => setIsDPDPModalOpen(false)}
@@ -984,6 +1209,310 @@ export default function Dashboard() {
         onClose={() => setIsNotifModalOpen(false)}
         onPermissionGranted={() => showToast('🔔 System Notifications Activated! Court hearing & limitation reminders are now active.', 'warning')}
       />
+
+      {/* ── SHARE LEGAL RESEARCH MODAL ── */}
+      <AnimatePresence>
+        {shareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[#0b0d1e] border border-indigo-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">Share Legal Research</h4>
+                    <p className="text-[11px] text-slate-400 truncate max-w-[240px]">{caseView?.name || 'Statutory Research Brief'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShareModalOpen(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Export or dispatch this verified legal statutory analysis to clients, senior advocates, or junior researchers:
+              </p>
+
+              {/* Share Channels */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  <span>WhatsApp</span>
+                </button>
+
+                <button
+                  onClick={handleShareEmail}
+                  className="p-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
+                  <span>Email</span>
+                </button>
+
+                <button
+                  onClick={handleShareTelegram}
+                  className="p-3 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
+                  <span>Telegram</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShareModalOpen(false)
+                    handlePrintDashboard()
+                  }}
+                  className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
+                  <span>Save as PDF</span>
+                </button>
+              </div>
+
+              {/* Copy Transcript Button */}
+              <div className="pt-2 border-t border-indigo-500/20">
+                <button
+                  onClick={handleCopyTranscript}
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white font-semibold flex items-center justify-center gap-2 transition-all"
+                >
+                  {copiedShare ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-400">Copied Full Transcript to Clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-indigo-400" />
+                      <span>Copy Full Legal Transcript</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── DEDICATED COURT-STANDARD WHITE-PAPER PRINT PORTAL FOR DASHBOARD ── */}
+      {createPortal(
+        <div id="dashboard-official-print" className="font-serif text-black max-w-[195mm] mx-auto text-[10pt] leading-normal bg-white">
+          {/* Top Court Header */}
+          <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '8px', marginBottom: '14px' }}>
+            <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 'bold', margin: '0 0 2px 0', color: '#334155', fontFamily: 'sans-serif' }}>
+              REPUBLIC OF INDIA • STATUTORY LEGAL OPINION & RESEARCH BRIEF
+            </p>
+            <h1 style={{ fontSize: '13pt', fontWeight: 'bold', textTransform: 'uppercase', margin: '2px 0', color: '#0f172a', letterSpacing: '0.5px' }}>
+              {caseView?.name || 'Statutory Legal Research Memorandum'}
+            </h1>
+            <p style={{ fontSize: '9pt', margin: '2px 0 0 0', color: '#475569', fontStyle: 'italic', fontFamily: 'sans-serif' }}>
+              JurisAI Sovereign Statutory Co-Pilot • Pre-Litigation Advisory Opinion
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', color: '#64748b', marginTop: '6px', paddingTop: '4px', borderTop: '1px dashed #cbd5e1', fontFamily: 'sans-serif' }}>
+              <span><strong>Counsel / User:</strong> {user?.full_name || 'Counsel'} ({user?.email || 'N/A'})</span>
+              <span><strong>Case Reference:</strong> {activeCaseId ? `JURIS-CASE-#${activeCaseId}` : 'GENERAL RESEARCH'}</span>
+              <span><strong>Date of Record:</strong> {new Date().toLocaleDateString('en-GB')} at {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+
+          {/* Sequential Case Turns (Clear distinction between Client Query & Sovereign Statutory Advisory) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {caseTurns.map((turn, idx) => (
+              <div key={turn.query_id || idx} className="print-turn-container" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                {/* User Query Block */}
+                <div
+                  className="print-query-box"
+                  style={{
+                    padding: '8pt 10pt',
+                    backgroundColor: '#f1f5f9',
+                    border: '1.5px solid #94a3b8',
+                    borderRadius: '5px',
+                    marginBottom: '8pt',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', marginBottom: '5px', fontSize: '8.5pt', fontWeight: 'bold', color: '#1e3a8a', fontFamily: 'sans-serif' }}>
+                    <span>[CLIENT / ADVOCATE LEGAL QUERY - #{idx + 1}]</span>
+                    <span style={{ fontSize: '7.5pt', color: '#64748b', fontWeight: 'normal', fontFamily: 'monospace' }}>
+                      {turn.created_at ? new Date(turn.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : `Turn #${idx + 1}`}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '9.5pt', color: '#000000', lineHeight: '1.45', fontFamily: 'sans-serif', whiteSpace: 'pre-wrap' }}>
+                    {turn.query_text}
+                  </div>
+                </div>
+
+                {/* Assistant Statutory Advisory Block */}
+                <div
+                  className="print-response-box"
+                  style={{
+                    padding: '10pt 12pt',
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #0f172a',
+                    borderRadius: '5px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #94a3b8', paddingBottom: '3px', marginBottom: '8px', fontSize: '8.5pt', fontWeight: 'bold', color: '#0f172a', fontFamily: 'sans-serif' }}>
+                    <span>[JURISAI SOVEREIGN STATUTORY ADVISORY & JUDICIAL GROUNDS]</span>
+                    <span style={{ fontSize: '7.5pt', color: '#166534', fontWeight: 'bold', fontFamily: 'sans-serif' }}>
+                      {turn.telemetry?.groundedness_score ? `${turn.telemetry.groundedness_score}% Court Verifiable` : 'Verified Indian Law'}
+                    </span>
+                  </div>
+
+                  {/* Plain Language Summary */}
+                  <div style={{ marginBottom: '8pt' }}>
+                    <div style={{ fontSize: '8.5pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#334155', marginBottom: '2pt', fontFamily: 'sans-serif' }}>
+                      1. Executive Legal Assessment
+                    </div>
+                    <div style={{ fontSize: '9.5pt', lineHeight: '1.5', color: '#000000', fontFamily: 'serif' }}>
+                      {turn.plain_english_summary}
+                    </div>
+                  </div>
+
+                  {/* Applicable Statutes — Official Court-Standard Table */}
+                  {turn.applicable_statutes && turn.applicable_statutes.length > 0 && (
+                    <div style={{ marginBottom: '10pt' }}>
+                      <div style={{ fontSize: '8.5pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#1e293b', marginBottom: '4pt', fontFamily: 'sans-serif', letterSpacing: '0.3px' }}>
+                        2. Applicable Statutory Provisions & Punishments
+                      </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #0f172a', fontSize: '8pt', fontFamily: 'sans-serif', backgroundColor: '#ffffff' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '1.5px solid #0f172a' }}>
+                            <th style={{ width: '32%', padding: '5pt 6pt', textAlign: 'left', fontWeight: 'bold', color: '#0f172a', borderRight: '1px solid #cbd5e1', textTransform: 'uppercase', fontSize: '7.5pt' }}>
+                              Statutory Provision & Act Citation
+                            </th>
+                            <th style={{ width: '50%', padding: '5pt 6pt', textAlign: 'left', fontWeight: 'bold', color: '#0f172a', borderRight: '1px solid #cbd5e1', textTransform: 'uppercase', fontSize: '7.5pt' }}>
+                              Statutory Mandate, Offence & Penal Liability
+                            </th>
+                            <th style={{ width: '18%', padding: '5pt 6pt', textAlign: 'left', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', fontSize: '7.5pt' }}>
+                              Classification / Forum
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {turn.applicable_statutes.map((s, si) => {
+                            const statuteTitle = s.title || (s.section ? `Section ${s.section}${s.act_title ? ` — ${s.act_title}` : ''}` : (s.act_title || s.act_name || `Statutory Provision #${si + 1}`))
+                            const statuteCitation = s.citation || s.act_title || s.act_name || 'Central Legislation'
+                            const mandateText = s.excerpt || s.description || s.punishment || s.text || 'Statutory grounds applicable to the presented facts and actionable remedies.'
+                            const forumScope = s.doc_type ? s.doc_type.toUpperCase() : (s.explanation || s.scope || 'CENTRAL STATUTE')
+                            const isAltRow = si % 2 === 1
+
+                            return (
+                              <tr key={si} style={{ borderBottom: '1px solid #cbd5e1', backgroundColor: isAltRow ? '#f8fafc' : '#ffffff' }}>
+                                <td style={{ padding: '5pt 6pt', borderRight: '1px solid #cbd5e1', verticalAlign: 'top' }}>
+                                  <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '8pt', lineHeight: '1.3' }}>
+                                    {statuteTitle}
+                                  </div>
+                                  <div style={{ color: '#475569', fontSize: '7.5pt', marginTop: '2pt', fontStyle: 'italic' }}>
+                                    {statuteCitation}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '5pt 6pt', borderRight: '1px solid #cbd5e1', verticalAlign: 'top', color: '#1e293b', lineHeight: '1.4' }}>
+                                  <div style={{ fontSize: '8pt' }}>
+                                    {mandateText}
+                                  </div>
+                                  {s.punishment && s.excerpt && s.punishment !== s.excerpt && (
+                                    <div style={{ marginTop: '3pt', fontSize: '7.5pt', color: '#b91c1c', fontWeight: 'bold' }}>
+                                      Prescribed Penalty: {s.punishment}
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ padding: '5pt 6pt', verticalAlign: 'top' }}>
+                                  <span style={{ display: 'inline-block', padding: '1pt 4pt', backgroundColor: '#e2e8f0', color: '#0f172a', borderRadius: '3px', fontSize: '7pt', fontWeight: 'bold' }}>
+                                    {forumScope}
+                                  </span>
+                                  {s.explanation && (
+                                    <div style={{ color: '#475569', fontSize: '7pt', marginTop: '2pt', fontStyle: 'italic' }}>
+                                      {s.explanation}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Relevant Precedents */}
+                  {turn.relevant_precedents && turn.relevant_precedents.length > 0 && (
+                    <div style={{ marginBottom: '10pt' }}>
+                      <div style={{ fontSize: '8.5pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#1e293b', marginBottom: '4pt', fontFamily: 'sans-serif', letterSpacing: '0.3px' }}>
+                        3. Supreme Court & High Court Precedents (Art. 141)
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4pt' }}>
+                        {turn.relevant_precedents.map((p, pi) => {
+                          const caseTitle = p.title || p.case_title || `Precedent #${pi + 1}`
+                          const courtName = p.court || 'Supreme Court of India'
+                          const yearText = p.year ? `(${p.year})` : ''
+                          const citationText = p.citation || 'AIR / SCC'
+                          const ratioText = p.holding || p.relevance || p.ratio_decidendi || p.excerpt || ''
+
+                          return (
+                            <div key={pi} style={{ padding: '5pt 7pt', border: '1px solid #94a3b8', borderRadius: '4px', backgroundColor: '#ffffff', fontSize: '8pt', fontFamily: 'sans-serif' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1px solid #e2e8f0', paddingBottom: '2pt', marginBottom: '3pt' }}>
+                                <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '8.5pt' }}>
+                                  • {caseTitle} {yearText}
+                                </span>
+                                <span style={{ fontSize: '7.5pt', color: '#475569', fontStyle: 'italic', fontWeight: '600' }}>
+                                  {courtName} | {citationText}
+                                </span>
+                              </div>
+                              {ratioText && (
+                                <div style={{ color: '#1e293b', fontSize: '8pt', lineHeight: '1.4' }}>
+                                  <strong style={{ color: '#334155' }}>Ratio Decidendi / Judicial Holding:</strong> "{ratioText}"
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Suggested Next Steps */}
+                  {turn.suggested_next_steps && turn.suggested_next_steps.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '8.5pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#334155', marginBottom: '3pt', fontFamily: 'sans-serif' }}>
+                        4. Actionable Next Steps & Procedural Roadmap
+                      </div>
+                      <ol style={{ margin: '0 0 0 16px', padding: 0, fontSize: '9pt', color: '#000000', fontFamily: 'sans-serif', lineHeight: '1.4' }}>
+                        {turn.suggested_next_steps.map((st, sti) => (
+                          <li key={sti} style={{ marginBottom: '2pt' }}>
+                            {st}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Formal Court Footer */}
+          <div style={{ marginTop: '20px', paddingTop: '8px', borderTop: '1.5px solid #0f172a', textAlign: 'center', fontSize: '7.5pt', color: '#475569', fontFamily: 'sans-serif' }}>
+            <p style={{ margin: '0 0 2px 0', fontWeight: 'bold' }}>
+              CONFIDENTIAL & PRIVILEGED LEGAL RESEARCH MEMORANDUM • PREPARED WITH JURISAI COURT ENGINE
+            </p>
+            <p style={{ margin: 0 }}>
+              Governed under the Bharatiya Nyaya Sanhita (2023), Bharatiya Nagarik Suraksha Sanhita (2023), and Bharatiya Sakshya Adhiniyam (2023). Not a substitute for formal Vakalatnama representation in a Court of Law.
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
     </motion.div>
   )
 }

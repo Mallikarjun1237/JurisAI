@@ -187,10 +187,10 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
         initial={{ opacity: 0, scale: 0.94, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 14 }}
-        className="relative w-full max-w-5xl bg-gradient-to-b from-[#101233] via-[#0b0d26] to-[#08091a] border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-slate-100"
+        className="relative w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-slate-100"
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-indigo-500/15 bg-white/3 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white indigo-glow">
               <Scale className="w-5 h-5 text-white" />
@@ -284,7 +284,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
                   <select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="w-full bg-[#131435] border border-indigo-500/25 focus:border-indigo-400 text-white text-xs rounded-xl px-3 py-2.5 outline-none transition-all"
+                    className="w-full bg-[#131435] border border-indigo-500/30 focus:border-indigo-500 text-white text-xs rounded-xl px-3 py-2.5 outline-none transition-all"
                   >
                     {states.map((st) => (
                       <option key={st.code} value={st.code}>
@@ -308,7 +308,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
                   <select
                     value={selectedSuitType}
                     onChange={(e) => setSelectedSuitType(e.target.value)}
-                    className="w-full bg-[#131435] border border-indigo-500/25 focus:border-indigo-400 text-white text-xs rounded-xl px-3 py-2.5 outline-none transition-all"
+                    className="w-full bg-[#131435] border border-indigo-500/30 focus:border-indigo-500 text-white text-xs rounded-xl px-3 py-2.5 outline-none transition-all"
                   >
                     {suitTypes.map((st) => (
                       <option key={st.key} value={st.key}>
@@ -326,7 +326,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
                 {/* 3. Valuation / Claim Amount */}
                 {currentSuitObj?.mode !== 'fixed' && (
                   <div>
-                    <label className="text-xs font-semibold text-slate-300 flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
                       <span>
                         {currentSuitObj?.mode === 'annual_rent' ? 'Annual Rent (12 Months)' : 'Subject Matter / Claim Valuation'}
                       </span>
@@ -341,7 +341,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
                         value={valuation}
                         onChange={(e) => setValuation(e.target.value)}
                         placeholder="Enter valuation amount"
-                        className="w-full bg-[#131435] border border-indigo-500/25 focus:border-indigo-400 text-white text-xs font-mono rounded-xl pl-7 pr-3 py-2.5 outline-none transition-all"
+                        className="w-full bg-[#131435] border border-indigo-500/30 focus:border-indigo-500 text-white text-xs font-mono rounded-xl pl-7 pr-3 py-2.5 outline-none transition-all"
                       />
                     </div>
 
@@ -391,7 +391,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
 
                 {/* 4. Number of Defendants / Process Fee */}
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
                     <span className="flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Number of Defendants / Respondents</span>
@@ -431,24 +431,24 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
               </div>
 
               {/* Right Column: Statutory Calculation Receipt & Slab Breakdown */}
-              <div className="lg:col-span-7 bg-[#080a1c] border border-indigo-500/20 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+              <div className="lg:col-span-7 bg-[#080a1c] border border-indigo-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl text-white">
                 {receipt ? (
                   <div className="space-y-4">
                     {/* Top Summary Banner */}
                     <div className="flex items-start justify-between border-b border-indigo-500/15 pb-3">
                       <div>
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-400">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-700 dark:text-indigo-400">
                           Verified Statutory Assessment
                         </span>
                         <h3 className="text-xl sm:text-2xl font-black text-white font-mono mt-0.5">
                           ₹{receipt.total_payable_fee.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </h3>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                           {receipt.amount_in_words}
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block font-mono">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">
                           Treasury Head: {receipt.treasury_accounting_code || '0030-02-101-0-01'}
                         </span>
                         <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full inline-block mt-1">
@@ -459,7 +459,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
 
                     {/* Itemized Statutory Breakdown */}
                     <div>
-                      <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <Receipt className="w-3.5 h-3.5 text-indigo-400" />
                         <span>Itemized Statutory Fee Breakdown</span>
                       </h4>
@@ -467,7 +467,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
                         {receipt.itemized_receipt.map((item, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between p-2 rounded-lg bg-white/4 border border-white/6 text-xs"
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs hover:border-slate-700 transition"
                           >
                             <div className="min-w-0 pr-2">
                               <span className="font-semibold text-white block truncate">
@@ -487,7 +487,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
 
                     {/* Slab Computation Logic (if ad-valorem) */}
                     {receipt.applied_slabs && receipt.applied_slabs.length > 0 && (
-                      <div className="p-3 bg-white/4 rounded-xl border border-white/6 text-xs space-y-1.5">
+                      <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 text-xs space-y-1.5">
                         <span className="text-[10px] uppercase font-bold text-slate-400 block">
                           Ad-Valorem Schedule Slab Progression (Official Formula):
                         </span>
@@ -497,7 +497,7 @@ JurisAI Legal Practice Suite · Officially Verified Schedule
                               <span className="text-slate-400">
                                 {slab.slab_label} ({slab.rate_desc}):
                               </span>
-                              <span className="text-white">
+                              <span className="text-white font-semibold">
                                 ₹{slab.slab_fee.toLocaleString('en-IN')}
                               </span>
                             </div>

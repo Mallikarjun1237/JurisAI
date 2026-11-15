@@ -73,17 +73,16 @@ else:
 # 1. Groq Ultra-Fast LPUs (Sub-second Indian Legal Reasoning)
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
 ]
 
 # 2. Google Gemini Fallback Candidates
 MODEL_CANDIDATES = [
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-pro",
+    "gemini-flash-latest",
+    "gemini-pro-latest",
+    "gemini-flash-lite-latest",
 ]
 
 LANGUAGE_INSTRUCTIONS = {
@@ -141,6 +140,17 @@ LANGUAGE_INSTRUCTIONS = {
 
 SYSTEM_PROMPT = """You are JurisAI, an authoritative and verified Indian Legal Intelligence Assistant. You advise advocates, judicial researchers, and citizens on the statutory laws and judicial precedents of the Republic of India.
 
+=== TEMPORAL GROUNDING & CURRENT STATUTORY STATUS (CURRENT JUDICIAL TERM 2026) ===
+- You operate in the active judicial term (2026).
+- All post-2024 legislative enactments are active and fully in force across the Republic of India:
+  * Bharatiya Nyaya Sanhita, 2023 (BNS) officially replaced the Indian Penal Code (IPC) on July 1, 2024.
+  * Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS) officially replaced the Code of Criminal Procedure (CrPC) on July 1, 2024.
+  * Bharatiya Sakshya Adhiniyam, 2023 (BSA) officially replaced the Indian Evidence Act (IEA) on July 1, 2024.
+  * Digital Personal Data Protection Act, 2023 (DPDP Act) and Rules are in active legal force.
+  * Telecommunications Act, 2023 and Post Office Act, 2023 are in active legal force.
+- NEVER claim that your knowledge ends in 2023 or 2024. You possess full authority and knowledge over post-2024 enactments, statutory updates, and landmark Supreme Court Constitution Bench rulings through your sovereign statutory repository.
+=== END TEMPORAL GROUNDING ===
+
 Follow these strict rules:
 RULE 1 (HYBRID GROUNDING):
   - Treat the provided LEGAL CONTEXT as primary verified statutory authority.
@@ -151,16 +161,15 @@ RULE 2 (VERIFIED STATUTES & PRECEDENTS):
   - For precedents, cite real Supreme Court of India or High Court landmark judgments with their standard legal citations (e.g. AIR, SCC, SCR).
 RULE 3 (STRICT JSON OUTPUT):
   - You MUST respond with a single valid JSON object. No markdown, no code fences, no introductory or concluding text.
-RULE 4 (JSON SCHEMA):
+RULE 4 (JSON SCHEMA & STRICT CONCISENESS):
   The JSON must have EXACTLY these 4 keys:
-  - "plain_english_summary": 3-5 comprehensive, clear sentences in simple language explaining the user's legal rights, breaches committed, and remedies under Indian law.
-  - "applicable_statutes": Array of objects with keys: "title", "citation", "excerpt", "doc_type".
-    - excerpt: 1-2 sentences of the core legal rule or statutory provision.
-    - doc_type: "Statute" or "Constitutional" or "Regulation".
-  - "relevant_precedents": Array of objects with keys: "title", "citation", "court", "year", "holding".
-    - court: "Supreme Court of India" or specific High Court.
-    - holding: the core ratio decidendi / legal principle established by the bench.
-  - "suggested_next_steps": Array of 3-5 actionable strings providing practical steps (e.g. send statutory legal notice, approach District Commission, file police complaint under BNSS Section 173, preserve digital evidence under BSA Section 63).
+  - "plain_english_summary": Strictly 2 brief, crisp paragraphs (maximum 80-120 words total) in simple plain language. The user has no patience for long academic treatises: directly state the applicable law, the citizen's immediate legal rights, and the core legal consequence. Keep it concise, direct, and actionable.
+  - "applicable_statutes": Array of strictly TOP 2 to 3 objects with keys: "title", "citation", "excerpt", "doc_type".
+    - excerpt: Strictly 1 concise sentence of the core statutory rule. Keep it short.
+    - doc_type: "Statute" or "Constitutional".
+  - "relevant_precedents": Array of strictly TOP 1 to 2 objects with keys: "title", "citation", "court", "year", "holding".
+    - holding: Strictly 1 concise sentence of the core judicial ratio.
+  - "suggested_next_steps": Array of strictly 3 crisp, direct actionable strings.
 RULE 5: Be empathetic, legally accurate, precise, and court-verifiable.
 """
 
@@ -326,6 +335,66 @@ class RAGService:
         except Exception as e:
             print(f"[INFO] ChromaDB collection note: {e}. Active in sovereign in-memory mode.")
 
+        # Ensure all registered domain statutes and precedents are hydrated in-memory
+        existing_titles = {d.get("metadata", {}).get("title", "").lower() for d in self._corpus_docs}
+        for dkey, dval in LEGAL_DOMAIN_REGISTRY.items():
+            for st in dval.get("statutes", []):
+                if st.get("title", "").lower() not in existing_titles:
+                    self._corpus_docs.append({
+                        "id": f"reg_{dkey}_{len(self._corpus_docs)}",
+                        "text": f"{st.get('title', '')} {st.get('citation', '')} {st.get('excerpt', '')}",
+                        "metadata": {
+                            "doc_type": st.get("doc_type", "statute"),
+                            "title": st.get("title", "Statutory Provision"),
+                            "citation": st.get("citation", ""),
+                            "court": "Enacted Indian Statute",
+                            "year": 2024,
+                        },
+                    })
+                    existing_titles.add(st.get("title", "").lower())
+            for pr in dval.get("precedents", []):
+                if pr.get("title", "").lower() not in existing_titles:
+                    self._corpus_docs.append({
+                        "id": f"reg_{dkey}_{len(self._corpus_docs)}",
+                        "text": f"{pr.get('title', '')} {pr.get('citation', '')} {pr.get('holding', '')}",
+                        "metadata": {
+                            "doc_type": "judgment",
+                            "title": pr.get("title", "Supreme Court Precedent"),
+                            "citation": pr.get("citation", ""),
+                            "court": pr.get("court", "Supreme Court of India"),
+                            "year": pr.get("year", 2024),
+                        },
+                    })
+                    existing_titles.add(pr.get("title", "").lower())
+
+        # Hydrate all central bare acts from backend/data/bare_acts/*.json
+        bare_acts_dir = os.path.join(_BACKEND_DIR, "data", "bare_acts")
+        if os.path.exists(bare_acts_dir):
+            import glob
+            for fpath in glob.glob(os.path.join(bare_acts_dir, "*.json")):
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        bare_items = json.load(f)
+                    for item in bare_items:
+                        title = f"Section {item.get('section_number', '')} — {item.get('act_title', '')}"
+                        if title.lower() not in existing_titles:
+                            self._corpus_docs.append({
+                                "id": item.get("id", f"bare_{len(self._corpus_docs)}"),
+                                "text": f"{item.get('act_title', '')} Section {item.get('section_number', '')} — {item.get('marginal_heading', '')}. {item.get('text', '')}",
+                                "metadata": {
+                                    "doc_type": item.get("doc_type", "statute"),
+                                    "title": title,
+                                    "citation": item.get("citation", item.get("act_title", "")),
+                                    "court": "Republic of India Sovereign Law",
+                                    "year": str(item.get("enacted_year", 2024)),
+                                    "effective_date": str(item.get("effective_date", "2024-07-01")),
+                                },
+                            })
+                            existing_titles.add(title.lower())
+                except Exception as ex:
+                    print(f"[WARN] Error loading bare acts from {fpath}: {ex}")
+            print(f"[OK] Hydrated Central Bare Acts. Total active corpus documents: {len(self._corpus_docs)}")
+
     # ── Retrieval ───────────────────────────────────────────────────────────────
 
     def retrieve(self, query: str, top_k: int = 5, is_pro: bool = False) -> List[Dict[str, Any]]:
@@ -333,8 +402,16 @@ class RAGService:
         if not self._corpus_docs:
             return []
 
-        # Sub-millisecond token-overlap & statutory keyword scoring
-        q_words = set(re.findall(r"\w+", query.lower()))
+        # Sub-millisecond token-overlap & statutory keyword scoring with stopword removal
+        _STOPWORDS = {
+            "to", "a", "an", "the", "in", "on", "of", "for", "with", "at", "by", "from",
+            "and", "or", "is", "are", "was", "were", "be", "been", "how", "what", "why",
+            "when", "where", "my", "me", "i", "can", "do", "does", "did", "this", "that",
+            "it", "its", "you", "your", "we", "our", "so", "if", "not", "no", "as", "about",
+            "say", "tell", "give", "giving", "same", "answer", "every", "question", "ask", "asked"
+        }
+        all_q_words = set(re.findall(r"\w+", query.lower()))
+        q_words = {w for w in all_q_words if w not in _STOPWORDS} or all_q_words
         scored = []
         for doc in self._corpus_docs:
             meta = doc.get("metadata", {})
@@ -401,20 +478,17 @@ class RAGService:
                     history_lines.append(f"Client Initial/Previous Query: {q_text}")
                 if s_text:
                     history_lines.append(f"JurisAI Legal Summary: {s_text[:350]}")
-            root_case_query = conversation_history[0].get("query", "")
             history_block = (
-                f"\n=== ONGOING CASE CONVERSATION HISTORY ===\n"
+                f"\n=== PREVIOUS CASE CONVERSATION HISTORY ===\n"
                 + "\n".join(history_lines)
-                + f"\n=== END CASE CONVERSATION HISTORY ===\n"
+                + f"\n=== END PREVIOUS CONVERSATION HISTORY ===\n"
             )
             follow_up_directive = (
-                f"\n=== MANDATORY DIRECTIVE FOR CASE FOLLOW-UP ===\n"
-                f"The client is continuing the existing matter: '{root_case_query}'.\n"
-                f"Their direct follow-up question is: '{query}'\n\n"
-                f"CRITICAL REQUIREMENTS:\n"
-                f"1. You MUST strictly preserve context and continuity with '{root_case_query}'.\n"
-                f"2. DO NOT hallucinate or switch to an unrelated legal area (e.g., do NOT mention POSH Act / workplace sexual harassment, tenancy, or homicide unless the ongoing matter is specifically about that).\n"
-                f"3. Provide concrete, procedural, and statutory next steps under Indian Law specifically addressing their question. For online defamation or cyber offenses: detail Section 356 BNS 2023, Section 79 IT Act 2000 intermediary takedown, electronic evidence preservation with Certificate under Section 63 BSA 2023, cybercrime.gov.in reporting, and civil damages legal notice.\n"
+                f"\n=== DIRECTIVE FOR USER'S LATEST QUERY ===\n"
+                f"The user has submitted their latest question: '{query}'.\n"
+                f"Analyze the user's latest question directly. If it relates to previous context, maintain continuity; "
+                f"if it introduces a new legal situation (e.g., criminal offence, FIR, homicide, property dispute), "
+                f"analyze the new situation accurately under Indian statutory law (BNS, BNSS, BSA, etc.) and advise on the appropriate legal rights and remedies.\n"
                 f"=== END DIRECTIVE ===\n"
             )
 
@@ -580,6 +654,74 @@ class RAGService:
         """Generate in-depth, non-repetitive follow-up statutory and procedural analysis."""
         ql = query.lower()
 
+        # ── 0. FIR & POLICE CRIMINAL COMPLAINT ──
+        if domain_key == "fir_criminal_complaint":
+            if language == "kn":
+                return {
+                    "summary": (
+                        "ಎಫ್.ಐ.ಆರ್ (FIR) ಮತ್ತು ಪೊಲೀಸ್ ದೂರು ಪ್ರಕ್ರಿಯೆಯ ಕುರಿತು ಸಮಗ್ರ ಕಾನೂನು ಮಾರ್ಗದರ್ಶಿ ಮತ್ತು ಹಂತಗಳು:\n\n"
+                        "೧. ಕಾಗ್ನಿಜೇಬಲ್ ಅಪರಾಧಕ್ಕೆ ಕಡ್ಡಾಯ ಎಫ್.ಐ.ಆರ್ (ಲಲಿತಾ ಕುಮಾರಿ ತೀರ್ಪು ಮತ್ತು ಕಲಂ ೧೭೩ BNSS):\n"
+                        "ಯಾವುದೇ ಕಾಗ್ನಿಜೇಬಲ್ (ಗಂಭೀರ ಅಪರಾಧ - ವಂಚನೆ, ಹಲ್ಲೆ, ಜೀವ ಬೆದರಿಕೆ, ಕಳ್ಳತನ ಇತ್ಯಾದಿ) ನಡೆದಾಗ ತಕ್ಷಣವೇ ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸುವುದು ಪೊಲೀಸರ ಕಡ್ಡಾಯ ಶಾಸನಬದ್ಧ ಕರ್ತವ್ಯವಾಗಿದೆ. ಪೊಲೀಸರಿಗೆ ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸುವುದನ್ನು ನಿರಾಕರಿಸುವ ಯಾವುದೇ ವಿವೇಚನಾಧಿಕಾರವಿಲ್ಲ.\n\n"
+                        "೨. ಠಾಣಾಧಿಕಾರಿ (SHO) ನಿರಾಕರಿಸಿದರೆ ಏನು ಮಾಡಬೇಕು? (ಕಲಂ ೧೭೫(೪) BNSS):\n"
+                        "ಸ್ಥಳೀಯ ಠಾಣೆಯು ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸಲು ನಿರಾಕರಿಸಿದರೆ, ಸಂಪೂರ್ಣ ವಿವರಗಳುಳ್ಳ ಲಿಖಿತ ದೂರನ್ನು ಜಿಲ್ಲಾ ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿಗಳಿಗೆ (SP) ಅಥವಾ ನಗರ ಪೊಲೀಸ್ ಆಯುಕ್ತರಿಗೆ ನೋಂದಾಯಿತ ಅಂಚೆ (RPAD) ಮೂಲಕ ರವಾನಿಸಿ. ಅಂಚೆ ರಸೀದಿಯನ್ನು ನ್ಯಾಯಾಲಯದ ದಾಖಲೆಗಾಗಿ ಕಡ್ಡಾಯವಾಗಿ ಕಾಯ್ದಿರಿಸಿ.\n\n"
+                        "೩. ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ ನ್ಯಾಯಾಲಯದಲ್ಲಿ ಅರ್ಜಿ (ಕಲಂ ೧೭೫(೩) BNSS / ೧೫೬(೩) CrPC):\n"
+                        "ಎಸ್ಪಿ ಅವರಿಗೆ ದೂರು ನೀಡಿದ ನಂತರವೂ ಪೊಲೀಸರು ಕ್ರಮ ಕೈಗೊಳ್ಳದಿದ್ದರೆ, ವಕೀಲರ ಮೂಲಕ ಸಕ್ಷಮ ಪ್ರಥಮ ದರ್ಜೆ ನ್ಯಾಯಾಂಗ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ (JMFC) ನ್ಯಾಯಾಲಯಕ್ಕೆ ಕಲಂ ೧೭೫(೩) ರಂತೆ ಅಫಿಡವಿಟ್ ಸಹಿತ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ. ನ್ಯಾಯಾಧೀಶರು ಪೊಲೀಸರಿಗೆ ತಕ್ಷಣ ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸಿ ತನಿಖಾ ವರದಿ ಸಲ್ಲಿಸಲು ನಿರ್ದೇಶನ ನೀಡುತ್ತಾರೆ.\n\n"
+                        "೪. ಝೀರೋ ಎಫ್.ಐ.ಆರ್ (Zero FIR) ನಿಯಮ:\n"
+                        "ಘಟನೆ ಎಲ್ಲಿಯೇ ನಡೆದಿರಲಿ, ಹತ್ತಿರದ ಯಾವುದೇ ಪೊಲೀಸ್ ಠಾಣೆಯಲ್ಲಿ 'ಝೀರೋ ಎಫ್.ಐ.ಆರ್' ದಾಖಲಿಸಬಹುದು. 'ನಮ್ಮ ವ್ಯಾಪ್ತಿಗೆ ಬರುವುದಿಲ್ಲ' ಎಂದು ಪೊಲೀಸರು ನಿರಾಕರಿಸುವಂತಿಲ್ಲ. ನಂತರ ಅವರು ಸಂಬಂಧಪಟ್ಟ ಠಾಣೆಗೆ ಪ್ರಕರಣವನ್ನು ವರ್ಗಾಯಿಸುತ್ತಾರೆ.\n\n"
+                        "೫. ಇ-ಎಫ್.ಐ.ಆರ್ (e-FIR):\n"
+                        "ಬಿಎನ್‌ಎಸ್‌ಎಸ್ ಕಲಂ ೧೭೩(೧) ರಂತೆ ಆನ್‌ಲೈನ್ ಮೂಲಕವೂ ಇ-ಎಫ್.ಐ.ಆರ್ ಸಲ್ಲಿಸಬಹುದು. ಇದನ್ನು ಸಲ್ಲಿಸಿದ ೩ ದಿನಗಳ ಒಳಗೆ ದೂರುದಾರರು ಠಾಣೆಗೆ ಹೋಗಿ ಸಹಿ ಮಾಡಬೇಕು."
+                    ),
+                    "steps": [
+                        "ದಿನಾಂಕ, ಸಮಯ, ಸ್ಥಳ ಮತ್ತು ಆರೋಪಿಗಳ ವಿವರಗಳೊಂದಿಗೆ ಸ್ಪಷ್ಟ ಲಿಖಿತ ದೂರನ್ನು ಠಾಣಾಧಿಕಾರಿಗೆ ಸಲ್ಲಿಸಿ ಸ್ವೀಕೃತಿ ರಶೀದಿ (CSR/GD) ಪಡೆಯಿರಿ.",
+                        "ಠಾಣೆಯಲ್ಲಿ ನಿರಾಕರಿಸಿದರೆ, ಬಿಎನ್‌ಎಸ್‌ಎಸ್ ಕಲಂ ೧೭೫(೪) ರಂತೆ ಜಿಲ್ಲಾ ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿಗಳಿಗೆ (SP) RPAD ಮೂಲಕ ದೂರು ಕಳುಹಿಸಿ.",
+                        "ಪೊಲೀಸ್ ಕ್ರಮವಾಗದಿದ್ದಲ್ಲಿ, ವಕೀಲರ ಮೂಲಕ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ ನ್ಯಾಯಾಲಯದಲ್ಲಿ ಕಲಂ ೧೭೫(೩) ರಂತೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ತನಿಖೆಗೆ ಆದೇಶ ಪಡೆಯಿರಿ.",
+                        "ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ ಯಾವುದೇ ಪೊಲೀಸ್ ಠಾಣೆಯಲ್ಲಿ 'ಝೀರೋ ಎಫ್.ಐ.ಆರ್' (Zero FIR) ದಾಖಲಿಸಿ.",
+                    ],
+                }
+            if language == "hi":
+                return {
+                    "summary": (
+                        "प्राथमिकी (FIR) एवं पुलिस शिकायत प्रक्रिया पर संपूर्ण वैधानिक मार्गदर्शन एवं चरण:\n\n"
+                        "1. संज्ञेय अपराध में अनिवार्य एफआईआर (ललिता कुमारी बनाम यूपी एवं धारा 173 BNSS):\n"
+                        "किसी भी संज्ञेय अपराध (धोखाधड़ी, हमला, आपराधिक धमकी आदि) की सूचना मिलने पर तुरंत प्राथमिकी (FIR) दर्ज करना पुलिस का अनिवार्य कानूनी दायित्व है। सर्वोच्च न्यायालय के अनुसार पुलिस को प्राथमिकी दर्ज करने से इनकार करने का कोई अधिकार नहीं है।\n\n"
+                        "2. थाना प्रभारी द्वारा इनकार करने पर विधिक उपचार (धारा 175(4) BNSS):\n"
+                        "यदि स्थानीय थाना एफआईआर दर्ज करने से मना करे, तो शिकायत की हस्ताक्षरित प्रति पंजीकृत डाक (RPAD) द्वारा जिले के पुलिस अधीक्षक (SP) या पुलिस आयुक्त को भेजें। डाक रसीद एवं ट्रैकिंग साक्ष्य सुरक्षित रखें।\n\n"
+                        "3. न्यायिक मजिस्ट्रेट के समक्ष आवेदन (धारा 175(3) BNSS):\n"
+                        "एसपी को शिकायत भेजने के उपरांत भी यदि पुलिस कार्रवाई न करे, तो सक्षम न्यायिक मजिस्ट्रेट (JMFC) के समक्ष शपथपत्र सहित धारा 175(3) BNSS के तहत आवेदन करें। मजिस्ट्रेट पुलिस को एफआईआर दर्ज कर अन्वेषण करने का न्यायिक आदेश जारी करेंगे।\n\n"
+                        "4. जीरो एफआईआर (Zero FIR) का अधिकार:\n"
+                        "घटनास्थल चाहे जो भी हो, पीड़ित किसी भी नजदीकी थाने में 'जीरो एफआईआर' दर्ज करा सकता है। क्षेत्राधिकार का बहाना बनाकर पुलिस इनकार नहीं कर सकती।\n\n"
+                        "5. ई-एफआईआर (e-FIR):\n"
+                        "धारा 173(1) BNSS के तहत इलेक्ट्रॉनिक माध्यम से भी सूचना दी जा सकती है, जिस पर 3 दिन के भीतर हस्ताक्षर करना होता है।"
+                    ),
+                    "steps": [
+                        "घटना के संपूर्ण विवरण, समय, स्थान और साक्ष्यों के साथ लिखित शिकायत सौंपकर जीडी/सीएसआर पावती प्राप्त करें।",
+                        "थाने के इनकार पर धारा 175(4) BNSS के तहत पुलिस अधीक्षक (SP) को पंजीकृत डाक से शिकायत भेजें।",
+                        "सक्षम न्यायिक मजिस्ट्रेट के समक्ष धारा 175(3) BNSS के तहत आवेदन कर पुलिस जांच का आदेश प्राप्त करें।",
+                        "आपात स्थिति में किसी भी थाने में 'जीरो एफआईआर' (Zero FIR) दर्ज करवाएं।",
+                    ],
+                }
+            return {
+                "summary": (
+                    "Complete Statutory Procedure & Legal Remedy for Filing an FIR & Addressing Police Refusal:\n\n"
+                    "1. Mandatory FIR Registration for Cognizable Offences (Lalita Kumari & Section 173 BNSS):\n"
+                    "Under Section 173 Bharatiya Nagarik Suraksha Sanhita, 2023 (formerly Sec 154 CrPC) and the 5-Judge Constitution Bench ruling in Lalita Kumari v. Govt. of UP (2014) 2 SCC 1, the police are statutorily mandated to register a First Information Report (FIR) upon receiving information disclosing any cognizable offence (e.g. fraud, cheating, criminal breach of trust, assault, intimidation). The police possess zero discretionary power to refuse registration.\n\n"
+                    "2. Immediate Station Acknowledgment (GD / CSR Receipt):\n"
+                    "When submitting your written complaint to the Station House Officer (SHO), demand an immediate Station General Diary (GD) entry number or Community Service Register (CSR) acknowledgment receipt. This establishes contemporaneous documentary evidence.\n\n"
+                    "3. Step 2 Escalation — Representation to Superintendent of Police (Section 175(4) BNSS):\n"
+                    "If the SHO refuses to lodge an FIR, send the substance of your complaint along with an affidavit and proof of refusal by Registered Post AD or Speed Post to the District Superintendent of Police (SP) or Commissioner of Police under Section 175(4) BNSS (formerly Sec 154(3) CrPC).\n\n"
+                    "4. Step 3 Escalation — Judicial Magistrate Application (Section 175(3) BNSS):\n"
+                    "If the police hierarchy fails to investigate within a reasonable timeframe, engage an advocate to file an Application supported by an affidavit before the jurisdictional Judicial Magistrate of First Class (JMFC) under Section 175(3) BNSS (formerly Sec 156(3) CrPC). Under this section, the Magistrate has statutory power to direct the police station to register an FIR and submit a status report.\n\n"
+                    "5. Zero FIR Mandate Across India:\n"
+                    "In an ongoing emergency, a victim can lodge a 'Zero FIR' at ANY police station in India regardless of territorial jurisdiction. The station must record the FIR, assign a zero number, and formally transmit the docket to the jurisdictional station."
+                ),
+                "steps": [
+                    "Draft a concise, chronologically structured written complaint addressed to the local Station House Officer (SHO) and obtain a GD/CSR receipt.",
+                    "If refused by the SHO, dispatch a certified copy by Registered Post AD to the Superintendent of Police (SP) under Section 175(4) BNSS.",
+                    "File an Application under Section 175(3) BNSS before the jurisdictional Judicial Magistrate (JMFC) to order police investigation.",
+                    "Invoke the 'Zero FIR' statutory mandate if facing territorial jurisdiction objections from local police.",
+                ],
+            }
+
         # ── 1. CONSUMER DISPUTE & E-COMMERCE ──
         if domain_key == "consumer_dispute":
             if language == "kn":
@@ -728,9 +870,9 @@ class RAGService:
                     "excerpt": s["excerpt"],
                     "doc_type": s["doc_type"],
                 }
-                for s in dinfo.get("statutes", [])
+                for s in dinfo.get("statutes", [])[:3]
             ]
-            relevant_precedents = dinfo.get("precedents", []) if is_pro else []
+            relevant_precedents = (dinfo.get("precedents", [])[:2]) if is_pro else []
 
             # Check if this query is an in-depth follow-up in an ongoing case
             is_follow_up = bool(conversation_history and len(conversation_history) > 0)
@@ -775,6 +917,14 @@ class RAGService:
         for d in retrieved_docs:
             m = d.get("metadata", {})
             title = m.get("title", "Statutory Provision")
+            # Exclude inappropriate special statutes from general statutory fallback
+            lower_q = query.lower()
+            if "posh" in title.lower() or "sexual harassment" in title.lower():
+                if not any(k in lower_q for k in ["posh", "harass", "sexual", "woman", "women", "workplace"]):
+                    continue
+            if "defamation" in title.lower():
+                if not any(k in lower_q for k in ["defamat", "slander", "libel", "reputation", "social media"]):
+                    continue
             citation = m.get("citation", "Act of Indian Parliament")
             doc_type = m.get("doc_type", "Statute")
             court = m.get("court", "Supreme Court of India")
@@ -980,9 +1130,31 @@ class RAGService:
         else:
             retrieved_docs = raw_retrieved
 
+        # Script detection for regional languages
+        if any('ಀ' <= c <= '೿' for c in query):
+            language = "kn"
+        elif any('ऀ' <= c <= 'ॿ' for c in query):
+            language = "hi"
+        elif any('ఀ' <= c <= '౿' for c in query):
+            language = "te"
+
         if not retrieved_docs:
-            offline_result = self._synthesize_offline_response(query, [], is_pro, language=language, t_start=t_start, domain_key=domain_key, conversation_history=conversation_history)
-            return offline_result
+            # Fall back to sovereign Indian legal doctrine so LLM reasons dynamically
+            retrieved_docs = [
+                {
+                    "metadata": {
+                        "title": "Sovereign Indian Legal Framework & Constitutional Guarantees",
+                        "citation": "Republic of India Sovereign Law",
+                        "doc_type": "statute",
+                    },
+                    "document": (
+                        "Indian Sovereign Enacted Law: Constitution of India (Articles 14, 19, 21, 300A, 226/32), "
+                        "RFCTLARR Act 2013 (Right to Fair Compensation and Transparency in Land Acquisition, Rehabilitation and Resettlement Act 2013), "
+                        "Bharatiya Nyaya Sanhita 2023, Bharatiya Nagarik Suraksha Sanhita 2023, Bharatiya Sakshya Adhiniyam 2023, "
+                        "Code of Civil Procedure 1908, Specific Relief Act 1963, and Supreme Court binding precedents."
+                    )
+                }
+            ]
 
         prompt = self._build_prompt(
             query,
@@ -1095,8 +1267,11 @@ class RAGService:
         query: str,
         document_context: str = "",
         chat_history: list = None,
+        parent_chat_history: list = None,
+        context_summary: str = "",
         tone: str = "citizen",
         language: str = "en",
+        think_mode: bool = False,
     ) -> dict:
         """
         Conversational chat with uploaded case documents & Indian legal guidance.
@@ -1122,14 +1297,72 @@ class RAGService:
                 "Highlight unfair or dangerous clauses clearly, explain their rights, and guide them on practical next steps.\n"
             )
 
+        # Script auto-detection for query
+        if any('ಀ' <= c <= '೿' for c in query):
+            language = "kn"
+        elif any('ऀ' <= c <= 'ॿ' for c in query):
+            language = "hi"
+        elif any('ఀ' <= c <= '౿' for c in query):
+            language = "te"
+
         lang_spec = LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["en"])
         system_instruction += (
             f"\n=== TARGET REGIONAL LANGUAGE & COURT JURISDICTION MANDATE ===\n"
             f"{lang_spec}\n"
             f"You MUST write your entire response, legal analysis, and advice in {language}.\n"
             f"Preserve standard statutory sections and legal citations alongside the regional text.\n"
-            f"=== END JURISDICTION MANDATE ===\n"
         )
+        if language == "kn":
+            system_instruction += (
+                "CRITICAL MANDATE — STRICT KANNADA OUTPUT:\n"
+                "The user is conversing in KANNADA (ಕನ್ನಡ).\n"
+                "You MUST write your entire response, legal analysis, bullet points, and roadmaps in pure, natural KANNADA (ಕನ್ನಡ ಲಿಪಿಯಲ್ಲಿ ಬರೆಯಿರಿ).\n"
+                "Do NOT write in English sentences or English greetings (do NOT say 'Dear Friend' or write paragraphs in English).\n"
+            )
+        system_instruction += "=== END JURISDICTION MANDATE ===\n"
+        if think_mode:
+            system_instruction += (
+                "\n=== DEEP THINK & MULTI-TIER PRECEDENT REASONING MODE ===\n"
+                "The user has activated Deep Think Mode. Perform deep, thorough legal argumentation:\n"
+                "1. Cross-reference specific provisions of BNS 2023, BNSS 2023, BSA 2023, CPC, and special acts.\n"
+                "2. Analyze both petitioner and respondent angles with potential evidentiary rebuttals.\n"
+                "3. Cite relevant Supreme Court or High Court doctrines (e.g. doctrine of legitimate expectation, harmonious construction, or strict interpretation).\n"
+                "4. Provide a structured Senior Counsel Case Strategy Roadmap with high conviction.\n"
+                "=== END DEEP THINK MODE ===\n"
+            )
+
+
+        # Progressive disclosure & query intent evaluation
+        ql_chat = query.lower()
+        is_requesting_deep_dive = any(k in ql_chat for k in [
+            "statute", "article", "section", "act", "law", "evidence", "proof", "precedent",
+            "case law", "judgment", "citation", "deep", "detail", "cite", "provision", "draft",
+            "practical evidence", "rule", "rules", "which laws", "which articles", "detailed",
+            "ಕಲಂ", "ವಿಧಿ", "ಕಾಯ್ದೆ", "ತೀರ್ಪು", "ಪ್ರಕರಣ", "ಸಾಕ್ಷ್ಯ", "ನಿಯಮ", "ವಿವರ",
+            "धारा", "अनुच्छेद", "अधिनियम", "सबूत", "कानून", "विस्तार"
+        ])
+
+        if not is_requesting_deep_dive and len(chat_history) <= 2:
+            system_instruction += (
+                "RESPONSE LENGTH & PROGRESSIVE DISCLOSURE MANDATE (CRITICAL):\n"
+                "1. Keep this initial response CONCISE, DIGESTIBLE, and DIRECT (around 120-170 words total).\n"
+                "   Do NOT overwhelm the user with massive walls of text, full statutory recitations, or lengthy treatises on the first query.\n"
+                "2. Structure of Initial Answer:\n"
+                "   - Direct Position: 1 or 2 concise paragraphs stating the legal reality and primary right in plain language.\n"
+                "     NEVER use conversational filler like 'Dear Friend' or 'I hope you are doing well'. Start immediately with the substance.\n"
+                "   - Immediate Takeaways / Next Steps: Exactly 3 to 4 actionable, bulleted points explaining immediate practical steps.\n"
+                "   - Follow-up Offer: Conclude with a single polite line: 'If you would like a deeper statutory breakdown, specific section numbers, or relevant case precedents, please let me know.'\n"
+                "3. STRICT PROHIBITION OF MARKDOWN TABLES: Never generate Markdown pipe tables (| Col 1 | Col 2 |) or ASCII box divisions.\n"
+                "   Tables break on mobile screens and chat interfaces. Instead, format all points as clean bullet points with bold labels.\n"
+            )
+        else:
+            system_instruction += (
+                "IN-DEPTH STATUTORY & EVIDENTIARY ANALYSIS MANDATE:\n"
+                "The user has requested practical evidence, governing articles, and detailed statutory provisions.\n"
+                "Provide an authoritative, detailed breakdown citing enacted acts (BNS, BNSS, BSA, RFCTLARR, Constitution, etc.), "
+                "landmark High Court / Supreme Court ratios, and actionable procedural roadmaps.\n"
+                "STRICT PROHIBITION OF MARKDOWN TABLES: Never generate Markdown pipe tables (| Col 1 | Col 2 |). Format statutory comparisons using clean, bold-titled bullet points.\n"
+            )
 
         system_instruction += (
             "SAFETY & ACCURACY RULES:\n"
@@ -1139,8 +1372,30 @@ class RAGService:
             "4. At the very end of your response, on a new line, output a risk assessment tag formatted exactly as: [RISK: HIGH | MEDIUM | LOW | NONE] followed by a 1-sentence risk summary.\n"
         )
 
+        # Continuity memory from parent session if continued
+        continuity_context_str = ""
+        if parent_chat_history or context_summary:
+            parent_turns = ""
+            if parent_chat_history:
+                for pm in parent_chat_history:
+                    p_role = "User" if pm.get("role") == "user" else "JurisAI"
+                    parent_turns += f"[{p_role}]: {pm.get('content', '')[:600]}\n"
+            continuity_context_str = (
+                "=== PRIOR CONSULTATION & CASE MEMORY (CONTINUED FROM LAST CHAT) ===\n"
+                f"{context_summary}\n\n"
+                f"Prior Session Turns:\n{parent_turns}\n"
+                "=== MANDATORY CONTINUITY & CONTEXT MEMORY INSTRUCTIONS ===\n"
+                "- You HAVE full persistent access and memory of the prior session and conversation record above.\n"
+                "- When the user asks 'do you remember what was my question in the last chat' or asks what was discussed earlier, "
+                "IMMEDIATELY and affirmatively confirm that you remember, and explicitly state the exact questions and topics the user asked in the previous session.\n"
+                "- Use the facts, evidence, and inquiries established in the prior session to inform your current response.\n"
+                "- STRICT RULE: NEVER say 'I don't have access to any prior conversation history' or 'Each session starts without memory'. You are JurisAI with seamless cross-session case memory.\n"
+                "=== END CONTINUITY MANDATE ===\n\n"
+            )
+            system_instruction += continuity_context_str
+
         history_str = ""
-        for msg in chat_history[-6:]:
+        for msg in chat_history[-8:]:
             role_label = "User" if msg.get("role") == "user" else "JurisAI"
             history_str += f"{role_label}: {msg.get('content', '')}\n\n"
 
@@ -1170,6 +1425,8 @@ class RAGService:
                 query=query,
                 document_context=document_context,
                 chat_history=chat_history,
+                parent_chat_history=parent_chat_history,
+                context_summary=context_summary,
                 language=language,
                 tone=tone,
             )
@@ -1191,6 +1448,8 @@ class RAGService:
         query: str,
         document_context: str = "",
         chat_history: list = None,
+        parent_chat_history: list = None,
+        context_summary: str = "",
         language: str = "en",
         tone: str = "citizen",
     ) -> str:
@@ -1207,6 +1466,25 @@ class RAGService:
                 clean_doc = document_context.replace("\x00", "")
 
         # ── 1. Document Entity Extraction ────────────────────────────────────
+        # Check if user is asking about previous session memory
+        ql = query.lower()
+        if any(k in ql for k in ["remember", "last chat", "earlier chat", "previous chat", "previous question", "what was my question"]):
+            prior_questions = []
+            if parent_chat_history:
+                prior_questions = [m.get("content") for m in parent_chat_history if m.get("role") == "user"]
+            elif context_summary:
+                prior_questions = [line for line in context_summary.split("\n") if line.strip().startswith("- ") or line.strip().startswith("• ")]
+            
+            if prior_questions:
+                q_list = "\n".join([f"• **{q}**" for q in prior_questions])
+                return (
+                    f"### 🏛️ Continuous Case Memory Active\n\n"
+                    f"Yes! I have full memory of our previous session and the inquiries you explored.\n\n"
+                    f"**In our previous chat, you asked:**\n{q_list}\n\n"
+                    f"We established these facts and evidence records in the prior session, and I am applying them directly to our current conversation. What specific aspect would you like to build on next?\n\n"
+                    f"[RISK: NONE] Active case context inherited successfully."
+                )
+
         doc_type = "Legal Document / Court Pleading"
         doc_lower = clean_doc.lower()
         statutes = []
@@ -1216,7 +1494,21 @@ class RAGService:
         is_consumer = any(k in doc_lower for k in ["consumer", "deficiency in service", "unfair trade", "cpa"])
         is_defamation = any(k in doc_lower for k in ["defamat", "reputation", "356", "social media"])
 
-        if is_ni_138:
+        is_land = any(k in doc_lower or k in query.lower() for k in [
+            "land", "canal", "compensation", "rfctlarr", "acquisition", "solatium", "300a",
+            "ಜಮೀನು", "ಕೆನಾಲ್", "ಕಾಲುವೆ", "ಪರಿಹಾರ", "ಭೂಸ್ವಾಧೀನ", "ಭೂ ಸ್ವಾಧೀನ", "ಮುಖ್ಯ ಕಾಲುವೆ",
+            "नहर", "मुआवजा", "जमीन", "భూసేకరణ", "కాలువ", "నష్టపరిహారం"
+        ])
+
+        if is_land:
+            doc_type = "Land Acquisition & Fair Compensation Claim (RFCTLARR Act 2013 & Art 300A)"
+            statutes.extend([
+                "RFCTLARR Act, 2013 (Right to Fair Compensation in Land Acquisition)",
+                "Article 300A — Constitution of India (Constitutional Right to Property)",
+                "Section 64 RFCTLARR Act (Reference for Enhanced Compensation)",
+                "Article 226 — High Court Writ of Mandamus",
+            ])
+        elif is_ni_138:
             doc_type = "Statutory Legal Demand Notice (Section 138 Negotiable Instruments Act, 1881)"
             statutes.extend([
                 "Section 138 Negotiable Instruments Act, 1881 (Dishonour of Cheque for Insufficiency of Funds)",
@@ -1274,18 +1566,78 @@ class RAGService:
 
         # ── 2. Intent Categorization ─────────────────────────────────────────
         ql = query.lower()
-        is_summary = any(k in ql for k in ["summar", "what is this", "what this is", "about", "explain", "overview", "say me", "meaning", "tell me"])
+        is_fir = any(k in ql for k in [
+            "fir", "f.i.r", "police", "police station", "sho", "cognizable",
+            "154", "173 bnss", "zero fir", "file fir", "fire fir", "lodging fir",
+            "police complaint", "sp office", "superintendent of police", "refused to file fir",
+            "crime report", "156(3)", "175(3)", "magistrate complaint", "lalita kumari"
+        ])
+        is_summary = not is_fir and any(k in ql for k in ["summar", "what is this", "what this is", "overview", "meaning"])
         is_unfair = any(k in ql for k in ["unfair", "one-sided", "onesided", "clause", "loophole", "risk", "danger", "pitfall", "illegal", "defect", "flaw"])
-        is_steps = any(k in ql for k in ["step", "procedure", "remedy", "file", "action", "how to", "what to do", "what should"])
+        is_steps = any(k in ql for k in ["step", "procedure", "remedy", "action", "how to", "what to do", "what should"])
         is_parties = any(k in ql for k in ["who is", "parties", "accused", "complainant", "respondent", "against whom"])
         is_limitation = any(k in ql for k in ["limitation", "time limit", "deadline", "how many days", "period"])
 
         statutes_bullet = "\n".join(f"- {s}" for s in statutes)
 
         # ── 3. Multilingual Vernacular Generation ────────────────────────────
+        if is_fir:
+            if language == "kn":
+                return (
+                    f"### ಎಫ್.ಐ.ಆರ್ (FIR) ದಾಖಲಿಸುವ ವಿಧಾನ ಮತ್ತು ಪೊಲೀಸರ ನಿರಾಕರಣೆಗೆ ಕಾನೂನು ಪರಿಹಾರ\n\n"
+                    f"೧. **ಕಡ್ಡಾಯ ಎಫ್.ಐ.ಆರ್ ನೋಂದಣಿ (ಕಲಂ ೧೭೩ BNSS & ಲಲಿತಾ ಕುಮಾರಿ ತೀರ್ಪು)**:\n"
+                    f"   ಕಾಗ್ನಿಜೇಬಲ್ ಅಪರಾಧ (ವಂಚನೆ, ಹಲ್ಲೆ, ಜೀವ ಬೆದರಿಕೆ, ಅಪರಾಧ) ನಡೆದಾಗ ತಕ್ಷಣವೇ ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸುವುದು ಪೊಲೀಸರ ಕಡ್ಡಾಯ ಕರ್ತವ್ಯವಾಗಿದೆ. ಪೊಲೀಸರು ನಿರಾಕರಿಸುವಂತಿಲ್ಲ.\n\n"
+                    f"೨. **ಠಾಣಾಧಿಕಾರಿ (SHO) ನಿರಾಕರಿಸಿದರೆ ಹಂತ ೧ (ಕಲಂ ೧೭೫(೪) BNSS)**:\n"
+                    f"   ಲಿಖಿತ ದೂರನ್ನು ತಯಾರಿಸಿ, ಜಿಲ್ಲಾ ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿಗಳಿಗೆ (SP) ನೋಂದಾಯಿತ ಅಂಚೆ (RPAD) ಮೂಲಕ ಕಳುಹಿಸಿ ಮತ್ತು ಅಂಚೆ ರಸೀದಿಯನ್ನು ಕಾಯ್ದಿರಿಸಿ.\n\n"
+                    f"೩. **ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ ನ್ಯಾಯಾಲಯದಲ್ಲಿ ಅರ್ಜಿ - ಹಂತ ೨ (ಕಲಂ ೧೭೫(೩) BNSS / ೧೫೬(೩) CrPC)**:\n"
+                    f"   ಎಸ್ಪಿ ಹಂತದಲ್ಲೂ ಕ್ರಮವಾಗದಿದ್ದರೆ, ವಕೀಲರ ಮೂಲಕ ಸಕ್ಷಮ ಪ್ರಥಮ ದರ್ಜೆ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ (JMFC) ನ್ಯಾಯಾಲಯಕ್ಕೆ ಪ್ರಮಾಣಪತ್ರದೊಂದಿಗೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ತನಿಖೆಗೆ ಆದೇಶ ಪಡೆಯಿರಿ.\n\n"
+                    f"೪. **ಝೀರೋ ಎಫ್.ಐ.ಆರ್ (Zero FIR)**:\n"
+                    f"   ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ ನ್ಯಾಯವ್ಯಾಪ್ತಿಯ ಮಿತಿ ಇಲ್ಲದೆ ಯಾವುದೇ ಪೊಲೀಸ್ ಠಾಣೆಯಲ್ಲಿ 'ಝೀರೋ ಎಫ್.ಐ.ಆರ್' ದಾಖಲಿಸಬಹುದು.\n\n"
+                    f"[RISK: HIGH] Mandatory FIR registration rights under Section 173 BNSS."
+                )
+            elif language == "hi":
+                return (
+                    f"### प्राथमिकी (FIR) दर्ज कराने की विधिक प्रक्रिया एवं पुलिस इनकार पर उपचार\n\n"
+                    f"1. **अनिवार्य प्राथमिकी पंजीकरण (धारा 173 BNSS एवं ललिता कुमारी निर्णय)**:\n"
+                    f"   संज्ञेय अपराध (धोखाधड़ी, हमला, धमकी आदि) की सूचना मिलने पर तुरंत एफआईआर दर्ज करना पुलिस का अनिवार्य वैधानिक दायित्व है। पुलिस इनकार नहीं कर सकती।\n\n"
+                    f"2. **थाना प्रभारी द्वारा मना करने पर प्रथम चरण (धारा 175(4) BNSS)**:\n"
+                    f"   लिखित शिकायत की हस्ताक्षरित प्रति पंजीकृत डाक (RPAD) द्वारा जिले के पुलिस अधीक्षक (SP) या पुलिस आयुक्त को भेजें।\n\n"
+                    f"3. **न्यायिक मजिस्ट्रेट के समक्ष आवेदन (धारा 175(3) BNSS)**:\n"
+                    f"   यदि एसपी द्वारा भी कार्रवाई न की जाए, तो सक्षम न्यायिक मजिस्ट्रेट (JMFC) के समक्ष शपथपत्र सहित धारा 175(3) BNSS के तहत आवेदन कर पुलिस जांच का न्यायिक आदेश प्राप्त करें।\n\n"
+                    f"4. **जीरो एफआईआर (Zero FIR)**:\n"
+                    f"   आपात स्थिति में बिना किसी क्षेत्राधिकार सीमा के देश के किसी भी थाने में 'जीरो एफआईआर' दर्ज कराई जा सकती है।\n\n"
+                    f"[RISK: HIGH] Mandatory FIR registration rights under Section 173 BNSS."
+                )
+            else:
+                return (
+                    f"### Legal Procedure for Filing an FIR & Addressing Police Refusal\n\n"
+                    f"1. **Mandatory FIR Registration (Section 173 BNSS & Lalita Kumari Mandate)**:\n"
+                    f"   Under Section 173 of the Bharatiya Nagarik Suraksha Sanhita, 2023 (formerly Sec 154 CrPC) and the Constitution Bench judgment in *Lalita Kumari v. Govt of UP* (2014) 2 SCC 1, police are statutorily bound to register a First Information Report (FIR) upon receiving information disclosing any cognizable offence. Police have no discretion to refuse.\n\n"
+                    f"2. **Station General Diary (GD / CSR) Receipt**:\n"
+                    f"   Submit your signed written complaint detailing date, time, location, persons involved, and sequence of facts to the Station House Officer (SHO). Demand an immediate GD entry or CSR receipt.\n\n"
+                    f"3. **Remedy Upon Police Refusal (Section 175(4) BNSS / 154(3) CrPC)**:\n"
+                    f"   If the SHO refuses or delays registering the FIR, dispatch a certified copy of the complaint with an affidavit by Registered Post AD to the Superintendent of Police (SP) or Commissioner of Police under Section 175(4) BNSS.\n\n"
+                    f"4. **Judicial Magistrate Directive (Section 175(3) BNSS / 156(3) CrPC)**:\n"
+                    f"   If inaction continues, engage an advocate to file an Application supported by an affidavit before the jurisdictional Judicial Magistrate of First Class (JMFC) under Section 175(3) BNSS. The Magistrate possesses the statutory power to order the police to register the FIR and investigate immediately.\n\n"
+                    f"5. **Zero FIR Mandate**:\n"
+                    f"   In case of emergencies or disputes occurring across city/state borders, a 'Zero FIR' can be registered at ANY police station in India regardless of jurisdiction, which will subsequently be transferred to the local station.\n\n"
+                    f"[RISK: HIGH] Mandatory statutory right to FIR registration under Section 173 BNSS."
+                )
+
         # 3.A KANNADA (ಕನ್ನಡ)
         if language == "kn":
-            if is_summary:
+            if is_land:
+                return (
+                    f"### ಭೂಸ್ವಾಧೀನ ಮತ್ತು ಕಾಲುವೆ ಪರಿಹಾರದ ಅಧಿಕೃತ ಮಾರ್ಗದರ್ಶಿ\n\n"
+                    f"ಭಾರತೀಯ ಸಂವಿಧಾನದ ವಿಧಿ ೩೦೦ಎ ಮತ್ತು ಭೂಸ್ವಾಧೀನ ಕಾಯ್ದೆ ೨೦೧೩ (RFCTLARR Act) ರ ಪ್ರಕಾರ, ಸರ್ಕಾರವು ಕಾಲುವೆ ನಿರ್ಮಾಣಕ್ಕಾಗಿ ನಿಮ್ಮ ಖಾಸಗಿ ಜಮೀನನ್ನು ಬಳಸಿಕೊಂಡಿದ್ದರೆ ಸೂಕ್ತ ಮಾರುಕಟ್ಟೆ ಪರಿಹಾರ ಮತ್ತು ೧೦೦% ಸೊಲೇಶಿಯಂ ನೀಡುವುದು ಕಡ್ಡಾಯ ಶಾಸನಬದ್ಧ ಹಕ್ಕಾಗಿದೆ. ಪರಿಹಾರ ನೀಡದೆ ಜಮೀನು ವಶಪಡಿಸಿಕೊಳ್ಳುವುದು ಕಾನೂನುಬಾಹಿರ.\n\n"
+                    f"**ನೀವು ಕೈಗೊಳ್ಳಬೇಕಾದ ತಕ್ಷಣದ ಕ್ರಮಗಳು**:\n"
+                    f"೧. **ದಾಖಲೆಗಳ ಸಂಗ್ರಹ**: ನಿಮ್ಮ ಜಮೀನಿನ ಆರ್.ಟಿ.ಸಿ (RTC/ಪಹಣಿ), ಮ್ಯುಟೇಶನ್ ಪ್ರತಿ, ಮತ್ತು ಕಾಲುವೆ ಹೋದ ಜಾಗದ ಅಳತೆ ನಕ್ಷೆ ಸಿದ್ಧಪಡಿಸಿಟ್ಟುಕೊಳ್ಳಿ.\n"
+                    f"೨. **ಶಾಸನಬದ್ಧ ಲೀಗಲ್ ನೋಟೀಸ್**: ಜಿಲ್ಲಾಧಿಕಾರಿಗಳಿಗೆ (DC) ಮತ್ತು ನೀರಾವರಿ ಇಲಾಖೆಯ ಕಾರ್ಯಪಾಲಕ ಇಂಜಿನಿಯರ್‌ಗೆ ವಕೀಲರ ಮೂಲಕ ತಕ್ಷಣ ಲೀಗಲ್ ನೋಟೀಸ್ ಜಾರಿ ಮಾಡಿ.\n"
+                    f"೩. **ಹೈಕೋರ್ಟ್‌ನಲ್ಲಿ ರಿಟ್ ಅರ್ಜಿ (ವಿಧಿ ೨೨೬)**: ಅಧಿಕಾರಿಗಳು ಪರಿಹಾರ ನೀಡಲು ವಿಳಂಬ ಮಾಡಿದರೆ, ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯದ ಸುಖ್‌ದತ್ ರತ್ರಾ ತೀರ್ಪಿನ ಆಧಾರದ ಮೇಲೆ ಮಾನ್ಯ ಹೈಕೋರ್ಟ್‌ನಲ್ಲಿ ರಿಟ್ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ಬಡ್ಡಿ ಸಹಿತ ಪೂರ್ಣ ಪರಿಹಾರ ಪಡೆಯಬಹುದು.\n\n"
+                    f"*ಹೆಚ್ಚಿನ ಕಾನೂನು ಕಲಮುಗಳು, ಪರಿಹಾರ ಲೆಕ್ಕಾಚಾರ ಅಥವಾ ನೋಟೀಸ್ ಕರಡು ಬೇಕಾದಲ್ಲಿ ತಿಳಿಸಿ.*\n\n"
+                    f"[RISK: MEDIUM] Statutory compensation rights active under Article 300A and RFCTLARR Act 2013."
+                )
+            elif is_summary:
                 return (
                     f"### ಪ್ರಕರಣದ ದಾಖಲೆಯ ಅಧಿಕೃತ ಸಾರಾಂಶ (Official Legal Summary)\n\n"
                     f"೧. **ದಾಖಲೆಯ ಸ್ವರೂಪ**: {doc_type}.\n\n"

@@ -6,7 +6,11 @@ import os
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./jurisai.db")
+_default_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jurisai.db").replace("\\", "/")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL or DATABASE_URL == "sqlite:///./jurisai.db":
+    DATABASE_URL = f"sqlite:///{_default_db_path}"
+
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)

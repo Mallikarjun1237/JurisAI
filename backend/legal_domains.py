@@ -523,7 +523,7 @@ LEGAL_DOMAIN_REGISTRY: Dict[str, Dict[str, Any]] = {
                 ),
             },
             {
-                "title": "Section 173 — Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS)",
+                "title": "Section 173 BNSS — First Information Report (FIR) in Cognizable Cases",
                 "citation": "Bharatiya Nagarik Suraksha Sanhita, 2023, Sec. 173",
                 "doc_type": "statute",
                 "excerpt": (
@@ -866,6 +866,290 @@ LEGAL_DOMAIN_REGISTRY: Dict[str, Dict[str, Any]] = {
             ],
         },
     },
+    "land_acquisition_compensation": {
+        "domain_name": "Land Acquisition, Fair Compensation & Constitutional Property Rights",
+        "search_anchor": "land acquisition compensation canal road RFCTLARR 2013 Article 300A Land Acquisition Rehabilitation Resettlement Act solatium",
+        "statutes": [
+            {
+                "title": "RFCTLARR Act, 2013 — Right to Fair Compensation in Land Acquisition",
+                "citation": "Right to Fair Compensation and Transparency in Land Acquisition, Rehabilitation and Resettlement Act, 2013 (Act No. 30 of 2013)",
+                "doc_type": "statute",
+                "excerpt": (
+                    "Governs compulsory acquisition of land by government for public infrastructure (canals, roads, irrigation). "
+                    "Mandates market value determination under Section 26, multiplier factor for rural land under Section 27, "
+                    "100% Solatium payment under Section 30, and mandatory Rehabilitation & Resettlement (R&R) entitlements under Section 31."
+                ),
+            },
+            {
+                "title": "Article 300A — Constitution of India (Right to Property & Compensation)",
+                "citation": "Constitution of India, Art. 300A",
+                "doc_type": "statute",
+                "excerpt": (
+                    "No person shall be deprived of his property save by authority of law. The Supreme Court has repeatedly held that "
+                    "taking possession of private land for canals, railways, or roads without paying fair statutory compensation is an illegal "
+                    "expropriation violating Article 300A and constitutional human rights."
+                ),
+            },
+            {
+                "title": "Section 64 RFCTLARR Act — Reference to Land Acquisition Authority for Enhanced Compensation",
+                "citation": "RFCTLARR Act, 2013, Sec. 64",
+                "doc_type": "statute",
+                "excerpt": (
+                    "Any person interested who has not accepted the Collector's award or who has received inadequate/zero compensation "
+                    "may, by written application to the Collector within 6 weeks, require that the matter be referred by the Collector "
+                    "for the determination of the Land Acquisition, Rehabilitation and Resettlement Authority."
+                ),
+            },
+            {
+                "title": "Article 226 — High Court Writ Jurisdiction (Writ of Mandamus)",
+                "citation": "Constitution of India, Art. 226",
+                "doc_type": "statute",
+                "excerpt": (
+                    "If the state government or irrigation/canal department has utilized private land without passing an award or without "
+                    "disbursing fair compensation, the landowner can file a Writ Petition (Mandamus) before the jurisdictional High Court "
+                    "seeking immediate court direction to determine and release full compensation with statutory interest and solatium."
+                ),
+            },
+        ],
+        "precedents": [
+            {
+                "title": "Kalyani (Dead) through LRs v. The Sub-Divisional Officer / Vidarbha Irrigation Dev. Corp.",
+                "citation": "Civil Appeal No. 4410 of 2023 / (2023) SCC OnLine SC 1214",
+                "court": "Supreme Court of India",
+                "year": "2023",
+                "holding": (
+                    "The Supreme Court held that the State cannot deprive citizens of their agricultural land for canal or irrigation projects "
+                    "without initiating formal acquisition proceedings and paying fair market compensation along with solatium and interest under Article 300A."
+                ),
+            },
+            {
+                "title": "Sukh Dutt Ratra v. State of Himachal Pradesh",
+                "citation": "(2022) 7 SCC 508",
+                "court": "Supreme Court of India",
+                "year": "2022",
+                "holding": (
+                    "The State cannot take refuge under delay or laches when it has illegally acquired citizens' private land without paying compensation. "
+                    "Forcible dispossessions for public infrastructure without lawful compensation violate constitutional rights."
+                ),
+            },
+        ],
+        "plain_english_summary": {
+            "en": (
+                "Under the Right to Fair Compensation and Transparency in Land Acquisition, Rehabilitation and Resettlement Act, 2013 (RFCTLARR Act) and Article 300A of the Constitution of India, "
+                "the Government cannot take possession of your agricultural land for a canal or public project without formally acquiring it and paying fair market compensation plus 100% Solatium and interest.\n\n"
+                "If your land was taken for a canal without compensation:\n"
+                "1. Statutory Compensation Right: You are legally entitled to market value compensation, a statutory multiplier factor (for rural agricultural land), plus 100% Solatium (bonus compensation) and statutory interest.\n"
+                "2. Reference under Section 64: If the Collector passed an inadequate or delayed award, you have the right to file an application before the Land Acquisition Authority for enhanced market compensation.\n"
+                "3. High Court Writ of Mandamus (Article 226): If the irrigation department built the canal without paying compensation or passing an award, you can immediately file a Writ Petition before the High Court to direct the State to release compensation with compound interest."
+            ),
+            "kn": (
+                "ಭಾರತೀಯ ಸಂವಿಧಾನದ ವಿಧಿ ೩೦೦ಎ (Article 300A) ಮತ್ತು ಭೂಸ್ವಾಧೀನದಲ್ಲಿ ನ್ಯಾಯಯುತ ಪರಿಹಾರ ಮತ್ತು ಪಾರದರ್ಶಕತೆಯ ಹಕ್ಕು ಕಾಯ್ದೆ ೨೦೧೩ (RFCTLARR Act, 2013) ರ ಪ್ರಕಾರ, ಸರ್ಕಾರವು ಕಾಲುವೆ (Canal), ರಸ್ತೆ ಅಥವಾ ಯಾವುದೇ ಸಾರ್ವಜನಿಕ ಯೋಜನೆಗೆ ರೈತರ ಜಮೀನನ್ನು ವಶಪಡಿಸಿಕೊಂಡಾಗ ನ್ಯಾಯಯುತ ಮಾರುಕಟ್ಟೆ ಪರಿಹಾರ ಮತ್ತು ೧೦೦% ಸೊಲೇಶಿಯಂ (Solatium) ನೀಡುವುದು ಕಡ್ಡಾಯ ಶಾಸನಬದ್ಧ ಹಕ್ಕಾಗಿದೆ. ಸರ್ಕಾರ ಪರಿಹಾರ ನೀಡದೆ ಜಮೀನು ಕಸಿದುಕೊಳ್ಳುವುದು ಕಾನೂನುಬಾಹಿರ.\n\n"
+                "ನಿಮ್ಮ ಜಮೀನು ಕಾಲುವೆಗೆ ಹೋಗಿ ಪರಿಹಾರ ದೊರೆಯದಿದ್ದರೆ ನಿಮಗಿರುವ ಅಧಿಕೃತ ಕಾನೂನು ಕ್ರಮಗಳು:\n"
+                "೧. ಜಿಲ್ಲಾಧಿಕಾರಿಗಳಿಗೆ (DC/Collector) ಮತ್ತು ನೀರಾವರಿ ಇಲಾಖೆಗೆ ಲಿಖಿತ ಮನವಿ ಮತ್ತು ಲೀಗಲ್ ನೋಟೀಸ್: ನಿಮ್ಮ ಜಮೀನಿನ ಆರ್.ಟಿ.ಸಿ (RTC/ಪಹಣಿ), ಅಳತೆ ನಕ್ಷೆ ಮತ್ತು ಕಾಲುವೆ ನಿರ್ಮಾಣದ ಸಾಕ್ಷ್ಯಗಳೊಂದಿಗೆ ತ್ವರಿತವಾಗಿ ಭೂಸ್ವಾಧೀನ ಪರಿಹಾರ ನೀಡುವಂತೆ ವಕೀಲರ ಮೂಲಕ ಶಾಸನಬದ್ಧ ಲೀಗಲ್ ನೋಟೀಸ್ ನೀಡಿ.\n"
+                "೨. ವಿಧಿ ೨೨೬ ರ ಅಡಿಯಲ್ಲಿ ಹೈಕೋರ್ಟ್‌ನಲ್ಲಿ ರಿಟ್ ಅರ್ಜಿ (Writ of Mandamus): ಅಧಿಕಾರಿಗಳು ಪರಿಹಾರ ನೀಡಲು ವಿಳಂಬ ಮಾಡುತ್ತಿದ್ದರೆ, ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯದ ಸುಖ್‌ದತ್ ರತ್ರಾ ತೀರ್ಪಿನ ಆಧಾರದ ಮೇಲೆ ಮಾನ್ಯ ಹೈಕೋರ್ಟ್ ಮೆಟ್ಟಿಲೇರಿ ರಿಟ್ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ಬಡ್ಡಿ ಸಹಿತ ಪೂರ್ಣ ಪರಿಹಾರ ಬಿಡುಗಡೆ ಮಾಡಲು ಆದೇಶ ಪಡೆಯಬಹುದು.\n"
+                "೩. ಕಲಂ ೬೪ ರಂತೆ ಪರಿಹಾರ ಹೆಚ್ಚಳ ಪ್ರಾಧಿಕಾರಕ್ಕೆ ಅರ್ಜಿ: ಜಿಲ್ಲಾಧಿಕಾರಿಗಳು ನಿಗದಿಪಡಿಸಿದ ದರ ತೃಪ್ತಿಕರವಲ್ಲದಿದ್ದರೆ, ಹೆಚ್ಚಿನ ಮಾರುಕಟ್ಟೆ ಮೌಲ್ಯಕ್ಕಾಗಿ ಭೂಸ್ವಾಧೀನ ಪ್ರಾಧಿಕಾರಕ್ಕೆ (LARR Authority) ಅರ್ಜಿ ಸಲ್ಲಿಸಲು ಕಾನೂನಿನಲ್ಲಿ ಸಂಪೂರ್ಣ ಹಕ್ಕಿದೆ."
+            ),
+            "hi": (
+                "भूमि अर्जन, पुनर्वासन और पुनर्व्यवस्थापन में उचित प्रतिकर और पारदर्शिता का अधिकार अधिनियम, 2013 (RFCTLARR Act 2013) और संविधान के अनुच्छेद 300A के अनुसार, सरकार द्वारा नहर, सड़क या किसी परियोजना हेतु निजी भूमि लेने पर बाजार दर का उचित मुआवजा, 100% सोलेशियम (तोषण) और ब्याज देना कानूनी रूप से अनिवार्य है।\n\n"
+                "यदि आपकी भूमि नहर में चली गई है और मुआवजा नहीं मिला है, तो आपके कानूनी अधिकार:\n"
+                "1. जिलाधिकारी (Collector) एवं सिंचाई विभाग को विधिक नोटिस: भूमि के खतौनी/दस्तावेजों के साथ सक्षम भूमि अधिग्रहण अधिकारी को मुआवजा तय करने हेतु कानूनी नोटिस भेजें।\n"
+                "2. उच्च न्यायालय में रिट याचिका (अनुच्छेद 226): यदि विभाग मुआवजा नहीं दे रहा है, तो बिना औपचारिक अधिग्रहण के भूमि कब्जाने के विरुद्ध हाईकोर्ट में रिट (Mandamus) दायर कर ब्याज सहित मुआवजा प्राप्त करें।\n"
+                "3. धारा 64 RFCTLARR के तहत रेफरेंस: यदि मुआवजा राशि कम है, तो भू-अर्जन न्यायाधिकरण के समक्ष वृद्धि हेतु दावा करें।"
+            ),
+            "te": (
+                "భూసేకరణ మరియు పునరావాస చట్టం 2013 (RFCTLARR Act 2013) మరియు రాజ్యాంగంలోని ఆర్టికల్ 300A ప్రకారం, ప్రభుత్వం కాలువ లేదా ప్రజా ప్రయోజనాల కోసం భూమిని తీసుకున్నప్పుడు మార్కెట్ విలువ ప్రకారం నష్టపరిహారం, 100% సొలేషియం మరియు వడ్డీ చెల్లించడం తప్పనిసరి.\n\n"
+                "నష్టపరిహారం రాని పక్షంలో చట్టపరమైన మార్గాలు:\n"
+                "1. కలెక్టర్ మరియు ఇరిగేషన్ శాఖకు లీగల్ నోటీసు పంపండి.\n"
+                "2. హైకోర్టులో ఆర్టికల్ 226 కింద రిట్ పిటిషన్ (Writ of Mandamus) దాఖలు చేసి పూర్తి నష్టపరిహారం మరియు వడ్డీని రాబట్టుకోండి.\n"
+                "3. సెక్షన్ 64 కింద మార్కెట్ పరిహారం పెంపు కోసం ల్యాండ్ అక్విజిషన్ అథారిటీకి దరఖాస్తు చేయండి."
+            ),
+        },
+        "suggested_next_steps": {
+            "en": [
+                "Gather all land ownership title records: RTC / Pahani, Mutation Extract, Sale Deed, and Canal demarcation sketch.",
+                "Serve a formal Legal Notice through an advocate to the Special Land Acquisition Officer (SLAO) and Executive Engineer (Irrigation Department).",
+                "If an award was passed with inadequate compensation, submit an application under Section 64 of RFCTLARR Act 2013 within 6 weeks to refer the matter to the Land Acquisition Authority.",
+                "If the government took possession without initiating acquisition or paying compensation, file a Writ Petition (Mandamus) under Article 226 before the jurisdictional High Court citing SC ruling in Sukh Dutt Ratra (2022).",
+            ],
+            "kn": [
+                "ಜಮೀನಿನ ಮಾಲೀಕತ್ವ ದಾಖಲೆಗಳನ್ನು (ಆರ್.ಟಿ.ಸಿ/RTC ಪಹಣಿ, ಮ್ಯುಟೇಶನ್ ಪ್ರತಿ, ಕ್ರಯಪತ್ರ ಮತ್ತು ಕಾಲುವೆ ಮಾರ್ಗದ ನಕ್ಷೆ) ಸಂಗ್ರಹಿಸಿಟ್ಟುಕೊಳ್ಳಿ.",
+                "ವಿಶೇಷ ಭೂಸ್ವಾಧೀನ ಅಧಿಕಾರಿ (SLAO) ಮತ್ತು ನೀರಾವರಿ ಇಲಾಖೆಯ ಕಾರ್ಯಪಾಲಕ ಇಂಜಿನಿಯರ್‌ಗೆ ವಕೀಲರ ಮೂಲಕ ಶಾಸನಬದ್ಧ ಲೀಗಲ್ ನೋಟೀಸ್ ಜಾರಿ ಮಾಡಿ.",
+                "ಪರಿಹಾರ ನಿಗದಿಪಡಿಸದೆ ಜಮೀನು ಕಸಿದುಕೊಂಡಿದ್ದರೆ, ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯದ ಸುಖ್‌ದತ್ ರತ್ರಾ ತೀರ್ಪಿನ ಅನ್ವಯ ಹೈಕೋರ್ಟ್‌ನಲ್ಲಿ ರಿಟ್ ಅರ್ಜಿ (Writ of Mandamus) ದಾಖಲಿಸಿ.",
+                "ಪರಿಹಾರದ ಮೊತ್ತ ಅತ್ಯಂತ ಕಡಿಮೆಯಾಗಿದ್ದರೆ, ಹೆಚ್ಚಿನ ಪರಿಹಾರಕ್ಕಾಗಿ RFCTLARR ಕಾಯ್ದೆಯ ಕಲಂ ೬೪ ರ ಅಡಿಯಲ್ಲಿ ಭೂಸ್ವಾಧೀನ ಪ್ರಾಧಿಕಾರಕ್ಕೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ.",
+            ],
+            "hi": [
+                "भूमि के स्वामित्व दस्तावेज (खतौनी, जमाबंदी, बैनामा और नहर सीमांकन नक्शा) सुरक्षित करें।",
+                "अधिवक्ता के माध्यम से विशेष भूमि अर्जन अधिकारी (SLAO) और सिंचाई विभाग को वैधानिक नोटिस जारी करें।",
+                "मुआवजा न मिलने पर सुप्रीम कोर्ट के सुख दत्त रात्रा निर्णय का हवाला देते हुए हाईकोर्ट में अनुच्छेद 226 के तहत रिट दायर करें।",
+                "यदि मुआवजा कम है, तो धारा 64 RFCTLARR के तहत 6 सप्ताह के भीतर रेफरेंस याचिका प्रस्तुत करें।",
+            ],
+            "te": [
+                "భూమి పట్టాదారు పాస్‌బుక్, పహణీ, కొలతల పటం సేకరించండి.",
+                "ప్రత్యేక భూసేకరణ అధికారి (SLAO) మరియు ఇరిగేషన్ శాఖకు లీగల్ నోటీసు పంపండి.",
+                "నష్టపరిహారం ఇవ్వకపోతే హైకోర్టులో ఆర్టికల్ 226 కింద రిట్ దాఖలు చేయండి.",
+                "పరిహారం సరిపోకపోతే సెక్షన్ 64 కింద ల్యాండ్ అక్విజిషన్ అథారిటీలో రిఫరెన్స్ పిటిషన్ వేయండి.",
+            ],
+        },
+    },
+
+    "fir_criminal_complaint": {
+        "domain_name": "Police Complaint & First Information Report (FIR)",
+        "search_anchor": "FIR Section 173 BNSS Section 154 CrPC Lalita Kumari cognizable crime Zero FIR Section 175 BNSS police refusal",
+        "statutes": [
+            {
+                "title": "Section 173 — Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS)",
+                "citation": "Bharatiya Nagarik Suraksha Sanhita, 2023, Sec. 173 (formerly CrPC Sec. 154)",
+                "doc_type": "statute",
+                "excerpt": (
+                    "Section 173 BNSS mandates that every information relating to the commission of a cognizable offence, "
+                    "if given orally to an officer in charge of a police station, shall be reduced to writing and read over to the informant. "
+                    "Key statutory features: (1) Mandatory registration of FIR without delay upon disclosure of a cognizable offence; "
+                    "(2) Information can be given electronically (e-FIR), to be signed within three days; "
+                    "(3) Zero FIR mandate: A person can lodge information at any police station irrespective of territorial jurisdiction, "
+                    "which must be transferred to the jurisdictional police station; "
+                    "(4) A free certified copy of the FIR must be provided immediately to the informant."
+                ),
+            },
+            {
+                "title": "Section 175 BNSS — Police Inaction, Representation to SP & Magistrate Directive",
+                "citation": "Bharatiya Nagarik Suraksha Sanhita, 2023, Sec. 175(3), 175(4) (formerly CrPC Sec. 154(3), 156(3))",
+                "doc_type": "statute",
+                "excerpt": (
+                    "Section 175 provides statutory hierarchy when a police officer refuses to record information: "
+                    "(1) Under Section 175(4), the aggrieved person may send the substance of information in writing and by post to the Superintendent of Police (SP). "
+                    "(2) If the SP fails to order an investigation, under Section 175(3) BNSS, the aggrieved person can file an application before the jurisdictional "
+                    "Judicial Magistrate accompanied by an affidavit stating that application to police was made. The Magistrate is empowered to order the police "
+                    "to register an FIR and conduct a full investigation."
+                ),
+            },
+            {
+                "title": "Section 173(2) — Preliminary Inquiry Safeguard (BNSS, 2023)",
+                "citation": "Bharatiya Nagarik Suraksha Sanhita, 2023, Sec. 173(2)",
+                "doc_type": "statute",
+                "excerpt": (
+                    "For offences punishable with imprisonment of 3 years or more but less than 7 years, the officer in charge of the police station may, "
+                    "with prior permission of an officer not below Deputy Superintendent of Police (DSP), conduct a preliminary inquiry to ascertain whether a prima facie case exists. "
+                    "Such preliminary inquiry must be concluded within 14 statutory days."
+                ),
+            },
+            {
+                "title": "Section 223 — BNSS, 2023 / Section 200 CrPC (Private Complaint before Magistrate)",
+                "citation": "Bharatiya Nagarik Suraksha Sanhita, 2023, Sec. 223",
+                "doc_type": "statute",
+                "excerpt": (
+                    "A Magistrate taking cognizance of an offence on complaint shall examine the complainant and the witnesses present upon oath. "
+                    "Under Section 223 BNSS, no Magistrate shall take cognizance without giving the accused an opportunity of being heard in a preliminary hearing."
+                ),
+            },
+            {
+                "title": "Article 226 of the Constitution & Section 528 BNSS (High Court Mandamus)",
+                "citation": "Constitution of India, Art. 226 / BNSS, 2023, Sec. 528 (formerly CrPC Sec. 482)",
+                "doc_type": "statute",
+                "excerpt": (
+                    "Where the police fail to act despite clear commission of cognizable crimes and lower statutory remedies have been exhausted or prove futile, "
+                    "the aggrieved party can approach the High Court through a Criminal Writ Petition praying for a writ of Mandamus directing FIR registration "
+                    "and an independent investigation by state CID or CBI."
+                ),
+            },
+        ],
+        "precedents": [
+            {
+                "title": "Lalita Kumari v. Govt. of Uttar Pradesh — Mandatory FIR Registration",
+                "citation": "(2014) 2 SCC 1 / AIR 2014 SC 187",
+                "court": "Supreme Court of India (Constitution Bench)",
+                "year": "2014",
+                "holding": (
+                    "A 5-Judge Constitution Bench ruled that registration of an FIR is mandatory under Section 154 CrPC (now Sec 173 BNSS) "
+                    "if the information discloses commission of a cognizable offence, and no preliminary inquiry is permissible in such a situation. "
+                    "Police officers who fail or refuse to register an FIR are subject to strict disciplinary action and prosecution."
+                ),
+            },
+            {
+                "title": "Sakiri Vasu v. State of U.P.",
+                "citation": "(2008) 2 SCC 409",
+                "court": "Supreme Court of India",
+                "year": "2008",
+                "holding": (
+                    "The Supreme Court held that if an FIR is not registered or if an investigation is not proper, the informant must first exhaust remedies "
+                    "under Section 154(3) and 156(3) CrPC before the Magistrate, rather than rushing directly to the High Court under Article 226 or Section 482."
+                ),
+            },
+            {
+                "title": "State of Haryana v. Bhajan Lal",
+                "citation": "1992 Supp (1) SCC 335",
+                "court": "Supreme Court of India",
+                "year": "1992",
+                "holding": (
+                    "Established seminal guidelines on when an FIR can or cannot be quashed. Where the allegations in the FIR prima facie constitute "
+                    "an offence, the police have a statutory duty to investigate and courts should not interfere prematurely."
+                ),
+            },
+        ],
+        "plain_english_summary": {
+            "en": (
+                "Under Indian criminal jurisprudence governed by the Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 and the Supreme Court Constitution Bench ruling in Lalita Kumari v. Govt. of UP, the police are statutorily mandated to register a First Information Report (FIR) upon receiving any information disclosing a cognizable offence. Police officers possess zero discretion to refuse registration.\n\n"
+                "If a local police station or Station House Officer (SHO) refuses to register your FIR, the law provides a clear 4-tier statutory remedy:\n"
+                "1. Station Diary / CSR Acknowledgment: Demand an immediate Community Service Register (CSR) or General Diary (GD) entry receipt.\n"
+                "2. Representation to Superintendent of Police (Section 175(4) BNSS): Send a signed copy of the complaint with proof of refusal by Registered Post AD to the Superintendent of Police (SP) or Commissioner of Police.\n"
+                "3. Judicial Magistrate Application (Section 175(3) BNSS): If the police still refuse, engage an advocate to file a private complaint with an affidavit before the jurisdictional Judicial Magistrate of First Class (JMFC), praying for an order directing the police to register an FIR and investigate.\n"
+                "4. Zero FIR Mandate: In case of an emergency, a 'Zero FIR' can be lodged at ANY police station in India regardless of territorial jurisdiction."
+            ),
+            "kn": (
+                "ಭಾರತೀಯ ನಾಗರಿಕ ಸುರಕ್ಷಾ ಸಂಹಿತೆ (BNSS) ೨೦೨೩ ಮತ್ತು ಸರ್ವೋಚ್ಚ ನ್ಯಾಯಾಲಯದ ಸಂವಿಧಾನ ಪೀಠದ ಲಲಿತಾ ಕುಮಾರಿ ತೀರ್ಪಿನ ಪ್ರಕಾರ, ಕಾಗ್ನಿಜೇಬಲ್ (ಪೊಲೀಸರು ವಾರೆಂಟ್ ಇಲ್ಲದೆ ಬಂಧಿಸಬಹುದಾದ ಗಂಭೀರ ಅಪರಾಧ) ಕುರಿತು ಮಾಹಿತಿ ದೊರೆತಾಗ ಪ್ರಥಮ ಮಾಹಿತಿ ವರದಿ (ಎಫ್.ಐ.ಆರ್ - FIR) ದಾಖಲಿಸುವುದು ಪೊಲೀಸರ ಕಡ್ಡಾಯ ಶಾಸನಬದ್ಧ ಕರ್ತವ್ಯವಾಗಿದೆ.\n\n"
+                "ಪೊಲೀಸ್ ಠಾಣಾಧಿಕಾರಿ (SHO) ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸಲು ನಿರಾಕರಿಸಿದರೆ ಕಾನೂನು ಪ್ರಕಾರ ಈ ಕೆಳಗಿನ ೪ ಹಂತಗಳ ಅಧಿಕೃತ ಪರಿಹಾರಗಳಿವೆ:\n"
+                "೧. ಸ್ವೀಕೃತಿ ಮತ್ತು ಡೈರಿ ಎಂಟ್ರಿ (GD / CSR): ದೂರು ಸಲ್ಲಿಸಿದ ಬಗ್ಗೆ ಸ್ಟೇಷನ್ ಡೈರಿ (GD) ಅಥವಾ ಸಿಎಸ್‌ಆರ್ (CSR) ರಶೀದಿಯನ್ನು ಕಡ್ಡಾಯವಾಗಿ ಪಡೆದುಕೊಳ್ಳಿ.\n"
+                "೨. ಜಿಲ್ಲಾ ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿಗಳಿಗೆ (SP) ಲಿಖಿತ ದೂರು (ಕಲಂ ೧೭೫(೪) BNSS): ಠಾಣಾಧಿಕಾರಿ ನಿರಾಕರಿಸಿದ ದಾಖಲೆಯೊಂದಿಗೆ ಜಿಲ್ಲಾ ಎಸ್ಪಿ ಅಥವಾ ಕಮಿಷನರ್‌ಗೆ ನೋಂದಾಯಿತ ಅಂಚೆ (RPAD) ಮೂಲಕ ದೂರು ಕಳುಹಿಸಿ.\n"
+                "೩. ನ್ಯಾಯಾಂಗ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ ನ್ಯಾಯಾಲಯದಲ್ಲಿ ದೂರು (ಕಲಂ ೧೭೫(೩) BNSS): ಎಸ್ಪಿ ಹಂತದಲ್ಲೂ ಕ್ರಮವಾಗದಿದ್ದರೆ, ಸಕ್ಷಮ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ (JMFC) ನ್ಯಾಯಾಲಯಕ್ಕೆ ಪ್ರಮಾಣಪತ್ರದೊಂದಿಗೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ಎಫ್.ಐ.ಆರ್ ದಾಖಲಿಸಿ ತನಿಖೆ ನಡೆಸುವಂತೆ ಪೊಲೀಸರಿಗೆ ಆದೇಶ ಕೋರಬಹುದು.\n"
+                "೪. ಝೀರೋ ಎಫ್.ಐ.ಆರ್ (Zero FIR): ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ ನ್ಯಾಯವ್ಯಾಪ್ತಿಯ ಮಿತಿ ಇಲ್ಲದೆ ಭಾರತದ ಯಾವುದೇ ಪೊಲೀಸ್ ಠಾಣೆಯಲ್ಲಿ 'ಝೀರೋ ಎಫ್.ಐ.ಆರ್' ದಾಖಲಿಸಬಹುದು."
+            ),
+            "hi": (
+                "भारतीय नागरिक सुरक्षा संहिता (BNSS), 2023 की धारा 173 एवं सर्वोच्च न्यायालय की संविधान पीठ के निर्णय (ललिता कुमारी बनाम उत्तर प्रदेश राज्य) के अनुसार, किसी भी संज्ञेय अपराध (Cognizable Offence) की सूचना मिलने पर प्रथम सूचना रिपोर्ट (FIR) दर्ज करना पुलिस का अनिवार्य वैधानिक दायित्व है। पुलिस को एफआईआर दर्ज करने से मना करने का कोई अधिकार नहीं है।\n\n"
+                "यदि थाना प्रभारी (SHO) प्राथमिकी दर्ज करने से इनकार करता है, तो कानून के तहत निम्नलिखित 4-चरणीय विधिक उपाय उपलब्ध हैं:\n"
+                "1. जनरल डायरी (GD / CSR) पावती: शिकायत प्रस्तुत कर तुरंत जीडी प्रविष्टि या पावती रसीद प्राप्त करें।\n"
+                "2. पुलिस अधीक्षक (SP) को शिकायत (धारा 175(4) BNSS): यदि थाना मना करे, तो शिकायत की प्रति पंजीकृत डाक (RPAD) द्वारा जिले के पुलिस अधीक्षक (SP) या पुलिस आयुक्त को प्रेषित करें।\n"
+                "3. न्यायिक मजिस्ट्रेट के समक्ष आवेदन (धारा 175(3) BNSS): यदि एसपी स्तर पर भी कार्रवाई न हो, तो सक्षम न्यायिक मजिस्ट्रेट (JMFC) के समक्ष शपथपत्र सहित धारा 175(3) के तहत आवेदन कर पुलिस को एफआईआर दर्ज कर जांच करने का आदेश प्राप्त करें।\n"
+                "4. जीरो एफआईआर (Zero FIR): आपात स्थिति में क्षेत्राधिकार की चिंता किए बिना भारत के किसी भी थाने में 'जीरो एफआईआर' दर्ज कराई जा सकती है।"
+            ),
+            "te": (
+                "భారతీయ నాగరిక్ సురక్ష సంహిత (BNSS), 2023 లోని సెక్షన్ 173 మరియు సుప్రీంకోర్టు రాజ్యాంగ ధర్మాసనం లలిత కుమారి తీర్పు ప్రకారం, కాగ్నిజబుల్ నేరం జరిగినట్లు సమాచారం అందిన వెంటనే ప్రథమ సమాచార నివేదిక (FIR) నమోదు చేయడం పోలీసుల తప్పనిసరి చట్టబద్ధమైన బాధ్యత.\n\n"
+                "పోలీస్ స్టేషన్ అధికారి (SHO) ఎఫ్.ఐ.ఆర్ నమోదు చేయడానికి నిరాకరిస్తే, చట్టం ప్రకారం 4 అంచెల అధికారిక పరిష్కారాలు ఉన్నాయి:\n"
+                "1. జీడీ/సీఎస్ఆర్ (GD / CSR) రశీదు: స్టేషన్ డైరీ ఎంట్రీ లేదా సీఎస్ఆర్ రశీదును తప్పనిసరిగా తీసుకోండి.\n"
+                "2. జిల్లా ఎస్పీ (SP) కి లిఖితపూర్వక ఫిర్యాదు (సెక్షన్ 175(4) BNSS): నిరాకరణ వివరాలతో జిల్లా ఎస్పీ లేదా కమిషనర్‌కు రిజిస్టర్డ్ పోస్ట్ (RPAD) ద్వారా ఫిర్యాదు పంపండి.\n"
+                "3. జ్యుడీషియల్ మేజిస్ట్రేట్ కోర్టులో పిటిషన్ (సెక్షన్ 175(3) BNSS): ఎస్పీ ద్వారా కూడా చర్య లేకపోతే, అఫిడవిట్‌తో మేజిస్ట్రేట్ కోర్టులో సెక్షన్ 175(3) కింద పిటిషన్ వేసి పోలీసులకు దర్యాప్తు ఆదేశాలు ఇప్పించండి.\n"
+                "4. జీరో ఎఫ్.ఐ.ఆర్ (Zero FIR): అత్యవసర సమయాల్లో న్యాయపరిధి పరిమితి లేకుండా దేశంలోని ఏ పోలీస్ స్టేషన్‌లోనైనా 'జీరో ఎఫ్.ఐ.ఆర్' నమోదు చేయవచ్చు."
+            ),
+        },
+        "suggested_next_steps": {
+            "en": [
+                "Draft a signed written complaint addressed to the Station House Officer (SHO) with date, time, location, persons involved, and sequence of events.",
+                "Demand an immediate Station Diary (GD) number or Community Service Register (CSR) acknowledgment receipt.",
+                "If the SHO refuses, dispatch a certified copy of the complaint with postal proof to the Superintendent of Police (SP) under Section 175(4) BNSS via Registered Post AD.",
+                "If no action is taken within 15 days, engage an advocate to file an Application under Section 175(3) BNSS before the jurisdictional Judicial Magistrate of First Class (JMFC) to order police investigation.",
+                "For ongoing emergencies or offences across borders, insist on registering a 'Zero FIR' at the nearest police station.",
+            ],
+            "kn": [
+                "ದಿನಾಂಕ, ಸಮಯ, ಸ್ಥಳ, ಆರೋಪಿಗಳು ಮತ್ತು ಘಟನೆಯ ನಿಖರ ವಿವರಗಳನ್ನು ಒಳಗೊಂಡ ಲಿಖಿತ ದೂರನ್ನು ಸಿದ್ಧಪಡಿಸಿ ಸ್ಥಳೀಯ ಠಾಣಾಧಿಕಾರಿಗೆ (SHO) ನೀಡಿ.",
+                "ದೂರು ನೀಡಿದ ತಕ್ಷಣವೇ ಸ್ಟೇಷನ್ ಡೈರಿ (GD) ಸಂಖ್ಯೆ ಅಥವಾ CSR ರಶೀದಿಯನ್ನು ಕಡ್ಡಾಯವಾಗಿ ಪಡೆದುಕೊಳ್ಳಿ.",
+                "ಠಾಣೆಯಲ್ಲಿ ನಿರಾಕರಿಸಿದರೆ, ಬಿಎನ್‌ಎಸ್‌ಎಸ್ ಕಲಂ ೧೭೫(೪) ರ ಅಡಿಯಲ್ಲಿ ಜಿಲ್ಲಾ ಪೊಲೀಸ್ ವರಿಷ್ಠಾಧಿಕಾರಿಗಳಿಗೆ (SP) ನೋಂದಾಯಿತ ಅಂಚೆ ಮೂಲಕ ದೂರು ಕಳುಹಿಸಿ.",
+                "ಪೊಲೀಸರಿಂದ ತನಿಖೆಯಾಗದಿದ್ದಲ್ಲಿ, ಸಕ್ಷಮ ಮ್ಯಾಜಿಸ್ಟ್ರೇಟ್ ನ್ಯಾಯಾಲಯಕ್ಕೆ ಕಲಂ ೧೭೫(೩) ರಂತೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ ತನಿಖೆಗೆ ನಿರ್ದೇಶನ ಪಡೆಯಿರಿ.",
+                "ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ ನ್ಯಾಯವ್ಯಾಪ್ತಿಯ ಮಿತಿ ಇಲ್ಲದೆ ಯಾವುದೇ ಠಾಣೆಯಲ್ಲಿ 'ಝೀರೋ ಎಫ್.ಐ.ಆರ್' ದಾಖಲಿಸಿ.",
+            ],
+            "hi": [
+                "घटना का समय, स्थान, आरोपी के विवरण और साक्ष्यों के साथ हस्ताक्षरित लिखित शिकायत स्थानीय थाना प्रभारी (SHO) को सौंपें।",
+                "शिकायत की पावती (Acknowledgement), जनरल डायरी (GD) प्रविष्टि संख्या या रसीद अवश्य प्राप्त करें।",
+                "थाने द्वारा इनकार करने पर, धारा 175(4) BNSS के तहत पुलिस अधीक्षक (SP) को पंजीकृत डाक (RPAD) द्वारा शिकायत भेजें।",
+                "यदि एसपी स्तर पर भी कार्रवाई न हो, तो अधिवक्ता के माध्यम से सक्षम न्यायिक मजिस्ट्रेट के समक्ष धारा 175(3) BNSS के तहत आवेदन कर जांच का आदेश प्राप्त करें।",
+                "आपातकालीन स्थिति में किसी भी नजदीकी थाने में 'जीरो एफआईआर' (Zero FIR) दर्ज करवाएं।",
+            ],
+            "te": [
+                "ఘటన వివరాలు, తేదీ, సమయం, స్థలంతో లిఖితపూర్వక ఫిర్యాదును స్థానిక స్టేషన్ హౌస్ ఆఫీసర్ (SHO) కు అందజేయండి.",
+                "ఫిర్యాదు సమర్పించిన వెంటనే అధికారిక రశీదు (GD ఎంట్రీ లేదా CSR నంబర్) తప్పనిసరిగా తీసుకోండి.",
+                "పోలీసులు నిరాకరిస్తే, సెక్షన్ 175(4) BNSS కింద జిల్లా ఎస్పీ (SP) గారికి రిజిస్టర్డ్ పోస్ట్ ద్వారా లిఖితపూర్వక కాపీ పంపండి.",
+                "పోలీసులు విచారణ జరపకపోతే, న్యాయవాది ద్వారా మేజిస్ట్రేట్ కోర్టులో సెక్షన్ 175(3) BNSS కింద దర్యాప్తునకు ఆదేశాల కోసం పిటిషన్ దాఖలు చేయండి.",
+                "అత్యవసర పరిస్థితుల్లో ఏ పోలీస్ స్టేషన్‌లోనైనా 'జీరో ఎఫ్.ఐ.ఆర్' నమోదు చేయించండి.",
+            ],
+        },
+    },
 }
 
 
@@ -874,10 +1158,39 @@ def detect_legal_domain(query: str, conversation_history: Optional[List[Dict[str
     Classifies a query into its sovereign Indian legal domain with follow-up case anchoring.
     If conversation_history is present, the root query sets the master domain anchor.
     """
-    combined = query.lower()
-    if conversation_history and len(conversation_history) > 0:
+    # Evaluate the current query on its own merits first
+    curr_q = query.lower()
+    # Only fall back to root query anchoring if the current query is an ambiguous continuation
+    is_continuation = any(k in curr_q for k in [
+        "more on this", "tell me more", "what next", "next step", "continue",
+        "what should i do now", "elaborate", "explain further", "how much time",
+        "cost", "fee", "advocate fee", "court fee", "timeline"
+    ])
+    if is_continuation and conversation_history and len(conversation_history) > 0:
         root_q = conversation_history[0].get("query", "").lower()
-        combined = f"{root_q} {combined}"
+        combined = f"{root_q} {curr_q}"
+    else:
+        combined = curr_q
+
+    # ── Land Acquisition & Government Canal / Road Compensation ──
+    if any(k in combined for k in [
+        "land acquisition", "canal", "land compensation", "government acquired",
+        "irrigation canal", "rfctlarr", "solatium", "land taken", "collector award",
+        "ಜಮೀನು", "ಕೆನಾಲ್", "ಕಾಲುವೆ", "ಪರಿಹಾರ", "ಭೂಸ್ವಾಧೀನ", "ಭೂ ಸ್ವಾಧೀನ", "ಸರ್ಕಾರದ ಕೆನಾಲ್",
+        "भूमि अधिग्रहण", "नहर", "मुआवजा", "जमीन", "భూసేకరణ", "కాలువ", "నష్టపరిహారం"
+    ]):
+        return "land_acquisition_compensation"
+
+    # ── FIR & Police Criminal Complaint ──
+    if any(k in combined for k in [
+        "fir", "f.i.r", "police", "police station", "sho", "cognizable",
+        "154", "173 bnss", "zero fir", "file fir", "fire fir", "lodging fir", "lodge fir",
+        "police complaint", "sp office", "superintendent of police", "refused to file fir",
+        "station house officer", "crime report", "156(3)", "175(3)", "magistrate complaint",
+        "lalita kumari", "police refusal", "efir", "e-fir", "criminal complaint",
+        "murder", "murdered", "kill", "killed", "homicide", "assault", "stabbed", "shot"
+    ]):
+        return "fir_criminal_complaint"
 
     if any(k in combined for k in [
         "defamat", "social media", "reputation", "slander", "libel",

@@ -41,28 +41,28 @@ export default function CitizenView({ data }) {
           <div className="w-7 h-7 rounded-lg bg-indigo-500/12 border border-indigo-500/20 flex items-center justify-center">
             <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
           </div>
-          <h3 className="text-sm font-semibold text-white">{summaryTitle}</h3>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">{summaryTitle}</h3>
           <span className="ml-auto text-xs text-indigo-400/60 bg-indigo-500/8 px-2 py-0.5 rounded-full border border-indigo-500/15">
             Citizen View
           </span>
         </div>
-        <p className="text-sm text-slate-300 leading-relaxed">{data.plain_english_summary}</p>
+        <p className="text-sm text-slate-800 dark:text-slate-300 leading-relaxed font-normal">{data.plain_english_summary}</p>
       </div>
 
-      {/* Applicable Statutes */}
+      {/* Applicable Statutes — Top 3 Max to Minimize Height */}
       {data.applicable_statutes?.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-sm font-semibold text-slate-300">
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+            <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-300">
               {lawsTitle}
-              <span className="ml-2 text-xs text-slate-600 font-normal">
-                ({data.applicable_statutes.length} found)
+              <span className="ml-2 text-[11px] text-slate-500 font-normal">
+                (Top {Math.min(3, data.applicable_statutes.length)})
               </span>
             </h3>
           </div>
-          <div className="grid gap-3">
-            {data.applicable_statutes.map((statute, i) => (
+          <div className="grid gap-2">
+            {data.applicable_statutes.slice(0, 3).map((statute, i) => (
               <CitationCard key={`statute-${i}`} item={statute} type="statute" index={i} />
             ))}
           </div>
@@ -76,7 +76,7 @@ export default function CitizenView({ data }) {
             <div className="w-7 h-7 rounded-lg bg-emerald-500/12 border border-emerald-500/20 flex items-center justify-center">
               <ListChecks className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <h3 className="text-sm font-semibold text-white">{nextStepsTitle}</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{nextStepsTitle}</h3>
           </div>
           <ul className="space-y-2.5">
             {data.suggested_next_steps.map((step, i) => (
@@ -85,7 +85,7 @@ export default function CitizenView({ data }) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + i * 0.07 }}
-                className="flex items-start gap-3 text-sm text-slate-300"
+                className="flex items-start gap-3 text-sm text-slate-800 dark:text-slate-300 font-normal"
               >
                 <div className="w-5 h-5 rounded-full bg-emerald-500/12 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
                   <ChevronRight className="w-3 h-3 text-emerald-400" />

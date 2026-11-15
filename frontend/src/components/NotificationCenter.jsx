@@ -121,7 +121,7 @@ export default function NotificationCenter({
       {/* ── Bell Icon Button with Live Badge ── */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-indigo-500/40 shadow-sm flex items-center justify-center"
+        className="relative p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-all border border-slate-200 dark:border-white/10 hover:border-indigo-400 dark:hover:border-indigo-500/40 shadow-sm flex items-center justify-center"
         title="Notifications & Hearing Reminders"
         aria-label="Notifications"
       >
@@ -144,10 +144,10 @@ export default function NotificationCenter({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="fixed top-16 right-3 sm:right-6 w-96 max-w-[calc(100vw-1.5rem)] bg-[#0c0d26] border border-indigo-500/25 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-[999999] overflow-hidden flex flex-col max-h-[82vh] text-slate-100 backdrop-blur-2xl"
+              className="fixed top-16 right-3 sm:right-6 w-96 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-[999999] overflow-hidden flex flex-col max-h-[82vh] text-slate-100 backdrop-blur-2xl"
             >
             {/* Header */}
-            <div className="p-3.5 border-b border-indigo-500/15 bg-slate-900/90 flex items-center justify-between shrink-0">
+            <div className="p-3.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 rounded-lg bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0">
                   <Bell className="w-3.5 h-3.5" />
