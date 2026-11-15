@@ -132,6 +132,10 @@ class RenameCaseRequest(BaseModel):
     name: str
 
 
+class JargonDefineRequest(BaseModel):
+    term: str
+
+
 # ── Document & Case Chatbot ──────────────────────────────────────────────────
 
 class DocChatMessageResponse(BaseModel):

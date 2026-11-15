@@ -28,6 +28,7 @@ import NotificationCenter from '../components/NotificationCenter'
 import NotificationPermissionModal from '../components/NotificationPermissionModal'
 import TelemetryCard from '../components/TelemetryCard'
 import VoiceInputButton from '../components/VoiceInputButton'
+import ComponentErrorBoundary from '../components/ComponentErrorBoundary'
 import { generateCourtLegalReport } from '../utils/courtReportGenerator'
 
 const SUGGESTIONS_MAP = {
@@ -82,6 +83,10 @@ export default function Dashboard() {
   const [query, setQuery] = useState('')
   const [followUpQuery, setFollowUpQuery] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingStep, setLoadingStep] = useState(0)
+  const abortControllerRef = useRef(null)
+  const progressTimerRef = useRef(null)
+  const watchdogTimerRef = useRef(null)
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [copiedShare, setCopiedShare] = useState(false)
@@ -119,6 +124,14 @@ export default function Dashboard() {
     setToast({ msg, type })
     if (toastTimer.current) clearTimeout(toastTimer.current)
     toastTimer.current = setTimeout(() => setToast(null), 8000)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current)
+      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current)
+    }
   }, [])
 
   // Safely parse JSON from query log
@@ -225,15 +238,43 @@ export default function Dashboard() {
     const trimmed = query.trim()
     if (!trimmed || loading) return
 
+    // Cancel any existing in-flight query to free network and server threads
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setLoading(true)
+    setLoadingStep(0)
     setError('')
     setLimitError(false)
+
+    // Dynamic multi-stage progress ticker
+    if (progressTimerRef.current) clearInterval(progressTimerRef.current)
+    let step = 0
+    progressTimerRef.current = setInterval(() => {
+      step = Math.min(3, step + 1)
+      setLoadingStep(step)
+    }, 2200)
+
+    // Client-side 45-second watchdog to prevent indefinite spinning
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current)
+    watchdogTimerRef.current = setTimeout(() => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        setLoading(false)
+        setError('Inference request timed out after 45 seconds. The server might be busy. Please try again.')
+        showToast('Request timed out. Please try again.', 'error')
+      }
+    }, 45000)
 
     try {
       const res = await apiQuery({
         query_text: trimmed,
         language,
         case_id: activeCaseId || undefined,
+        signal: controller.signal,
       })
 
       const queryResult = res.data
@@ -249,6 +290,9 @@ export default function Dashboard() {
       setQuery('')
       refreshSidebar()
     } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+        return // Silently ignored if cancelled by user or replaced by newer request
+      }
       const status = err.response?.status
       const detail = err.response?.data?.detail || ''
 
@@ -265,6 +309,15 @@ export default function Dashboard() {
       }
     } finally {
       setLoading(false)
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+        progressTimerRef.current = null
+      }
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current)
+        watchdogTimerRef.current = null
+      }
+      abortControllerRef.current = null
     }
   }
 
@@ -272,14 +325,39 @@ export default function Dashboard() {
     const trimmed = followUpQuery.trim()
     if (!trimmed || loading) return
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setLoading(true)
+    setLoadingStep(0)
     setError('')
+
+    if (progressTimerRef.current) clearInterval(progressTimerRef.current)
+    let step = 0
+    progressTimerRef.current = setInterval(() => {
+      step = Math.min(3, step + 1)
+      setLoadingStep(step)
+    }, 2200)
+
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current)
+    watchdogTimerRef.current = setTimeout(() => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        setLoading(false)
+        setError('Follow-up request timed out after 45 seconds. Please try again.')
+        showToast('Request timed out. Please try again.', 'error')
+      }
+    }, 45000)
 
     try {
       const res = await apiQuery({
         query_text: trimmed,
         language,
         case_id: activeCaseId || (result ? result.case_id : undefined),
+        signal: controller.signal,
       })
 
       const queryResult = res.data
@@ -298,6 +376,9 @@ export default function Dashboard() {
         followUpRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 150)
     } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+        return // Silently ignored if cancelled by user
+      }
       const status = err.response?.status
       const detail = err.response?.data?.detail || ''
 
@@ -314,6 +395,15 @@ export default function Dashboard() {
       }
     } finally {
       setLoading(false)
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+        progressTimerRef.current = null
+      }
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current)
+        watchdogTimerRef.current = null
+      }
+      abortControllerRef.current = null
     }
   }
 
@@ -823,39 +913,106 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Loading state during query analysis */}
+          {/* Multi-Stage Real-Time Progress Stepper */}
           <AnimatePresence>
             {loading && (
               <motion.div
-                key="loading"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="glass-card rounded-2xl p-10 flex flex-col items-center gap-5 mb-5 border border-indigo-500/20"
+                key="loading-stepper"
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.25 }}
+                className="glass-card rounded-2xl p-6 mb-6 border border-indigo-500/30 shadow-2xl bg-gradient-to-b from-[#0e122b]/95 to-[#07091a]/95 backdrop-blur-xl relative overflow-hidden"
               >
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white indigo-glow">
-                    <Scale className="w-6 h-6 text-white" />
-                  </div>
+                {/* Top Subtle Animated Progress Line */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
                   <motion.div
-                    className="absolute -inset-1.5 rounded-2xl border border-indigo-400/30"
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                    className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-400"
+                    initial={{ width: '15%' }}
+                    animate={{
+                      width: loadingStep === 0 ? '28%' : loadingStep === 1 ? '58%' : loadingStep === 2 ? '82%' : '96%'
+                    }}
+                    transition={{ duration: 0.8, ease: 'easeInOut' }}
                   />
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-white mb-1">Analyzing your legal scenario…</p>
-                  <p className="text-xs text-slate-400">Retrieving statutes · Searching precedents · Verifying citations</p>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                        <Scale className="w-5 h-5 animate-pulse" />
+                      </div>
+                      <div className="absolute -inset-1 rounded-xl border border-indigo-500/30 border-t-transparent animate-spin" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
+                          Sovereign Legal Intelligence
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-mono">
+                          Live Research
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-white mt-0.5">
+                        {loadingStep === 0 && 'Stage 1: Determining Jurisdiction & Substantive Law…'}
+                        {loadingStep === 1 && 'Stage 2: Cross-referencing 800+ Central Acts & BNS…'}
+                        {loadingStep === 2 && 'Stage 3: Retrieving Supreme Court Precedents (Art. 141)…'}
+                        {loadingStep === 3 && 'Stage 4: Synthesizing Advisory & Procedural Roadmap…'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (abortControllerRef.current) abortControllerRef.current.abort()
+                      setLoading(false)
+                      showToast('Legal analysis cancelled.', 'warning')
+                    }}
+                    className="self-end sm:self-center px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all shrink-0"
+                  >
+                    Cancel
+                  </button>
                 </div>
-                <div className="flex gap-1.5">
-                  {[0, 1, 2, 3].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-1.5 h-1.5 bg-indigo-500 rounded-full"
-                      animate={{ scale: [1, 1.6, 1], opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18 }}
-                    />
-                  ))}
+
+                {/* 4 Interactive Sequential Milestones */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-4">
+                  {[
+                    { title: 'Jurisdiction & Acts', desc: 'Subject matter & forum' },
+                    { title: 'BNS Concordance', desc: '2024-2026 penal codes' },
+                    { title: 'SC Precedents', desc: 'Binding ratios (Art. 141)' },
+                    { title: 'Court Advisory', desc: 'Verified layperson brief' },
+                  ].map((st, idx) => {
+                    const isDone = loadingStep > idx
+                    const isActive = loadingStep === idx
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-2.5 rounded-xl border transition-all ${
+                          isActive
+                            ? 'bg-indigo-600/15 border-indigo-500/50 shadow-md shadow-indigo-600/10'
+                            : isDone
+                            ? 'bg-emerald-950/20 border-emerald-500/30'
+                            : 'bg-white/3 border-white/5 opacity-40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {isDone ? (
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          ) : isActive ? (
+                            <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin shrink-0" />
+                          ) : (
+                            <div className="w-3.5 h-3.5 rounded-full border border-slate-600 shrink-0" />
+                          )}
+                          <span className={`text-xs font-bold truncate ${isActive ? 'text-indigo-200' : isDone ? 'text-emerald-300' : 'text-slate-400'}`}>
+                            {st.title}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 truncate pl-5">
+                          {st.desc}
+                        </p>
+                      </div>
+                    )
+                  })}
                 </div>
               </motion.div>
             )}
@@ -1072,11 +1229,13 @@ export default function Dashboard() {
 
                             {/* Turn Content (Citizen vs Advocate) */}
                             <div>
-                              {turnView === 'citizen' ? (
-                                <CitizenView data={turn} />
-                              ) : (
-                                <AdvocateView data={turn} isPro={user?.is_pro} />
-                              )}
+                              <ComponentErrorBoundary name={turnView === 'citizen' ? 'CitizenView' : 'AdvocateView'}>
+                                {turnView === 'citizen' ? (
+                                  <CitizenView data={turn} />
+                                ) : (
+                                  <AdvocateView data={turn} isPro={user?.is_pro} />
+                                )}
+                              </ComponentErrorBoundary>
                             </div>
                           </div>
                         </div>
@@ -1161,48 +1320,60 @@ export default function Dashboard() {
         onUserUpdated={(updated) => updateUser(updated)}
       />
 
-      <BNSConverterModal
-        isOpen={isBNSModalOpen}
-        onClose={() => setIsBNSModalOpen(false)}
-      />
+      <ComponentErrorBoundary name="BNSConverterModal">
+        <BNSConverterModal
+          isOpen={isBNSModalOpen}
+          onClose={() => setIsBNSModalOpen(false)}
+        />
+      </ComponentErrorBoundary>
 
-      <LegalDraftModal
-        isOpen={isDraftModalOpen}
-        onClose={() => setIsDraftModalOpen(false)}
-        result={latestTurn || result}
-        user={user}
-      />
+      <ComponentErrorBoundary name="LegalDraftModal">
+        <LegalDraftModal
+          isOpen={isDraftModalOpen}
+          onClose={() => setIsDraftModalOpen(false)}
+          result={latestTurn || result}
+          user={user}
+        />
+      </ComponentErrorBoundary>
 
-      <CourtFeeModal
-        isOpen={isCourtFeeModalOpen}
-        onClose={() => setIsCourtFeeModalOpen(false)}
-      />
+      <ComponentErrorBoundary name="CourtFeeModal">
+        <CourtFeeModal
+          isOpen={isCourtFeeModalOpen}
+          onClose={() => setIsCourtFeeModalOpen(false)}
+        />
+      </ComponentErrorBoundary>
 
-      <AdvocateDiaryModal
-        isOpen={isDiaryModalOpen}
-        onClose={() => setIsDiaryModalOpen(false)}
-      />
+      <ComponentErrorBoundary name="AdvocateDiaryModal">
+        <AdvocateDiaryModal
+          isOpen={isDiaryModalOpen}
+          onClose={() => setIsDiaryModalOpen(false)}
+        />
+      </ComponentErrorBoundary>
 
-      <BareActsModal
-        isOpen={isBareActsModalOpen}
-        onClose={() => setIsBareActsModalOpen(false)}
-        onSelectAct={(act) => {
-          setIsBareActsModalOpen(false)
-          const prompt = `Explain the key statutory provisions, practical litigation applications, and court remedies under ${act.title} (${act.year || ''}) for legal proceedings.`
-          setQuery(prompt)
-          if (textareaRef.current) {
-            setTimeout(() => {
-              textareaRef.current.focus()
-              textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }, 100)
-          }
-        }}
-      />
+      <ComponentErrorBoundary name="BareActsModal">
+        <BareActsModal
+          isOpen={isBareActsModalOpen}
+          onClose={() => setIsBareActsModalOpen(false)}
+          onSelectAct={(act) => {
+            setIsBareActsModalOpen(false)
+            const prompt = `Explain the key statutory provisions, practical litigation applications, and court remedies under ${act.title} (${act.year || ''}) for legal proceedings.`
+            setQuery(prompt)
+            if (textareaRef.current) {
+              setTimeout(() => {
+                textareaRef.current.focus()
+                textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }, 100)
+            }
+          }}
+        />
+      </ComponentErrorBoundary>
 
-      <DPDPSecurityModal
-        isOpen={isDPDPModalOpen}
-        onClose={() => setIsDPDPModalOpen(false)}
-      />
+      <ComponentErrorBoundary name="DPDPSecurityModal">
+        <DPDPSecurityModal
+          isOpen={isDPDPModalOpen}
+          onClose={() => setIsDPDPModalOpen(false)}
+        />
+      </ComponentErrorBoundary>
 
       <NotificationPermissionModal
         isOpen={isNotifModalOpen}

@@ -22,13 +22,15 @@ client.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Intercept 401s — only redirect if explicitly on a protected route and not during active retry
+// Intercept 401s — only hard-redirect if root session identity verification fails
 client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/signup')
-      if (!isAuthEndpoint && window.location.pathname !== '/login') {
+      const url = error.config?.url || ''
+      const isAuthInit = url.includes('/auth/me')
+      // Only do a hard session clear if root user identity check explicitly rejects the stored token
+      if (isAuthInit && window.location.pathname !== '/login') {
         localStorage.removeItem('jurisai_token')
         localStorage.removeItem('jurisai_user')
         window.location.href = '/login'
@@ -51,15 +53,24 @@ export const apiForgotPassword = (email) => client.post('/auth/forgot-password',
 export const apiResetPassword = (token, new_password) =>
   client.post('/auth/reset-password', { token, new_password })
 
-// ── Query (Robust dual-signature handler) ──────────────────────────────────────
-export const apiQuery = (query, case_id = null, language = 'en') => {
+// ── Query (Robust dual-signature handler with AbortController signal support) ──────────────────────
+export const apiQuery = (query, case_id = null, language = 'en', signal = undefined) => {
   if (typeof query === 'object' && query !== null) {
     const qText = query.query || query.query_text || ''
     const cId = query.case_id !== undefined ? query.case_id : case_id
     const lang = query.language || language || 'en'
-    return client.post('/query', { query: qText, ...(cId ? { case_id: cId } : {}), language: lang })
+    const sig = query.signal || signal
+    return client.post(
+      '/query',
+      { query: qText, ...(cId ? { case_id: cId } : {}), language: lang },
+      sig ? { signal: sig } : {}
+    )
   }
-  return client.post('/query', { query, ...(case_id ? { case_id } : {}), language })
+  return client.post(
+    '/query',
+    { query, ...(case_id ? { case_id } : {}), language },
+    signal ? { signal } : {}
+  )
 }
 
 // ── Cases ─────────────────────────────────────────────────────────────────────
@@ -101,6 +112,9 @@ export const apiGetHandoffPrompt = (sessionId) =>
 
 export const apiContinueInNewSession = (sessionId) =>
   client.post(`/chat/sessions/${sessionId}/continue-in-new`)
+
+// ── Dynamic Legal Jargon Definition ──────────────────────────────────────────
+export const apiDefineJargon = (term) => client.post('/legal-jargon/define', { term })
 
 export const apiTransferCaseToChat = (caseId, title = null) =>
   client.post(`/chat/sessions/from-case/${caseId}`, null, { params: title ? { title } : {} })

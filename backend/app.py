@@ -522,6 +522,53 @@ def run_query(
 
 # ─── HISTORY ─────────────────────────────────────────────────────────────────
 
+@app.post("/api/legal-jargon/define", tags=["Legal Jargon"])
+def define_legal_jargon(
+    payload: schemas.JargonDefineRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Dynamically define any Indian legal jargon term using LLM with in-memory caching."""
+    term = payload.term.strip()
+    if not term:
+        raise HTTPException(400, "Term cannot be empty.")
+
+    rag = get_rag_service()
+    if not hasattr(rag, "_jargon_cache"):
+        rag._jargon_cache = {}
+
+    clean_key = term.lower()
+    if clean_key in rag._jargon_cache:
+        return rag._jargon_cache[clean_key]
+
+    prompt = (
+        f"You are JurisAI Indian Legal Assistant. Explain the specific Indian legal jargon term '{term}' for a common citizen.\n"
+        f"Respond strictly in a single valid JSON object with exactly two keys:\n"
+        f'{{"label": "{term}", "definition": "1 or 2 concise, clear sentences defining this legal term in the context of Indian courts and statutes.", '
+        f'"plainMeaning": "1 crisp sentence explaining what this practically means for a normal citizen or litigant."}}\n'
+        f"No markdown, no commentary, only JSON."
+    )
+    try:
+        raw_text = rag._generate_with_fallback(prompt)
+        clean_json = raw_text.strip()
+        if clean_json.startswith("```"):
+            clean_json = clean_json.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+        parsed = json.loads(clean_json)
+        result = {
+            "label": parsed.get("label", term),
+            "definition": parsed.get("definition", f"A recognized statutory procedure or legal term in Indian law concerning {term}."),
+            "plainMeaning": parsed.get("plainMeaning", "Consult an advocate to understand the specific timeline and procedural impact on your case."),
+        }
+    except Exception as e:
+        result = {
+            "label": term,
+            "definition": f"A specialized statutory concept in Indian judicial proceedings related to {term}.",
+            "plainMeaning": "This term directly affects court procedure, filings, or evidence admissibility in your matter.",
+        }
+
+    rag._jargon_cache[clean_key] = result
+    return result
+
+
 @app.get("/api/history", response_model=list[schemas.QueryHistoryItem], tags=["History"])
 def get_history(
     db: Session = Depends(get_db),
