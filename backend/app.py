@@ -33,6 +33,7 @@ import precedents_service
 import pii_redactor
 import court_fee_service
 import contract_auditor_service
+import storage
 from database import engine, get_db
 from rag_service import get_rag_service
 
@@ -953,7 +954,80 @@ async def upload_chat_document(
     session.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(doc)
+
+    # Backup raw uploaded file to Neon Object Storage
+    if storage.is_storage_configured():
+        storage_key = f"cases/{session.id}/{doc.id}_{file.filename}"
+        storage.upload_document(
+            file_bytes=content_bytes,
+            key=storage_key,
+            content_type=file.content_type,
+        )
+
     return doc
+
+
+@app.get("/api/chat/documents/{doc_id}/download", tags=["Document Chat"])
+def download_chat_document(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Download an uploaded legal file via secure presigned Neon Object Storage URL."""
+    doc = db.query(models.UploadedDoc).filter(
+        models.UploadedDoc.id == doc_id,
+        models.UploadedDoc.user_id == current_user.id
+    ).first()
+    if not doc:
+        raise HTTPException(404, "Document not found.")
+
+    storage_key = f"cases/{doc.chat_id}/{doc.id}_{doc.filename}"
+    presigned_url = storage.generate_presigned_download_url(storage_key)
+    if presigned_url:
+        return {"download_url": presigned_url, "filename": doc.filename}
+
+    return {"content": doc.extracted_text, "filename": doc.filename}
+
+
+@app.get("/api/neon/status", tags=["System"])
+def get_neon_status(db: Session = Depends(get_db)):
+    """Diagnostic endpoint verifying all connected Neon Cloud services."""
+    import os
+    from sqlalchemy import text
+
+    # 1. Lakebase Postgres
+    try:
+        pg_res = db.execute(text("SELECT current_database(), current_user, version();")).fetchone()
+        pg_status = {
+            "status": "connected",
+            "database": pg_res[0],
+            "user": pg_res[1],
+            "version": pg_res[2].split(" ")[0] + " " + pg_res[2].split(" ")[1],
+        }
+    except Exception as e:
+        pg_status = {"status": "error", "error": str(e)}
+
+    # 2. Object Storage
+    storage_status = {
+        "configured": storage.is_storage_configured(),
+        "bucket": storage.DEFAULT_BUCKET,
+        "region": storage.AWS_REGION,
+    }
+
+    # 3. Realtime
+    rt_url = os.getenv("NEON_REALTIME_URL")
+    realtime_status = {
+        "configured": bool(rt_url),
+        "endpoint": rt_url,
+    }
+
+    return {
+        "branch": os.getenv("NEON_BRANCH", "production"),
+        "branch_id": os.getenv("NEON_BRANCH_ID"),
+        "postgres": pg_status,
+        "object_storage": storage_status,
+        "realtime": realtime_status,
+    }
 
 
 @app.post("/api/redact/preview", tags=["Privacy & Compliance"])
