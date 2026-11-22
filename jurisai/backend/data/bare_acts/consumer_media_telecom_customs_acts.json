@@ -1,0 +1,74 @@
+[
+  {
+    "id": "telecom_act_2023_sec19",
+    "act_title": "Telecommunications Act, 2023",
+    "act_id": "ACT_2023_44",
+    "section_number": "19 & 20",
+    "marginal_heading": "Protection of Telecommunication Networks & Interception of Messages for National Security",
+    "enacted_year": 2023,
+    "effective_date": "2024-06-26",
+    "doc_type": "statute",
+    "citation": "Telecommunications Act, 2023, Sec. 19 & 20",
+    "text": "Section 19 empowers the Central Government to prescribe standards and conformity assessments for telecommunication equipment and cybersecurity. Section 20 provides that on the occurrence of any public emergency, including disaster management, or in the interest of public safety, the Central Government or a State Government may temporarily take possession of any telecommunication service or network, or direct that any message or class of messages shall not be transmitted, or shall be intercepted, detained or disclosed to the authorized officer."
+  },
+  {
+    "id": "fssa_sec26_59",
+    "act_title": "Food Safety and Standards Act, 2006 (FSSA)",
+    "act_id": "ACT_2006_34",
+    "section_number": "26 & 59",
+    "marginal_heading": "Responsibilities of Food Business Operators & Punishment for Unsafe Food",
+    "enacted_year": 2006,
+    "effective_date": "2011-08-05",
+    "doc_type": "statute",
+    "citation": "Food Safety and Standards Act, 2006, Sec. 26 & 59",
+    "text": "Section 26 places legal responsibility on every food business operator (FBO) to ensure that articles of food satisfy requirements of the Act at all stages of production, processing, import and distribution. Section 59 penalizes manufacturing, selling, storing or distributing unsafe food: (i) where failure results in no injury: imprisonment up to six months and fine up to ₹1 Lakh; (ii) non-grievous injury: imprisonment up to one year and fine up to ₹3 Lakh; (iii) grievous injury: imprisonment up to six years and fine up to ₹5 Lakh; (iv) death: imprisonment not less than seven years extending to life, and fine not less than ₹10 Lakhs."
+  },
+  {
+    "id": "drugs_cosmetics_sec18_27",
+    "act_title": "Drugs and Cosmetics Act, 1940",
+    "act_id": "ACT_1940_23",
+    "section_number": "18 & 27",
+    "marginal_heading": "Prohibition of Manufacture and Sale of Spurious, Adulterated or Misbranded Drugs & Severe Penalties",
+    "enacted_year": 1940,
+    "effective_date": "1947-04-01",
+    "doc_type": "statute",
+    "citation": "Drugs and Cosmetics Act, 1940, Sec. 18 & 27",
+    "text": "Section 18 prohibits the manufacture, sale, or distribution of any drug which is not of standard quality, or is misbranded, adulterated, or spurious. Section 27 prescribes severe penalties: any person manufacturing or selling adulterated or spurious drugs likely to cause death or grievous hurt shall be punishable with imprisonment for a term which shall not be less than ten years but which may extend to imprisonment for life, and shall also be liable to fine which shall not be less than ₹10,00,000 or three times the value of drugs confiscated."
+  },
+  {
+    "id": "customs_sec108_135",
+    "act_title": "Customs Act, 1962",
+    "act_id": "ACT_1962_52",
+    "section_number": "108 & 135",
+    "marginal_heading": "Power to Summon Persons to Give Evidence & Prosecution for Evasion of Duty or Smuggling",
+    "enacted_year": 1962,
+    "effective_date": "1963-02-01",
+    "doc_type": "statute",
+    "citation": "Customs Act, 1962, Sec. 108 & 135",
+    "text": "Section 108 empowers any gazetted officer of customs to summon any person whose attendance he considers necessary to give evidence or produce a document; statements made under Section 108 are deemed to be judicial proceedings and are admissible in evidence (K.I. Pavunny v. AC). Section 135 penalizes evasion of duty, fraudulent imports, or dealing with smuggled goods with imprisonment up to seven years and fine where the market price or duty evaded exceeds ₹50 Lakhs (or ₹1 Crore under recent circulars)."
+  },
+  {
+    "id": "railways_sec124a",
+    "act_title": "Railways Act, 1989",
+    "act_id": "ACT_1989_24",
+    "section_number": "124A",
+    "marginal_heading": "Compensation on Account of Untoward Incident (Strict Liability - Union of India v. Rina Devi)",
+    "enacted_year": 1989,
+    "effective_date": "1994-08-01",
+    "doc_type": "statute",
+    "citation": "Railways Act, 1989, Sec. 124A",
+    "text": "When in the course of working a railway an untoward incident occurs, then whether or not there has been any wrongful act, neglect or default on the part of the railway administration, the railway administration shall be liable to pay compensation. As settled by the Supreme Court in Union of India v. Rina Devi (2019), death or injury in the course of boarding or de-boarding a train is an 'untoward incident' covered under strict liability, and absence of a passenger ticket creates no presumption of unauthorized travel unless rebutted by railway administration."
+  },
+  {
+    "id": "essential_commodities_sec3_6a",
+    "act_title": "Essential Commodities Act, 1955",
+    "act_id": "ACT_1955_10",
+    "section_number": "3, 6A & 7",
+    "marginal_heading": "Powers to Control Production, Supply, Distribution, Confiscation by Collector, and Penalties",
+    "enacted_year": 1955,
+    "effective_date": "1955-04-01",
+    "doc_type": "statute",
+    "citation": "Essential Commodities Act, 1955, Sec. 3, 6A & 7",
+    "text": "Section 3 empowers the Central Government to issue orders controlling the production, supply, distribution, storage, transport, and trade of essential commodities. Section 6A provides for confiscation of seized essential commodities and packages, coverings, or vehicles by the District Collector upon issuance of show-cause notice. Section 7 penalizes contravention of orders with imprisonment for a term up to seven years and fine."
+  }
+]

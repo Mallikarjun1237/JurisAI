@@ -1,0 +1,74 @@
+[
+  {
+    "id": "limitation_sec3_5",
+    "act_title": "Limitation Act, 1963",
+    "act_id": "ACT_1963_36",
+    "section_number": "3 & 5",
+    "marginal_heading": "Bar of Limitation & Condonation of Delay for 'Sufficient Cause' in Appeals/Applications",
+    "enacted_year": 1963,
+    "effective_date": "1964-01-01",
+    "doc_type": "statute",
+    "citation": "Limitation Act, 1963, Sec. 3 & 5",
+    "text": "Section 3 mandates that subject to sections 4 to 24, every suit instituted, appeal preferred, and application made after the prescribed period shall be dismissed, although limitation has not been set up as a defence. Section 5 provides that any appeal or application (other than execution under Order XXI CPC) may be admitted after the prescribed period if the appellant or applicant satisfies the court that he had sufficient cause for not preferring it within such period (Collector Land Acquisition v. Mst. Katiji / Ramlal v. Rewa Coalfields)."
+  },
+  {
+    "id": "limitation_sec14_18",
+    "act_title": "Limitation Act, 1963",
+    "act_id": "ACT_1963_36",
+    "section_number": "14 & 18",
+    "marginal_heading": "Exclusion of Time Prosecuting Bona Fide in Wrong Forum & Effect of Written Acknowledgment of Debt",
+    "enacted_year": 1963,
+    "effective_date": "1964-01-01",
+    "doc_type": "statute",
+    "citation": "Limitation Act, 1963, Sec. 14 & 18",
+    "text": "Section 14 provides that in computing limitation for any suit or application, the time during which the plaintiff has been prosecuting with due diligence another civil proceeding in good faith in a court which, from defect of jurisdiction, is unable to entertain it, shall be excluded (Consolidated Engineering Enterprises). Section 18 provides that where, before the expiration of the prescribed period for a suit or application in respect of any property or right, an acknowledgment of liability in respect of such property or right has been made in writing signed by the party, a fresh period of limitation shall be computed from the time the acknowledgment was signed (Asset Reconstruction Company v. Bishal Jaiswal)."
+  },
+  {
+    "id": "limitation_art54_65",
+    "act_title": "Limitation Act, 1963 (Schedule Articles)",
+    "act_id": "ACT_1963_36",
+    "section_number": "Articles 54 & 65",
+    "marginal_heading": "3-Year Limitation for Specific Performance & 12-Year Limitation for Adverse Possession of Immovable Property",
+    "enacted_year": 1963,
+    "effective_date": "1964-01-01",
+    "doc_type": "statute",
+    "citation": "Limitation Act, 1963, Schedule Arts. 54 & 65",
+    "text": "Article 54 prescribes a limitation period of three years for a suit for specific performance of a contract, running from the date fixed for performance, or, if no such date is fixed, when the plaintiff has notice that performance is refused. Article 65 prescribes twelve years for possession of immovable property based on title, running from when the possession of the defendant becomes adverse to the plaintiff. Under Section 27, at the determination of the period hereby limited to any person for instituting a suit for possession of any property, his right to such property shall be extinguished."
+  },
+  {
+    "id": "sra_sec34_38_41",
+    "act_title": "Specific Relief Act, 1963",
+    "act_id": "ACT_1963_47",
+    "section_number": "34, 38 & 41",
+    "marginal_heading": "Declaratory Decrees, Perpetual Injunctions & When Injunction Cannot be Granted",
+    "enacted_year": 1963,
+    "effective_date": "1964-03-01",
+    "doc_type": "statute",
+    "citation": "Specific Relief Act, 1963, Sec. 34, 38 & 41",
+    "text": "Section 34 provides that any person entitled to any legal character or to any right as to any property may institute a suit for declaration against any person denying it. Proviso: No court shall make any declaration where the plaintiff, being able to seek further relief (such as possession), omits to do so (Ram Saran v. Ganga Devi). Section 38 empowers the court to grant a perpetual injunction to prevent breach of an obligation. Section 41 bars injunctions when an equally efficacious relief can be obtained by any other usual mode of proceeding, or to restrain judicial proceedings in court not subordinate."
+  },
+  {
+    "id": "court_fees_sec16",
+    "act_title": "Court Fees Act, 1870 (as amended)",
+    "act_id": "ACT_1870_7",
+    "section_number": "16",
+    "marginal_heading": "Refund of Court Fee Where Matter is Referred to and Settled via Section 89 CPC Alternative Dispute Resolution",
+    "enacted_year": 1870,
+    "effective_date": "2002-07-01",
+    "doc_type": "statute",
+    "citation": "Court Fees Act, 1870, Sec. 16",
+    "text": "Where the Court refers the parties to the suit to any one of the mode of settlement of dispute referred to in Section 89 of the Code of Civil Procedure, 1908 (Mediation, Lok Adalat, Conciliation, Arbitration), the plaintiff shall be entitled to receive from the Court a certificate authorizing him to receive back from the Collector the full amount of the fee paid in respect of such plaint. Confirmed by the Supreme Court in High Court of Judicature at Madras v. M.C. Subramaniam (2021) to apply to all private out-of-court settlements arrived at bona fide."
+  },
+  {
+    "id": "bankers_books_sec4",
+    "act_title": "Bankers' Books Evidence Act, 1891",
+    "act_id": "ACT_1891_18",
+    "section_number": "2A & 4",
+    "marginal_heading": "Admissibility of Certified Copies of Bank Records, Printouts, and Electronic Ledger Statements",
+    "enacted_year": 1891,
+    "effective_date": "1891-10-01",
+    "doc_type": "statute",
+    "citation": "Bankers' Books Evidence Act, 1891, Sec. 2A & 4",
+    "text": "Section 4 establishes that a certified copy of any entry in a banker's book shall in all legal proceedings be received as prima facie evidence of the existence of such entry, and shall be admitted as evidence of the matters, transactions and accounts therein recorded in every case where the original entry itself would be admissible. Section 2A validates computer printouts accompanied by a certificate signed by the principal accountant or branch manager certifying custody, system integrity, and accuracy (read with Section 63 BSA 2023)."
+  }
+]

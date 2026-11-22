@@ -1,0 +1,86 @@
+[
+  {
+    "id": "rti_sec6_7",
+    "act_title": "Right to Information Act, 2005 (RTI Act)",
+    "act_id": "ACT_2005_22",
+    "section_number": "6 & 7",
+    "marginal_heading": "Request for Obtaining Information & 30-Day Mandatory Disposal Timeline",
+    "enacted_year": 2005,
+    "effective_date": "2005-10-12",
+    "doc_type": "statute",
+    "citation": "Right to Information Act, 2005, Sec. 6 & 7",
+    "text": "Section 6 allows any citizen to submit an RTI request in writing or through electronic means to the Central Public Information Officer (CPIO) or SPIO without giving any reason. Section 7 mandates that the PIO shall provide information or reject within thirty days of receipt. Proviso: Where the information sought concerns the life or liberty of a person, the same shall be provided within forty-eight hours of the receipt of the request."
+  },
+  {
+    "id": "rti_sec8",
+    "act_title": "Right to Information Act, 2005 (RTI Act)",
+    "act_id": "ACT_2005_22",
+    "section_number": "8",
+    "marginal_heading": "Exemption from Disclosure of Information (Sovereignty, Commercial Confidence, Personal Privacy)",
+    "enacted_year": 2005,
+    "effective_date": "2005-10-12",
+    "doc_type": "statute",
+    "citation": "Right to Information Act, 2005, Sec. 8",
+    "text": "Notwithstanding anything contained in this Act, there shall be no obligation to give any citizen: (a) information affecting sovereignty and integrity of India; (d) commercial confidence, trade secrets or intellectual property; (e) information available in fiduciary relationship unless public interest warrants; (j) personal information which has no relationship to any public activity or interest or which would cause unwarranted invasion of privacy (Girish Ramchandra Deshpande)."
+  },
+  {
+    "id": "rti_sec19_20",
+    "act_title": "Right to Information Act, 2005 (RTI Act)",
+    "act_id": "ACT_2005_22",
+    "section_number": "19 & 20",
+    "marginal_heading": "First Appeal, Second Appeal to Information Commission, and ₹250/day Penalty on PIO",
+    "enacted_year": 2005,
+    "effective_date": "2005-10-12",
+    "doc_type": "statute",
+    "citation": "Right to Information Act, 2005, Sec. 19 & 20",
+    "text": "Section 19 provides for First Appeal within thirty days to the First Appellate Authority (FAA), and Second Appeal within ninety days to the Central or State Information Commission (CIC/SIC). Section 20 empowers the Commission to impose a penalty of ₹250 per day up to a maximum of ₹25,000 on the PIO for refusing to receive an application, delaying without reasonable cause, or giving misleading or false information."
+  },
+  {
+    "id": "contempt_sec2_12",
+    "act_title": "Contempt of Courts Act, 1971",
+    "act_id": "ACT_1971_70",
+    "section_number": "2 & 12",
+    "marginal_heading": "Civil & Criminal Contempt Defined, and Punishment with Imprisonment up to Six Months",
+    "enacted_year": 1971,
+    "effective_date": "1971-12-24",
+    "doc_type": "statute",
+    "citation": "Contempt of Courts Act, 1971, Sec. 2 & 12",
+    "text": "Section 2 distinguishes: (b) 'civil contempt' means wilful disobedience to any judgment, decree, direction, order, writ or other process of a court, or wilful breach of an undertaking; (c) 'criminal contempt' means publication of matter or doing any act that scandalises, lowers authority, prejudices judicial proceedings, or obstructs administration of justice. Section 12 provides punishment with simple imprisonment up to six months or fine up to ₹2,000 or both, subject to discharge upon bona fide apology."
+  },
+  {
+    "id": "ngt_act_sec14_15",
+    "act_title": "National Green Tribunal Act, 2010 (NGT Act)",
+    "act_id": "ACT_2010_19",
+    "section_number": "14 & 15",
+    "marginal_heading": "Jurisdiction over Substantial Question Relating to Environment & Relief, Compensation, Restitution",
+    "enacted_year": 2010,
+    "effective_date": "2010-10-18",
+    "doc_type": "statute",
+    "citation": "National Green Tribunal Act, 2010, Sec. 14 & 15",
+    "text": "Section 14 confers the Tribunal jurisdiction over all civil cases where a substantial question relating to environment arises out of implementation of enactments specified in Schedule I (Water Act, Air Act, Environment Protection Act, Forest Conservation Act). Under Section 15, the NGT can order relief and compensation to victims of pollution, restitution of damaged property, and restitution of the environment for the area, applying the Polluter Pays Principle and Precautionary Principle (Section 20)."
+  },
+  {
+    "id": "lsa_sec19_21",
+    "act_title": "Legal Services Authorities Act, 1987",
+    "act_id": "ACT_1987_39",
+    "section_number": "19 & 21",
+    "marginal_heading": "Organization of Lok Adalats & Finality of Lok Adalat Award as Deemed Civil Court Decree",
+    "enacted_year": 1987,
+    "effective_date": "1995-11-09",
+    "doc_type": "statute",
+    "citation": "Legal Services Authorities Act, 1987, Sec. 19 & 21",
+    "text": "Section 19 provides for organization of Lok Adalats to arrive at a compromise or settlement. Section 21 establishes that every award of the Lok Adalat shall be deemed to be a decree of a civil court or order of any other court. Every award shall be final and binding on all parties, and no appeal shall lie to any court against the award of the Lok Adalat (P.T. Thomas v. Thomas Job). Full court fee is refunded under Section 16 Court Fees Act upon Lok Adalat settlement."
+  },
+  {
+    "id": "advocates_act_sec30_35",
+    "act_title": "Advocates Act, 1961",
+    "act_id": "ACT_1961_25",
+    "section_number": "30 & 35",
+    "marginal_heading": "Right of Advocates to Practise in All Courts & Punishment for Professional Misconduct",
+    "enacted_year": 1961,
+    "effective_date": "2011-06-15",
+    "doc_type": "statute",
+    "citation": "Advocates Act, 1961, Sec. 30 & 35",
+    "text": "Section 30 confers upon every advocate enrolled with a State Bar Council the statutory right to practise throughout the territories of India in all Courts including the Supreme Court, before any tribunal or person legally authorized to take evidence. Section 35 empowers the Disciplinary Committee of the State Bar Council to reprimand, suspend from practice, or remove from the State roll of advocates any advocate found guilty of professional or other misconduct."
+  }
+]
