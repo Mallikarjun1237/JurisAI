@@ -9,7 +9,7 @@ import {
   CheckCircle, ArrowRight, Download, Pencil, BookOpen, Calendar,
   Calculator, ShieldCheck, Printer, User,
   Share2, FileDown, Brain, Copy, Check, X,
-  ArrowUpRight,
+  ArrowUpRight, Command,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LanguageSelector } from '../context/LanguageContext'
@@ -29,6 +29,8 @@ import NotificationPermissionModal from '../components/NotificationPermissionMod
 import TelemetryCard from '../components/TelemetryCard'
 import VoiceInputButton from '../components/VoiceInputButton'
 import ComponentErrorBoundary from '../components/ComponentErrorBoundary'
+import Breadcrumb from '../components/Breadcrumb'
+import KeyboardShortcutsModal from '../components/KeyboardShortcutsModal'
 import { generateCourtLegalReport } from '../utils/courtReportGenerator'
 
 const SUGGESTIONS_MAP = {
@@ -80,7 +82,21 @@ export default function Dashboard() {
   const textareaRef = useRef(null)
   const followUpRef = useRef(null)
 
-  const [query, setQuery] = useState('')
+  // Input draft persistence with sessionStorage
+  const [query, setQuery] = useState(() => {
+    try {
+      return sessionStorage.getItem('jurisai_draft_main_query') || ''
+    } catch {
+      return ''
+    }
+  })
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(() => {
+    try {
+      return Boolean(sessionStorage.getItem('jurisai_draft_main_query')?.trim())
+    } catch {
+      return false
+    }
+  })
   const [followUpQuery, setFollowUpQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
@@ -115,6 +131,7 @@ export default function Dashboard() {
   const [isDPDPModalOpen, setIsDPDPModalOpen] = useState(false)
   const [isBareActsModalOpen, setIsBareActsModalOpen] = useState(false)
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false)
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false)
 
   const refreshSidebar = () => {
     if (window._jurisRefreshCases) window._jurisRefreshCases()
@@ -133,6 +150,114 @@ export default function Dashboard() {
       if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current)
     }
   }, [])
+
+  // ── INPUT DRAFT PERSISTENCE ──
+  // Sync main scenario query to sessionStorage
+  useEffect(() => {
+    try {
+      if (query.trim()) {
+        sessionStorage.setItem('jurisai_draft_main_query', query)
+      } else {
+        sessionStorage.removeItem('jurisai_draft_main_query')
+        setHasRestoredDraft(false)
+      }
+    } catch {}
+  }, [query])
+
+  // Sync follow-up query draft per case to sessionStorage
+  useEffect(() => {
+    const draftKey = activeCaseId ? `jurisai_draft_followup_${activeCaseId}` : 'jurisai_draft_followup_general'
+    try {
+      if (followUpQuery.trim()) {
+        sessionStorage.setItem(draftKey, followUpQuery)
+      } else {
+        sessionStorage.removeItem(draftKey)
+      }
+    } catch {}
+  }, [followUpQuery, activeCaseId])
+
+  // When switching cases, load existing follow-up draft if available
+  useEffect(() => {
+    const draftKey = activeCaseId ? `jurisai_draft_followup_${activeCaseId}` : 'jurisai_draft_followup_general'
+    try {
+      const saved = sessionStorage.getItem(draftKey)
+      if (saved) {
+        setFollowUpQuery(saved)
+      } else {
+        setFollowUpQuery('')
+      }
+    } catch {}
+  }, [activeCaseId])
+
+  const handleClearDraft = () => {
+    setQuery('')
+    setHasRestoredDraft(false)
+    try {
+      sessionStorage.removeItem('jurisai_draft_main_query')
+    } catch {}
+  }
+
+  // ── KEYBOARD ACCELERATORS (Ctrl+Enter, Esc, Ctrl+K, Ctrl+/, Ctrl+B) ──
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      // 1. Ctrl + K / Cmd + K: Focus scenario input or follow-up
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+          textareaRef.current.select?.()
+        } else if (followUpRef.current) {
+          const ta = followUpRef.current.querySelector('textarea')
+          if (ta) ta.focus()
+        }
+        return
+      }
+
+      // 2. Ctrl + / / Cmd + /: Toggle Keyboard Shortcuts Modal
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault()
+        setIsShortcutsModalOpen((prev) => !prev)
+        return
+      }
+
+      // 3. Ctrl + B / Cmd + B: Toggle Navigation Sidebar
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault()
+        setSidebarOpen((prev) => !prev)
+        return
+      }
+
+      // 4. Escape: Close open modals in priority order
+      if (e.key === 'Escape') {
+        if (isShortcutsModalOpen) { setIsShortcutsModalOpen(false); return }
+        if (shareModalOpen) { setShareModalOpen(false); return }
+        if (isProfileModalOpen) { setIsProfileModalOpen(false); return }
+        if (isBNSModalOpen) { setIsBNSModalOpen(false); return }
+        if (isDraftModalOpen) { setIsDraftModalOpen(false); return }
+        if (isCourtFeeModalOpen) { setIsCourtFeeModalOpen(false); return }
+        if (isDiaryModalOpen) { setIsDiaryModalOpen(false); return }
+        if (isDPDPModalOpen) { setIsDPDPModalOpen(false); return }
+        if (isBareActsModalOpen) { setIsBareActsModalOpen(false); return }
+        if (isNotifModalOpen) { setIsNotifModalOpen(false); return }
+        if (sidebarOpen) { setSidebarOpen(false); return }
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [
+    isShortcutsModalOpen,
+    shareModalOpen,
+    isProfileModalOpen,
+    isBNSModalOpen,
+    isDraftModalOpen,
+    isCourtFeeModalOpen,
+    isDiaryModalOpen,
+    isDPDPModalOpen,
+    isBareActsModalOpen,
+    isNotifModalOpen,
+    sidebarOpen,
+  ])
 
   // Safely parse JSON from query log
   const parseQueryResponse = (q) => {
@@ -182,6 +307,48 @@ export default function Dashboard() {
     const key = turnId || `turn-${idx}`
     setTurnViews((prev) => ({ ...prev, [key]: view }))
   }
+
+  // ── PERSISTENT TOP BREADCRUMB HIERARCHY ──
+  const breadcrumbItems = useMemo(() => {
+    if (activeCaseId && caseView) {
+      return [
+        {
+          label: 'Cases',
+          icon: <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />,
+          onClick: () => {
+            setActiveCaseId(null)
+            setCaseView(null)
+            setResult(null)
+            setSelectedQueryId(null)
+          },
+        },
+        {
+          label: caseView.name || 'Active Case',
+          onClick: () => {
+            setResult(null)
+            setSelectedQueryId(null)
+          },
+        },
+        {
+          label: result
+            ? (activeTab === 'citizen' ? 'Citizen Guide' : 'Advocate Brief')
+            : 'Statutory Docket',
+          active: true,
+        },
+      ]
+    }
+    return [
+      {
+        label: 'JurisAI Workspace',
+        icon: <Scale className="w-3.5 h-3.5 text-indigo-400" />,
+        href: '/dashboard',
+      },
+      {
+        label: result ? 'Legal Research Assessment' : 'New Research Inquiry',
+        active: true,
+      },
+    ]
+  }, [activeCaseId, caseView, result, activeTab])
 
   // Load a case's queries when user clicks it in sidebar
   const handleCaseSelect = useCallback(async (caseId) => {
@@ -288,6 +455,10 @@ export default function Dashboard() {
       }
 
       setQuery('')
+      setHasRestoredDraft(false)
+      try {
+        sessionStorage.removeItem('jurisai_draft_main_query')
+      } catch {}
       refreshSidebar()
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
@@ -363,6 +534,10 @@ export default function Dashboard() {
       const queryResult = res.data
       setResult(queryResult)
       setFollowUpQuery('')
+      try {
+        const draftKey = activeCaseId ? `jurisai_draft_followup_${activeCaseId}` : 'jurisai_draft_followup_general'
+        sessionStorage.removeItem(draftKey)
+      } catch {}
 
       if (queryResult.case_id) {
         setActiveCaseId(queryResult.case_id)
@@ -639,12 +814,12 @@ export default function Dashboard() {
       <main className="flex-1 min-w-0 w-full max-w-full lg:pl-64 flex flex-col min-h-screen relative overflow-x-hidden">
         <div className="max-w-5xl w-full min-w-0 mx-auto px-3.5 sm:px-4 lg:px-6 py-3.5 sm:py-5 flex flex-col flex-1">
 
-          {/* Top Header Bar — Responsive Two-Tier Architecture */}
+          {/* Top Header Bar — Responsive Two-Tier Architecture with Persistent Breadcrumb */}
           <header className="flex flex-col gap-2 mb-5 sm:mb-6 border-b border-indigo-500/15 bg-white/3 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 relative z-40 w-full min-w-0 max-w-full">
-            {/* Row 1: Identity & Primary Controls */}
+            {/* Row 1: Breadcrumb Hierarchy & Primary Controls */}
             <div className="flex items-center justify-between gap-2 w-full">
-              {/* Left: Mobile Menu & Active Case Context */}
-              <div className="flex items-center gap-2 min-w-0">
+              {/* Left: Mobile Menu & Persistent Breadcrumb */}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl glass flex items-center justify-center text-slate-400 hover:text-white transition-colors shrink-0"
@@ -653,32 +828,22 @@ export default function Dashboard() {
                   <Menu className="w-4 h-4" />
                 </button>
 
-                {activeCaseId && caseView ? (
-                  <button
-                    onClick={() => { setActiveCaseId(null); setCaseView(null); setResult(null); setSelectedQueryId(null) }}
-                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition-colors bg-white/4 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/6 truncate max-w-[170px] xs:max-w-[220px] sm:max-w-xs"
-                    title="Click to exit case view"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-slate-500">Case:</span>
-                    <span className="font-semibold text-white truncate">
-                      {caseView.name}
-                    </span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 indigo-glow">
-                      <Scale className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-bold text-gradient tracking-wide">
-                      JurisAI
-                    </span>
-                  </div>
-                )}
+                <Breadcrumb items={breadcrumbItems} className="min-w-0 flex-1" />
               </div>
 
-              {/* Right: Language Selector & Notifications */}
+              {/* Right: Keyboard Shortcuts, Language Selector & Notifications */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Keyboard Shortcuts Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsShortcutsModalOpen(true)}
+                  className="hidden md:flex items-center gap-1.5 text-xs text-slate-400 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 px-2.5 py-1.5 rounded-xl transition-all font-mono"
+                  title="Keyboard Shortcuts & Accelerators (Ctrl + /)"
+                >
+                  <Command className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-[11px]">Ctrl /</span>
+                </button>
+
                 <LanguageSelector compact={true} align="right" />
                 <NotificationCenter
                   onOpenDiary={handleOpenDiary}
@@ -802,6 +967,23 @@ export default function Dashboard() {
           {/* Initial Query input card — shown when no result is displayed */}
           {!result && !caseViewLoading && (
             <div className="glass-card rounded-2xl p-3.5 sm:p-4 mb-4 border border-indigo-500/20 w-full min-w-0">
+              {/* Draft Restored Banner */}
+              {hasRestoredDraft && query.trim() && (
+                <div className="flex items-center justify-between px-3 py-1.5 mb-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-xs text-indigo-300">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                    <span>Scenario draft restored from your previous session</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    className="text-slate-400 hover:text-white underline text-[11px] cursor-pointer"
+                  >
+                    Discard draft
+                  </button>
+                </div>
+              )}
+
               {activeCaseId && (
                 <div className="flex items-center gap-1.5 mb-2 px-0.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
@@ -821,7 +1003,7 @@ export default function Dashboard() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={t('searchPlaceholder') || 'Describe your legal scenario in plain language…\n\nPress Ctrl + Enter to submit.'}
+                placeholder={t('searchPlaceholder') || 'Describe your legal scenario in plain language…\n\nCtrl + Enter to submit • Ctrl + K to focus'}
                 rows={4}
                 className="w-full bg-transparent text-white placeholder-slate-500 text-[15px] sm:text-sm resize-none focus:outline-none leading-relaxed"
               />
@@ -838,6 +1020,12 @@ export default function Dashboard() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-auto">
+                  {/* Keyboard Shortcut Hint */}
+                  <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 select-none mr-1">
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-300 text-[10px]">Ctrl Enter</kbd>
+                    <span>submit</span>
+                  </span>
+
                   {/* Deep Think Mode Toggle Switch */}
                   <button
                     type="button"
@@ -1379,6 +1567,11 @@ export default function Dashboard() {
         isOpen={isNotifModalOpen}
         onClose={() => setIsNotifModalOpen(false)}
         onPermissionGranted={() => showToast('🔔 System Notifications Activated! Court hearing & limitation reminders are now active.', 'warning')}
+      />
+
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
       />
 
       {/* ── SHARE LEGAL RESEARCH MODAL ── */}

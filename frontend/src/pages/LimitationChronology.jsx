@@ -20,6 +20,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import Breadcrumb from '../components/Breadcrumb'
 import {
   apiGetLimitationPresets,
   apiCalculateLimitation,
@@ -86,6 +87,17 @@ export default function LimitationChronology() {
     }
     loadPresets()
   }, [])
+
+  // Keyboard Accelerator: Esc to return to Dashboard
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        navigate('/dashboard')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [navigate])
 
   // Calculate Limitation on preset or date change
   useEffect(() => {
@@ -197,31 +209,27 @@ export default function LimitationChronology() {
 
   return (
     <div className="min-h-screen bg-[#060813] text-slate-100 flex flex-col">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-[#060813]/90 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Top Header with Persistent Breadcrumb */}
+      <header className="border-b border-slate-800 bg-[#060813]/90 backdrop-blur-md sticky top-0 z-30 px-6 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-            title="Back to Dashboard"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors shrink-0"
+            title="Back to Dashboard (Esc)"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-white flex items-center gap-2">
-                <span>Court Limitation & Chronology Builder</span>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold">
-                  Limitation Act, 1963 & BNSS 2023
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400">
-                Statutory deadline calculator & Court-standard "List of Dates and Events"
-              </p>
-            </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <Breadcrumb
+              items={[
+                { label: 'JurisAI Workspace', icon: <Scale className="w-3.5 h-3.5 text-indigo-400" />, href: '/dashboard' },
+                { label: 'Legal Suite' },
+                { label: 'Court Limitation & Chronology', active: true },
+              ]}
+            />
+            <p className="text-[11px] text-slate-400 hidden sm:block truncate">
+              Statutory deadline calculator & Court-standard "List of Dates and Events" (Limitation Act 1963 & BNSS 2023)
+            </p>
           </div>
         </div>
 

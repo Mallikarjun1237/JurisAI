@@ -460,6 +460,18 @@ export default function Sidebar({
         )}
       </div>
 
+      {/* ── Keyboard Shortcuts Quick Guide ── */}
+      <div className="px-4 py-2 border-t border-indigo-500/10 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+        <span className="flex items-center gap-1">
+          <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">Ctrl K</kbd>
+          <span>Search</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">Ctrl /</kbd>
+          <span>Keys</span>
+        </span>
+      </div>
+
       {/* ── Logout ── */}
       <div className="px-4 pb-4 pt-1 border-t border-indigo-500/10 shrink-0">
         <button

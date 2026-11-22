@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -16,6 +16,7 @@ import {
   Bookmark,
   ExternalLink,
 } from 'lucide-react'
+import Breadcrumb from '../components/Breadcrumb'
 import { apiSearchPrecedents, apiAnalyzePrecedent } from '../api/client'
 
 const CATEGORIES = [
@@ -29,6 +30,7 @@ const CATEGORIES = [
 
 export default function PrecedentsExplorer() {
   const navigate = useNavigate()
+  const searchInputRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All Domains')
   const [precedents, setPrecedents] = useState([])
@@ -39,6 +41,21 @@ export default function PrecedentsExplorer() {
   // AI Deep Search state
   const [deepLoading, setDeepLoading] = useState(false)
   const [deepResult, setDeepResult] = useState(null)
+
+  // Keyboard Accelerators: Esc to return to Dashboard, Ctrl+K to focus search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        navigate('/dashboard')
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select?.()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [navigate])
 
   // Load / Search precedents
   useEffect(() => {
@@ -118,35 +135,31 @@ export default function PrecedentsExplorer() {
 
   return (
     <div className="min-h-screen bg-[#060813] text-slate-100 flex flex-col">
-      {/* Top Header */}
-      <header className="border-b border-indigo-500/10 bg-[#060813]/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Top Header with Persistent Breadcrumb */}
+      <header className="border-b border-indigo-500/10 bg-[#060813]/80 backdrop-blur-md sticky top-0 z-30 px-6 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate('/dashboard')}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-            title="Back to Dashboard"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0"
+            title="Back to Dashboard (Esc)"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md">
-              <BookOpen className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-white flex items-center gap-2">
-                <span>Landmark Precedents & Citation Explorer</span>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold">
-                  Supreme Court of India
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400">
-                Authoritative Ratio Decidendi, Obiter Dicta & Law Report Citations
-              </p>
-            </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <Breadcrumb
+              items={[
+                { label: 'JurisAI Workspace', icon: <Scale className="w-3.5 h-3.5 text-indigo-400" />, href: '/dashboard' },
+                { label: 'Legal Suite' },
+                { label: 'Supreme Court Precedents Explorer', active: true },
+              ]}
+            />
+            <p className="text-[11px] text-slate-400 hidden sm:block truncate">
+              Authoritative Ratio Decidendi, Obiter Dicta & Law Report Citations (Supreme Court of India)
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => navigate('/case-chat')}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors"
@@ -159,17 +172,21 @@ export default function PrecedentsExplorer() {
       {/* Search & Category Header */}
       <div className="border-b border-white/5 bg-[#090c1e] px-6 py-4">
         <div className="max-w-6xl mx-auto space-y-3">
-          {/* Search Box */}
+          {/* Search Box with Ctrl+K support */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by case name (e.g. Arnesh Kumar, Kesavananda), citation (e.g. (2014) 8 SCC 273), or act..."
-                className="w-full bg-[#12162d] border border-indigo-500/30 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 shadow-inner"
+                placeholder="Search by case name (e.g. Arnesh Kumar, Kesavananda), citation, or statute… (Ctrl + K to focus)"
+                className="w-full bg-[#12162d] border border-indigo-500/30 rounded-xl pl-10 pr-16 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 shadow-inner"
               />
+              <span className="hidden sm:inline-flex items-center absolute right-3 top-2.5 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-slate-400">
+                Ctrl K
+              </span>
             </div>
             <button
               onClick={handleDeepAnalyze}

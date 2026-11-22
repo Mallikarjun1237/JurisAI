@@ -20,6 +20,7 @@ import DPDPSecurityModal from '../components/DPDPSecurityModal'
 import BareActsModal from '../components/BareActsModal'
 import NotificationCenter from '../components/NotificationCenter'
 import NotificationPermissionModal from '../components/NotificationPermissionModal'
+import Breadcrumb from '../components/Breadcrumb'
 import {
   apiCreateChatSession,
   apiListChatSessions,
@@ -266,7 +267,71 @@ export default function CaseChat() {
   const [messages, setMessages] = useState([])
   const [documents, setDocuments] = useState([])
 
-  const [inputMessage, setInputMessage] = useState('')
+  // Input draft persistence with sessionStorage
+  const [inputMessage, setInputMessage] = useState(() => {
+    try {
+      return sessionStorage.getItem('jurisai_draft_chat_' + (activeSessionId || 'general')) || ''
+    } catch {
+      return ''
+    }
+  })
+
+  // Sync draft chat input
+  useEffect(() => {
+    const draftKey = 'jurisai_draft_chat_' + (activeSessionId || 'general')
+    try {
+      if (inputMessage.trim()) {
+        sessionStorage.setItem(draftKey, inputMessage)
+      } else {
+        sessionStorage.removeItem(draftKey)
+      }
+    } catch {}
+  }, [inputMessage, activeSessionId])
+
+  // When switching chat sessions, load saved draft if any
+  useEffect(() => {
+    const draftKey = 'jurisai_draft_chat_' + (activeSessionId || 'general')
+    try {
+      const saved = sessionStorage.getItem(draftKey)
+      setInputMessage(saved || '')
+    } catch {}
+  }, [activeSessionId])
+
+  // Global Keyboard Accelerators: Esc to close modals / return to Dashboard, Ctrl+K to focus input
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        textareaRef.current?.focus()
+        textareaRef.current?.select?.()
+        return
+      }
+      if (e.key === 'Escape') {
+        if (handoffModalOpen) { setHandoffModalOpen(false); return }
+        if (shareModalOpen) { setShareModalOpen(false); return }
+        if (auditModalOpen) { setAuditModalOpen(false); return }
+        if (diaryModalOpen) { setDiaryModalOpen(false); return }
+        if (notifModalOpen) { setNotifModalOpen(false); return }
+        if (dpdpModalOpen) { setDpdpModalOpen(false); return }
+        if (bareActsModalOpen) { setBareActsModalOpen(false); return }
+        if (sidebarOpen) { setSidebarOpen(false); return }
+        navigate('/dashboard')
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [
+    handoffModalOpen,
+    shareModalOpen,
+    auditModalOpen,
+    diaryModalOpen,
+    notifModalOpen,
+    dpdpModalOpen,
+    bareActsModalOpen,
+    sidebarOpen,
+    navigate,
+  ])
+
   const [tone, setTone] = useState('citizen') // 'citizen' | 'counsel'
   const [thinkMode, setThinkMode] = useState(false) // Deep Think / Multi-Step Precedent Mode
   const [handoffModalOpen, setHandoffModalOpen] = useState(false)
@@ -578,6 +643,9 @@ export default function CaseChat() {
     if (!textToSend || !activeSessionId || loading) return
 
     setInputMessage('')
+    try {
+      sessionStorage.removeItem('jurisai_draft_chat_' + (activeSessionId || 'general'))
+    } catch {}
     setError('')
 
     // Automatic DPDP Act 2023 PII Sanitization
@@ -763,9 +831,13 @@ export default function CaseChat() {
               </div>
 
               <div className="min-w-0">
-                <h1 className="text-xs sm:text-sm font-bold text-white truncate max-w-[130px] xs:max-w-[190px] sm:max-w-xs md:max-w-md">
-                  {currentSession?.title || 'Personal Legal Assistant'}
-                </h1>
+                <Breadcrumb
+                  items={[
+                    { label: 'Workspace', icon: <Scale className="w-3.5 h-3.5" />, href: '/dashboard' },
+                    { label: 'Legal Suite' },
+                    { label: currentSession?.title || 'Personal Legal Assistant', active: true },
+                  ]}
+                />
               </div>
             </div>
 
