@@ -98,20 +98,49 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ─── CORS CONFIGURATION (Production & Development Safe) ─────────────────────
+import os
+
+_frontend_env = os.getenv("FRONTEND_URL", "").strip()
+_allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
+
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
+# Append custom production URLs if provided
+for env_val in [_frontend_env, _allowed_origins_env]:
+    if env_val:
+        for u in env_val.split(","):
+            u = u.strip()
+            if u and u not in origins:
+                origins.append(u)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*(\.vercel\.app|\.netlify\.app|\.onrender\.com|\.railway\.app)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ─── HEALTH ──────────────────────────────────────────────────────────────────
+# ─── HEALTH & ROOT ───────────────────────────────────────────────────────────
+
+@app.get("/", tags=["Health"])
+def root_check():
+    """Root health check for cloud platform uptime probes."""
+    return {
+        "status": "ok",
+        "service": "JurisAI Sovereign Legal Intelligence API",
+        "version": "2.0.0",
+        "docs": "/docs",
+    }
+
 
 @app.get("/health", tags=["Health"])
 def health_check():
