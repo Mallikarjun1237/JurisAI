@@ -260,12 +260,41 @@ export default function CaseChat() {
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
+  const latestMessageRef = useRef(null)
 
+  // Session & Message states
   const [sessions, setSessions] = useState([])
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [currentSession, setCurrentSession] = useState(null)
   const [messages, setMessages] = useState([])
   const [documents, setDocuments] = useState([])
+
+  // Controls & Settings states
+  const [tone, setTone] = useState('citizen') // 'citizen' | 'counsel'
+  const [thinkMode, setThinkMode] = useState(false) // Deep Think / Multi-Step Precedent Mode
+  const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Modal states
+  const [handoffModalOpen, setHandoffModalOpen] = useState(false)
+  const [handoffData, setHandoffData] = useState(null)
+  const [loadingHandoff, setLoadingHandoff] = useState(false)
+  const [copiedHandoff, setCopiedHandoff] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [copiedShare, setCopiedShare] = useState(false)
+
+  // Contract Risk Auditor states
+  const [auditReport, setAuditReport] = useState(null)
+  const [auditModalOpen, setAuditModalOpen] = useState(false)
+  const [auditing, setAuditing] = useState(false)
+
+  // Advocate Digital Diary & Security Modals
+  const [diaryModalOpen, setDiaryModalOpen] = useState(false)
+  const [notifModalOpen, setNotifModalOpen] = useState(false)
+  const [dpdpModalOpen, setDpdpModalOpen] = useState(false)
+  const [bareActsModalOpen, setBareActsModalOpen] = useState(false)
 
   // Input draft persistence with sessionStorage
   const [inputMessage, setInputMessage] = useState(() => {
@@ -331,32 +360,6 @@ export default function CaseChat() {
     sidebarOpen,
     navigate,
   ])
-
-  const [tone, setTone] = useState('citizen') // 'citizen' | 'counsel'
-  const [thinkMode, setThinkMode] = useState(false) // Deep Think / Multi-Step Precedent Mode
-  const [handoffModalOpen, setHandoffModalOpen] = useState(false)
-  const [handoffData, setHandoffData] = useState(null)
-  const [loadingHandoff, setLoadingHandoff] = useState(false)
-  const [copiedHandoff, setCopiedHandoff] = useState(false)
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [copiedShare, setCopiedShare] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  // Contract Risk Auditor states
-  const [auditReport, setAuditReport] = useState(null)
-  const [auditModalOpen, setAuditModalOpen] = useState(false)
-  const [auditing, setAuditing] = useState(false)
-
-  // Advocate Digital Diary state
-  const [diaryModalOpen, setDiaryModalOpen] = useState(false)
-  const [notifModalOpen, setNotifModalOpen] = useState(false)
-  const [dpdpModalOpen, setDpdpModalOpen] = useState(false)
-  const [bareActsModalOpen, setBareActsModalOpen] = useState(false)
-
-  const latestMessageRef = useRef(null)
 
   // Container-isolated conversational scroll (ChatGPT & Gemini style)
   // ONLY scrolls the messages container — NEVER scrolls the window or page!
