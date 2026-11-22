@@ -1,0 +1,74 @@
+[
+  {
+    "id": "tpa1882_sec53a",
+    "act_title": "Transfer of Property Act, 1882",
+    "act_id": "ACT_1882_4",
+    "section_number": "53A",
+    "marginal_heading": "Doctrine of Part Performance (Equitable Shield for Transferee in Possession)",
+    "enacted_year": 1882,
+    "effective_date": "1882-07-01",
+    "doc_type": "statute",
+    "citation": "Transfer of Property Act, 1882, Sec. 53A",
+    "text": "Where any person contracts to transfer for consideration any immovable property by writing signed by him, and the transferee has in part performance of contract taken possession of property and has done some act in furtherance of contract, and is willing to perform his part, the transferor is debarred from enforcing against transferee any right in respect of property other than expressly provided by contract. Requires registered agreement post 2001 Registration Amendment."
+  },
+  {
+    "id": "tpa1882_sec106",
+    "act_title": "Transfer of Property Act, 1882",
+    "act_id": "ACT_1882_4",
+    "section_number": "106",
+    "marginal_heading": "Duration of Leases & Mandatory Notice to Quit",
+    "enacted_year": 1882,
+    "effective_date": "1882-07-01",
+    "doc_type": "statute",
+    "citation": "Transfer of Property Act, 1882, Sec. 106",
+    "text": "In the absence of a written contract or local law to the contrary: (a) a lease of immovable property for agricultural or manufacturing purposes is deemed to be a lease from year to year, terminable by 6 months notice expiring with the end of year of tenancy; (b) a lease of immovable property for any other purpose (commercial or residential tenancy) is deemed month to month, terminable by 15 days notice expiring with the end of month of tenancy. Notice must be in writing."
+  },
+  {
+    "id": "rera2016_sec18",
+    "act_title": "Real Estate (Regulation and Development) Act, 2016 (RERA)",
+    "act_id": "ACT_2016_16",
+    "section_number": "18",
+    "marginal_heading": "Return of Amount & Compensation for Delay by Real Estate Promoter",
+    "enacted_year": 2016,
+    "effective_date": "2017-05-01",
+    "doc_type": "statute",
+    "citation": "Real Estate (Regulation and Development) Act, 2016, Sec. 18",
+    "text": "If promoter fails to complete or give possession of an apartment, plot or building in accordance with the terms of agreement for sale or due to discontinuance of business, promoter is liable on demand to allottees: (a) if allottee wishes to withdraw from project, to return the entire amount received with interest at prescribed rate (SBI MCLR + 2%) and compensation; (b) if allottee does not withdraw, to pay interest for every month of delay until handover of possession."
+  },
+  {
+    "id": "sarfaesi2002_sec13",
+    "act_title": "Securitisation and Reconstruction of Financial Assets and Enforcement of Security Interest Act, 2002 (SARFAESI Act)",
+    "act_id": "ACT_2002_54",
+    "section_number": "13",
+    "marginal_heading": "Enforcement of Security Interest Without Court Intervention (Section 13(2) & 13(4))",
+    "enacted_year": 2002,
+    "effective_date": "2002-06-21",
+    "doc_type": "statute",
+    "citation": "SARFAESI Act, 2002, Sec. 13",
+    "text": "Where any borrower defaults in repayment of secured debt classified as NPA, secured creditor may issue notice under Section 13(2) requiring borrower to discharge liabilities within 60 days. If borrower fails to comply, secured creditor under Section 13(4) may take possession of secured assets, take over management, appoint manager, or recover receivables. Under Section 17, aggrieved borrower can file Securitization Application before Debts Recovery Tribunal (DRT) within 45 days."
+  },
+  {
+    "id": "pmla2002_sec3",
+    "act_title": "Prevention of Money Laundering Act, 2002 (PMLA)",
+    "act_id": "ACT_2002_15",
+    "section_number": "3",
+    "marginal_heading": "Offence of Money-Laundering & Proceeds of Crime",
+    "enacted_year": 2002,
+    "effective_date": "2005-07-01",
+    "doc_type": "statute",
+    "citation": "Prevention of Money Laundering Act, 2002, Sec. 3",
+    "text": "Whosoever directly or indirectly attempts to indulge or knowingly assists or knowingly is a party or is actually involved in any process or activity connected with the proceeds of crime including its concealment, possession, acquisition or use and projecting or claiming it as untainted property shall be guilty of offence of money-laundering. Under Section 4, punishable with rigorous imprisonment not less than 3 years up to 7 years (up to 10 years for NDPS offences) and fine."
+  },
+  {
+    "id": "pmla2002_sec45",
+    "act_title": "Prevention of Money Laundering Act, 2002 (PMLA)",
+    "act_id": "ACT_2002_15",
+    "section_number": "45",
+    "marginal_heading": "Twin Conditions for Bail (Stringent Non-Bailable Threshold)",
+    "enacted_year": 2002,
+    "effective_date": "2018-04-19",
+    "doc_type": "statute",
+    "citation": "Prevention of Money Laundering Act, 2002, Sec. 45",
+    "text": "No person accused of an offence under PMLA shall be released on bail unless: (i) the Public Prosecutor has been given an opportunity to oppose the application for bail; and (ii) where the Public Prosecutor opposes the application, the Court is satisfied that there are reasonable grounds for believing that he is not guilty of such offence and that he is not likely to commit any offence while on bail (Vijay Madanlal Choudhary Supreme Court benchmark). Exceptions apply for sick, infirm, or women."
+  }
+]

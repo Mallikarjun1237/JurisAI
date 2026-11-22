@@ -1,0 +1,74 @@
+[
+  {
+    "id": "easements_sec4_15",
+    "act_title": "Indian Easements Act, 1882",
+    "act_id": "ACT_1882_5",
+    "section_number": "4 & 15",
+    "marginal_heading": "Easement Defined & Acquisition by Prescription (20 Years Uninterrupted Use)",
+    "enacted_year": 1882,
+    "effective_date": "1882-07-01",
+    "doc_type": "statute",
+    "citation": "Indian Easements Act, 1882, Sec. 4 & 15",
+    "text": "Section 4 defines an easement as a right which the owner or occupier of certain land possesses, as such, for the beneficial enjoyment of that land, to do and continue to do something, or to prevent and continue to prevent something being done, in or upon, or in respect of, certain other land not his own. Section 15 provides that where access and use of light, air, way, or watercourse has been peaceably and openly enjoyed without interruption for twenty years (sixty years against Government), the right becomes absolute and indefeasible."
+  },
+  {
+    "id": "easements_sec52_60",
+    "act_title": "Indian Easements Act, 1882",
+    "act_id": "ACT_1882_5",
+    "section_number": "52 & 60",
+    "marginal_heading": "Licence Defined & When a Licence is Irrevocable (Permanent Structure Constructed)",
+    "enacted_year": 1882,
+    "effective_date": "1882-07-01",
+    "doc_type": "statute",
+    "citation": "Indian Easements Act, 1882, Sec. 52 & 60",
+    "text": "Section 52 defines a licence as a grant of a right to do, or continue to do, in or upon the immovable property of the grantor, something which would, in the absence of such right, be unlawful, where such right does not amount to an easement or an interest in the property. Section 60 provides that a licence may be revoked by the grantor, unless: (a) it is coupled with a transfer of property and such transfer is in force; (b) the licensee, acting upon the licence, has executed a work of a permanent character and incurred expenses in the execution."
+  },
+  {
+    "id": "registration_sec17_49",
+    "act_title": "Registration Act, 1908",
+    "act_id": "ACT_1908_16",
+    "section_number": "17 & 49",
+    "marginal_heading": "Documents Compulsorily Registrable & Effect of Non-Registration (Inadmissibility in Evidence)",
+    "enacted_year": 1908,
+    "effective_date": "1909-01-01",
+    "doc_type": "statute",
+    "citation": "Registration Act, 1908, Sec. 17 & 49",
+    "text": "Section 17 mandates compulsory registration of gifts of immovable property, non-testamentary instruments transferring or creating interest of value ₹100 and upwards, leases exceeding one year, and contracts to transfer for consideration under Section 53A TPA. Section 49 establishes that no document required by Section 17 to be registered shall affect any immovable property or be received as evidence of any transaction affecting such property, unless registered. Proviso: An unregistered document may be received as evidence of a contract in a suit for specific performance under Specific Relief Act or as evidence of any collateral transaction not required to be effected by registered instrument."
+  },
+  {
+    "id": "stamp_act_sec33_35",
+    "act_title": "Indian Stamp Act, 1899 (read with N.N. Global Mercantile)",
+    "act_id": "ACT_1899_2",
+    "section_number": "33 & 35",
+    "marginal_heading": "Impounding of Instruments Not Duly Stamped & Inadmissibility in Evidence until Deficit and 10x Penalty Paid",
+    "enacted_year": 1899,
+    "effective_date": "1899-07-01",
+    "doc_type": "statute",
+    "citation": "Indian Stamp Act, 1899, Sec. 33 & 35",
+    "text": "Section 33 mandates that every person having by law or consent of parties authority to receive evidence, before whom any instrument chargeable with duty is produced, shall impound the same if it appears not duly stamped. Section 35 provides that no instrument chargeable with duty shall be admitted in evidence for any purpose by any person or public officer, nor acted upon, unless duly stamped. Defect is curable upon payment of the deficit duty together with a statutory penalty of ten times the deficit (Supreme Court 7-Judge Bench in In Re: Interplay between Arbitration Agreements and Stamp Act, 2023)."
+  },
+  {
+    "id": "environment_sec7_15",
+    "act_title": "Environment (Protection) Act, 1986",
+    "act_id": "ACT_1986_29",
+    "section_number": "7 & 15",
+    "marginal_heading": "Discharge of Environmental Pollutants in Excess of Standards & Penalties",
+    "enacted_year": 1986,
+    "effective_date": "1986-11-19",
+    "doc_type": "statute",
+    "citation": "Environment (Protection) Act, 1986, Sec. 7 & 15",
+    "text": "Section 7 prohibits any person carrying on any industry, operation or process from discharging or emitting or permitting to be discharged or emitted any environmental pollutant in excess of prescribed standards. Section 15 provides that whoever fails to comply with or contravenes any provisions of this Act or rules shall be punishable with imprisonment for a term up to five years or with fine up to ₹1,00,000, or with both, and additional ₹5,000 per day for continuing contravention."
+  },
+  {
+    "id": "mmdr_sec4_21",
+    "act_title": "Mines and Minerals (Development and Regulation) Act, 1957 (MMDR Act)",
+    "act_id": "ACT_1957_67",
+    "section_number": "4 & 21",
+    "marginal_heading": "Prohibition of Mining Operations without Prospecting Licence or Lease & Penalties for Illegal Mining",
+    "enacted_year": 1957,
+    "effective_date": "1958-06-01",
+    "doc_type": "statute",
+    "citation": "MMDR Act, 1957, Sec. 4 & 21",
+    "text": "Section 4 prohibits undertaking reconnaissance, prospecting or mining operations in any area except under and in accordance with the terms and conditions of a reconnaissance permit, prospecting licence or mining lease. Section 21 provides that whoever contravenes Section 4 shall be punished with imprisonment for a term up to five years and with fine up to five lakh rupees per hectare. Section 21(4) empowers seizure and confiscation of minerals, tools, machinery, and vehicles involved."
+  }
+]

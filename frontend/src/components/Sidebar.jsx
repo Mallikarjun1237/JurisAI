@@ -1,0 +1,518 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Scale, LogOut, ChevronRight, Sparkles, X, TrendingUp,
+  Plus, Folder, FolderOpen, Pencil, Trash2, Check, MoreHorizontal,
+  ArrowDownCircle, History, Clock, MessageSquare, Bot, Calendar, BookOpen, Calculator,
+  ShieldCheck,
+} from 'lucide-react'
+import PlanBadge from './PlanBadge'
+import { useLanguage, LanguageSelector } from '../context/LanguageContext'
+import { apiListCases, apiRenameCase, apiDeleteCase, apiTogglePro, apiGetHistory } from '../api/client'
+
+export default function Sidebar({
+  user, onLogout, onUpgrade, onCaseSelect, onHistorySelect, activeCaseId, open, onClose,
+  onOpenProfile, onOpenBNS, onOpenCourtFee, onOpenDiary, onOpenDPDP, onOpenBareActs,
+}) {
+  const { t } = useLanguage()
+  const navigate = useNavigate()
+  const [cases, setCases] = useState([])
+  const [historyList, setHistoryList] = useState([])
+  const [sidebarTab, setSidebarTab] = useState('cases') // 'cases' | 'history'
+  const [togglingPro, setTogglingPro] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editingName, setEditingName] = useState('')
+  const [menuOpenId, setMenuOpenId] = useState(null)
+
+  const loadData = useCallback(async () => {
+    try {
+      const [casesRes, historyRes] = await Promise.all([
+        apiListCases(),
+        apiGetHistory().catch(() => ({ data: [] })),
+      ])
+      setCases(casesRes.data || [])
+      setHistoryList(historyRes.data || [])
+    } catch (err) {
+      console.error('Failed to load sidebar data:', err)
+    }
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  // Refresh cases only when sidebar is opened (open transitions to true)
+  useEffect(() => { if (open) loadData() }, [open, loadData])
+
+  // Allow parent to trigger a refresh
+  useEffect(() => {
+    window._jurisRefreshCases = loadData
+  }, [loadData])
+
+  const handleTogglePro = async () => {
+    setTogglingPro(true)
+    try {
+      const action = user?.is_pro ? 'downgrade' : 'upgrade'
+      const res = await apiTogglePro(action)
+      if (onUpgrade) onUpgrade(res.data)
+    } catch (err) {
+      console.error('Toggle pro failed:', err)
+    } finally {
+      setTogglingPro(false)
+    }
+  }
+
+  const startEdit = (c, e) => {
+    e.stopPropagation()
+    setEditingId(c.id)
+    setEditingName(c.name)
+    setMenuOpenId(null)
+  }
+
+  const commitEdit = async (id) => {
+    const trimmed = editingName.trim()
+    if (!trimmed) { setEditingId(null); return }
+    try {
+      await apiRenameCase(id, trimmed)
+      setCases((prev) => prev.map((c) => c.id === id ? { ...c, name: trimmed } : c))
+    } catch { /* ignore */ }
+    setEditingId(null)
+  }
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation()
+    if (!confirm('Delete this legal case and all its queries?')) return
+    try {
+      await apiDeleteCase(id)
+      setCases((prev) => prev.filter((c) => c.id !== id))
+      if (activeCaseId === id) onCaseSelect(null)
+    } catch { /* ignore */ }
+    setMenuOpenId(null)
+  }
+
+  // Compute today's date in IST (UTC+5:30) for accurate daily reset display
+  const getISTDate = () => {
+    const utc = Date.now() + new Date().getTimezoneOffset() * 60000
+    return new Date(utc + (5 * 60 + 30) * 60000).toISOString().slice(0, 10)
+  }
+  const todayIST = getISTDate()
+  const isNewDay = user?.last_query_date && user.last_query_date !== todayIST
+  const dailyUsed = isNewDay ? 0 : (user?.daily_query_count || 0)
+  const dailyPct = Math.min(100, (dailyUsed / 5) * 100)
+
+  const SidebarContent = () => (
+    <div className="h-full flex flex-col overflow-hidden">
+
+      {/* ── Logo ── */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-indigo-500/10 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center indigo-glow">
+            <Scale className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-bold text-gradient text-base">JurisAI</span>
+        </div>
+        <button onClick={onClose} className="lg:hidden text-slate-500 hover:text-white transition-colors p-1">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* ── User Card with Profile Image & Pencil Edit Button ── */}
+      <div className="px-4 py-4 border-b border-indigo-500/10 shrink-0">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative group/avatar">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden border border-indigo-500/30">
+              {user?.profile_image ? (
+                <img src={user.profile_image} alt="User Avatar" className="w-full h-full object-cover" />
+              ) : (
+                (user?.full_name || user?.email || 'U')[0].toUpperCase()
+              )}
+            </div>
+            {/* Pencil button directly on avatar */}
+            <button
+              onClick={() => { if (onOpenProfile) onOpenProfile(); onClose(); }}
+              title="Edit Profile & Photo"
+              className="absolute -bottom-1 -right-1 w-5 h-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-md border border-[#05050f] transition-transform hover:scale-110"
+            >
+              <Pencil className="w-2.5 h-2.5" />
+            </button>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-slate-200 truncate">{user?.full_name || 'User'}</p>
+              <button
+                onClick={() => { if (onOpenProfile) onOpenProfile(); onClose(); }}
+                title="Edit Profile"
+                className="text-slate-500 hover:text-indigo-400 transition-colors p-0.5"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+          </div>
+          <PlanBadge isPro={user?.is_pro} />
+        </div>
+
+        {/* ── Query Quota (free users only) ── */}
+        {!user?.is_pro && (
+          <div>
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+              <span className="flex items-center gap-1 text-[11px]">
+                <TrendingUp className="w-3 h-3 text-indigo-400" />
+                {t('dailyQueries') || 'Daily Queries'}
+              </span>
+              <span className="font-mono text-slate-400 text-[11px]">{dailyUsed}/5 used</span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  dailyUsed >= 5
+                    ? 'bg-red-500'
+                    : dailyUsed >= 4
+                    ? 'bg-amber-400'
+                    : 'bg-indigo-500'
+                }`}
+                initial={{ width: 0 }}
+                animate={{ width: `${dailyPct}%` }}
+                transition={{ duration: 0.6 }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Quick Tools Grid (Compact 2-Column Suite) ── */}
+      <div className="px-3.5 py-2 border-b border-indigo-500/10 shrink-0">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 px-0.5">{t('legalSuite') || 'Legal Suite'}</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => { navigate('/case-chat'); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Personal Legal Assistant & Document Co-Pilot"
+          >
+            <Bot className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Personal Assistant</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenDiary) onOpenDiary(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Advocate Diary & Daily Cause List"
+          >
+            <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Diary</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenCourtFee) onOpenCourtFee(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Court Fees Calculator & Valuation Slip"
+          >
+            <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Court Fees</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenBNS) onOpenBNS(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="IPC ⇄ BNS Provision Converter"
+          >
+            <Scale className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">IPC ⇄ BNS</span>
+          </button>
+          <button
+            onClick={() => { if (onOpenBareActs) onOpenBareActs(); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Central Bare Acts and Statutory Library"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Bare Acts</span>
+          </button>
+          <button
+            onClick={() => { navigate('/precedents'); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Supreme Court Precedents Explorer"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Precedents</span>
+          </button>
+          <button
+            onClick={() => { navigate('/limitation-chronology'); onClose(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white bg-white/4 hover:bg-white/8 border border-white/6 transition-all text-left truncate"
+            title="Limitation & Chronology Builder"
+          >
+            <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="truncate">Chronology</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Tabs: Cases vs Search History ── */}
+      <div className="px-3.5 pt-2.5 pb-1.5 shrink-0">
+        <div className="flex bg-white/4 rounded-lg p-0.5 border border-white/6">
+          <button
+            onClick={() => setSidebarTab('cases')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              sidebarTab === 'cases'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Folder className="w-3 h-3" />
+            <span>{t('casesTitle') || 'Cases'} ({cases.length})</span>
+          </button>
+          <button
+            onClick={() => setSidebarTab('history')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              sidebarTab === 'history'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <History className="w-3 h-3" />
+            <span>{t('historyTitle') || 'History'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── TAB 1: Cases List ── */}
+      {sidebarTab === 'cases' && (
+        <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 scrollbar-thin">
+          {/* New Case button */}
+          <button
+            onClick={() => { onCaseSelect(null); onClose(); }}
+            className="w-full flex items-center gap-2 p-2.5 rounded-lg border border-dashed border-indigo-500/20 hover:border-indigo-500/40 text-slate-400 hover:text-indigo-300 transition-all text-xs font-medium mb-2 group"
+          >
+            <Plus className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span>{t('newCase') || 'New Case'}</span>
+          </button>
+
+          {cases.length === 0 ? (
+            <div className="text-center py-8 px-2">
+              <Folder className="w-7 h-7 text-slate-800 mx-auto mb-2" />
+              <p className="text-xs text-slate-600">No cases saved yet</p>
+              <p className="text-[11px] text-slate-700 mt-1">Queries you run can be saved into organized cases</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {cases.map((c) => {
+                const isActive = activeCaseId === c.id
+                const isEditing = editingId === c.id
+                const isMenuOpen = menuOpenId === c.id
+
+                return (
+                  <div
+                    key={c.id}
+                    className={`group relative rounded-lg transition-all ${
+                      isActive
+                        ? 'bg-indigo-600/20 border border-indigo-500/30'
+                        : 'hover:bg-white/4 border border-transparent'
+                    }`}
+                  >
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 p-2">
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitEdit(c.id)
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
+                          autoFocus
+                          className="flex-1 bg-slate-900 border border-indigo-500/40 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                        />
+                        <button
+                          onClick={() => commitEdit(c.id)}
+                          className="p-1 text-emerald-400 hover:text-emerald-300"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="p-1 text-slate-500 hover:text-slate-300"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => { onCaseSelect(c.id); onClose(); }}
+                        className="flex items-center gap-2 p-2.5 cursor-pointer"
+                      >
+                        {isActive ? (
+                          <FolderOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        ) : (
+                          <Folder className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 shrink-0" />
+                        )}
+                        <span className={`text-xs truncate flex-1 ${isActive ? 'text-white font-medium' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                          {c.name}
+                        </span>
+
+                        {/* Meatball menu */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMenuOpenId(isMenuOpen ? null : c.id)
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-slate-300 rounded transition-opacity"
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </button>
+
+                          {isMenuOpen && (
+                            <div className="absolute right-0 top-6 w-32 bg-slate-900 border border-white/10 rounded-lg shadow-xl z-30 py-1 text-xs">
+                              <button
+                                onClick={(e) => startEdit(c, e)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5"
+                              >
+                                <Pencil className="w-3 h-3" /> Rename
+                              </button>
+                              <button
+                                onClick={(e) => handleDelete(c.id, e)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="w-3 h-3" /> Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB 2: Search History ── */}
+      {sidebarTab === 'history' && (
+        <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 scrollbar-thin">
+          {historyList.length === 0 ? (
+            <div className="text-center py-8 px-2">
+              <Clock className="w-7 h-7 text-slate-800 mx-auto mb-2" />
+              <p className="text-xs text-slate-600">No search history yet</p>
+              <p className="text-[11px] text-slate-700 mt-1">Queries will appear here automatically</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {historyList.map((item, i) => (
+                <motion.button
+                  key={item.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  onClick={() => {
+                    if (onHistorySelect) onHistorySelect(item)
+                    onClose()
+                  }}
+                  className="w-full text-left p-2.5 rounded-lg hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs group"
+                >
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-300 group-hover:text-white font-medium truncate">
+                        {item.query_text}
+                      </p>
+                      <p className="text-[10px] text-slate-600 mt-1">
+                        {new Date(item.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Pro / Downgrade CTA ── */}
+      <div className="px-3.5 pb-2 shrink-0">
+        {!user?.is_pro ? (
+          <motion.button
+            onClick={handleTogglePro}
+            disabled={togglingPro}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/25 hover:border-amber-500/40 rounded-xl px-4 py-3 text-left transition-all"
+          >
+            <div className="flex items-center gap-2 mb-0.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-xs font-semibold text-amber-300">
+                {togglingPro ? 'Switching…' : 'Upgrade to Pro — Free'}
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-400/50 ml-5">Unlimited queries + SC precedents</p>
+          </motion.button>
+        ) : (
+          <button
+            onClick={handleTogglePro}
+            disabled={togglingPro}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-slate-400 hover:text-slate-200 bg-white/4 hover:bg-white/8 border border-white/6 rounded-xl transition-all font-medium"
+          >
+            <ArrowDownCircle className="w-3.5 h-3.5 text-slate-400" />
+            {togglingPro ? 'Switching…' : 'Switch to Free Plan (5 queries/day)'}
+          </button>
+        )}
+      </div>
+
+      {/* ── Keyboard Shortcuts Quick Guide ── */}
+      <div className="px-4 py-2 border-t border-indigo-500/10 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+        <span className="flex items-center gap-1">
+          <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">Ctrl K</kbd>
+          <span>Search</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">Ctrl /</kbd>
+          <span>Keys</span>
+        </span>
+      </div>
+
+      {/* ── Logout ── */}
+      <div className="px-4 pb-4 pt-1 border-t border-indigo-500/10 shrink-0">
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-2 rounded-lg hover:bg-red-500/10 w-full"
+        >
+          <LogOut className="w-3.5 h-3.5" /> Sign out
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Desktop: fixed static on viewport */}
+      <aside className="hidden lg:flex w-64 flex-col glass border-r border-indigo-500/10 h-screen fixed left-0 top-0 bottom-0 z-30">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile: slide-in overlay */}
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              key="overlay"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+              onClick={onClose}
+            />
+            <motion.aside
+              key="sidebar"
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+              className="fixed left-0 top-0 bottom-0 w-72 glass z-50 lg:hidden flex flex-col border-r border-indigo-500/10"
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
