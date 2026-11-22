@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from database import get_db
 import models
 import os
@@ -66,7 +67,8 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(models.User).filter(models.User.email == email).first()
+    clean_email = email.strip().lower()
+    user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if user is None:
         raise credentials_exception
     return user

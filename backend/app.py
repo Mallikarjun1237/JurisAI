@@ -20,6 +20,7 @@ Endpoints: Auth, Query, History, Cases, Password Reset
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import date, datetime, timedelta
 from typing import Optional, List
 import json
@@ -179,13 +180,14 @@ def get_llm_status():
 @app.post("/api/auth/signup", response_model=schemas.TokenResponse,
           status_code=status.HTTP_201_CREATED, tags=["Auth"])
 def signup(payload: schemas.SignupRequest, db: Session = Depends(get_db)):
-    if db.query(models.User).filter(models.User.email == payload.email).first():
+    clean_email = payload.email.strip().lower()
+    if db.query(models.User).filter(func.lower(models.User.email) == clean_email).first():
         raise HTTPException(400, "An account with this email already exists.")
 
     user = models.User(
-        email=payload.email,
+        email=clean_email,
         hashed_password=auth.hash_password(payload.password),
-        full_name=payload.full_name,
+        full_name=payload.full_name.strip() if payload.full_name else clean_email.split('@')[0],
     )
     db.add(user)
     db.commit()
@@ -204,7 +206,8 @@ def signup(payload: schemas.SignupRequest, db: Session = Depends(get_db)):
 
 @app.post("/api/auth/login", response_model=schemas.TokenResponse, tags=["Auth"])
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    clean_email = payload.email.strip().lower()
+    user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if not user or not auth.verify_password(payload.password, user.hashed_password):
         raise HTTPException(401, "Invalid email or password.")
 
@@ -280,7 +283,8 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
     Generate a password-reset token and email the user a link.
     Always returns success to prevent email enumeration.
     """
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    clean_email = payload.email.strip().lower()
+    user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if user:
         token = auth.create_reset_token()
         user.reset_token = token
